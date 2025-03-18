@@ -18,7 +18,7 @@ def get_bot(token=None):
 
 def send_text_message(msg, chat_id, token=None):
     try:
-        bot = Bot(token or TELEGRAM_TOKEN)
+        bot = Bot(TELEGRAM_TOKEN)
         bot.sendMessage(chat_id=chat_id, text=msg)
         logging.info(f"Telegram text message sent to chat_id {chat_id}.")
         return True

@@ -25,4 +25,5 @@ flask_socketio
 webdriver_manager
 fake_useragent
 SpeechRecognition
+tensorflow
 
