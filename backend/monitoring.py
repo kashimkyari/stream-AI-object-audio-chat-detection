@@ -6,8 +6,9 @@ from datetime import datetime, timedelta
 from config import app
 from extensions import db
 from models import Stream, Log, Assignment
-from notifications import *
+from notifications import send_notifications
 
+# Thread pool for monitoring tasks
 monitoring_executor = concurrent.futures.ThreadPoolExecutor(max_workers=20)
 
 def monitor_stream(stream_url):
@@ -31,19 +32,22 @@ def start_monitoring():
 
 def start_notification_monitor():
     def monitor_notifications():
+        # Start with a timestamp slightly in the past
         last_notified_time = datetime.utcnow() - timedelta(seconds=5)
         while True:
             try:
                 with app.app_context():
+                    # Monitor for all event types coming from videoplayer.js
                     logs = Log.query.filter(
                         Log.timestamp > last_notified_time,
-                        Log.event_type == "object_detection"
+                        Log.event_type.in_(["object_detection", "audio_detection", "chat_detection", "video_notification"])
                     ).all()
                     for log in logs:
-                        detections = log.details.get("detections", [])
-                        if detections:
-                            send_notifications(log, detections)
+                        # For object detection, pass detections; for other events, pass None
+                        detections = log.details.get("detections", []) if log.event_type == "object_detection" else None
+                        send_notifications(log, detections)
                     if logs:
+                        # Update the last notified time to the latest log's timestamp
                         last_notified_time = max(log.timestamp for log in logs)
             except Exception as e:
                 logging.error("Notification monitor error: %s", e)

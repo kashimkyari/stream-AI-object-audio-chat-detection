@@ -14,22 +14,21 @@ const NotificationsPage = () => {
     try {
       setLoading(true);
       setError(null);
+      // Fetch notifications with the selected filter
       const res = await axios.get(`/api/notifications?filter=${filter}`);
       
       if (res.status === 200) {
+        // Process each notification ensuring details fields have fallback values
         const processedNotifications = res.data.map(notification => ({
           ...notification,
           details: {
-            ...notification.details,
-            annotated_image: notification.details.annotated_image,
-            captured_image: notification.details.captured_image,
-            streamer_uid: notification.details.streamer_uid,
-            streamer_name: notification.details.streamer_name,
-            assigned_agent: notification.details.assigned_agent,
-            platform: notification.details.platform,
-            detected_object: notification.details.detected_object,
-            detections: notification.details.detections,
-            keyword: notification.details.keyword,
+            annotated_image: notification.details?.annotated_image || null,
+            captured_image: notification.details?.captured_image || null,
+            streamer_name: notification.details?.streamer_name || '',
+            assigned_agent: notification.details?.assigned_agent || '',
+            platform: notification.details?.platform || '',
+            detections: notification.details?.detections || [],
+            keyword: notification.details?.keyword || '',
           },
         }));
         setNotifications(processedNotifications);
@@ -689,36 +688,6 @@ const NotificationsPage = () => {
           border-radius: 12px;
           font-weight: 500;
           color: white;
-        }
-
-        .detail-actions-bottom {
-          display: flex;
-          gap: 8px;
-          margin-top: 20px;
-          justify-content: flex-end;
-        }
-
-        .action-btn {
-          padding: 8px 16px;
-          border-radius: 6px;
-          border: 1px solid #444;
-          background: #2d2d2d;
-          color: #e0e0e0;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .action-btn:hover {
-          background: #333;
-        }
-
-        .action-btn.primary {
-          background: #1d4ed8;
-          border-color: #2563eb;
-        }
-
-        .action-btn.primary:hover {
-          background: #2563eb;
         }
 
         .empty-detail,

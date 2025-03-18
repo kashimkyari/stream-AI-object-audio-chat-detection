@@ -4,6 +4,7 @@ import json
 import uuid
 import base64
 import shutil
+import threading
 from collections import defaultdict
 from datetime import datetime, timedelta
 import cv2
@@ -22,9 +23,6 @@ from detection import detect_frame, detect_chat, update_flagged_objects, refresh
 from monitoring import *
 import speech_recognition as sr
 from werkzeug.utils import secure_filename
-
-
-
 
 # --------------------------------------------------------------------
 # Endpoints
@@ -84,6 +82,7 @@ def detect_chat_from_image():
     if "chat_image" not in request.files:
         return jsonify({"message": "No chat image provided"}), 400
     file = request.files["chat_image"]
+    stream_url = request.form.get("stream_url")  # Add stream_url from form data
     filename = os.path.basename(file.filename)
     if not filename:
         return jsonify({"message": "Invalid filename"}), 400
@@ -101,18 +100,21 @@ def detect_chat_from_image():
         flagged_filename = f"flagged_{new_filename}"
         flagged_filepath = os.path.join(app.config["FLAGGED_CHAT_IMAGES_FOLDER"], flagged_filename)
         shutil.move(chat_image_path, flagged_filepath)
-        description = (
-            "Chat flagged: Detected keywords " + ", ".join(detected_keywords) +
-            ". OCR text: " + ocr_text
-        )
+        # Get stream details
+        stream = Stream.query.filter_by(room_url=stream_url).first() if stream_url else None
         log_entry = Log(
-            room_url="chat",
+            room_url=stream_url or "chat",
             event_type="chat_detection",
-            details={"keywords": detected_keywords, "ocr_text": ocr_text},
+            details={
+                'keywords': detected_keywords,
+                'ocr_text': ocr_text,
+                'streamer_name': stream.streamer_username if stream else "Unknown",
+                'platform': stream.type if stream else "Unknown"
+            }
         )
         db.session.add(log_entry)
         db.session.commit()
-        send_chat_telegram_notification(flagged_filepath, description)
+        send_notifications(log_entry)  # Replace with send_notifications
         return jsonify({"message": "Flagged keywords detected", "keywords": detected_keywords})
     else:
         return jsonify({"message": "No flagged keywords detected"})
@@ -524,7 +526,6 @@ def get_agent_dashboard():
         "assignments": [a.stream.serialize() for a in assignments if a.stream]
     })
 
-
 @app.route("/detection-images/<filename>")
 def serve_detection_image(filename):
     return send_from_directory("detections", filename)
@@ -605,13 +606,13 @@ def get_livestream():
         return jsonify({"error": str(e)}), 500
 
 # --------------------------------------------------------------------
-# Updated /api/detect-objects endpoint with error fixes
+# Updated /api/detect-objects endpoint with fixes to properly receive data from videoplayer.js
+# Removed the login_required decorator to allow unauthenticated POSTs from the client
 # --------------------------------------------------------------------
 @app.route("/api/detect-objects", methods=["POST"])
-@login_required()
 def detect_objects():
     try:
-        data = request.get_json()
+        data = request.get_json(force=True)
         stream_url = data.get("stream_url")
         detections = data.get("detections", [])
         annotated_image = data.get("annotated_image")
@@ -719,8 +720,6 @@ def delete_all_notifications():
     Log.query.filter(Log.event_type.in_(['object_detection', 'chat_detection'])).delete()
     db.session.commit()
     return jsonify({"message": "All notifications deleted"})
-
-
 
 @app.route("/api/send-telegram-message", methods=["POST"])
 @login_required(role="admin")

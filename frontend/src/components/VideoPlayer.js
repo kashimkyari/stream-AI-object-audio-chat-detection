@@ -4,9 +4,34 @@ import axios from 'axios';
 import * as tf from '@tensorflow/tfjs';
 import * as cocossd from '@tensorflow-models/coco-ssd';
 
+/**
+ * Custom hook to detect element visibility using IntersectionObserver.
+ * When the element is at least 50% visible, it is considered "visible".
+ */
+function useVisibility(ref, options = { threshold: 0.5 }) {
+  const [isVisible, setIsVisible] = useState(true);
+  useEffect(() => {
+    if (!ref.current) return;
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        setIsVisible(entry.isIntersecting);
+      });
+    }, options);
+    observer.observe(ref.current);
+    return () => {
+      observer.disconnect();
+    };
+  }, [ref, options]);
+  return isVisible;
+}
+
 const HlsPlayer = ({ m3u8Url, onDetection, isModalOpen, posterUrl }) => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  // Offscreen canvas for low-resolution detection
+  const offscreenCanvasRef = useRef(null);
+  // Ref to track objects already sent from this stream
+  const sentObjectsRef = useRef(new Set());
 
   // Playback states
   const [isMuted, setIsMuted] = useState(true);
@@ -17,8 +42,13 @@ const HlsPlayer = ({ m3u8Url, onDetection, isModalOpen, posterUrl }) => {
   const [errorMessage, setErrorMessage] = useState("");
   const [model, setModel] = useState(null); // TensorFlow model state
 
-  // To throttle server calls and reduce load on the client
+  // To throttle detection and reduce load on the client
   const [detectionCooldown, setDetectionCooldown] = useState(false);
+
+  // Use the custom hook to determine if the video element is visible
+  const isVisible = useVisibility(videoRef);
+  // Consider the component visible if it is in modal view or visible on screen
+  const isComponentVisible = isModalOpen || isVisible;
 
   // Load TensorFlow model
   useEffect(() => {
@@ -60,60 +90,95 @@ const HlsPlayer = ({ m3u8Url, onDetection, isModalOpen, posterUrl }) => {
       canvas.style.height = `${rect.height}px`;
     };
 
-    // Perform TensorFlow object detection
+    // Perform TensorFlow object detection using a low-resolution offscreen canvas
     const detectObjects = async () => {
       try {
+        // Skip detection if not visible or video is not ready
+        if (!isComponentVisible) return;
         if (video.videoWidth === 0 || video.videoHeight === 0) return;
         updateCanvasSize();
 
-        // Capture frame and convert to image
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const imageData = canvas.toDataURL('image/jpeg');
+        // Create and configure offscreen canvas for reduced resolution detection
+        if (!offscreenCanvasRef.current) {
+          offscreenCanvasRef.current = document.createElement('canvas');
+        }
+        const offscreenCanvas = offscreenCanvasRef.current;
+        const displayWidth = canvas.width;
+        const displayHeight = canvas.height;
+        const scaleFactor = 0.5; // Process at 50% of display resolution
+        offscreenCanvas.width = Math.floor(displayWidth * scaleFactor);
+        offscreenCanvas.height = Math.floor(displayHeight * scaleFactor);
+
+        const offscreenCtx = offscreenCanvas.getContext('2d');
+        // Draw video frame into offscreen canvas (lower resolution for detection)
+        offscreenCtx.drawImage(video, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
 
         if (!detectionCooldown) {
-          setDetectionCooldown(true);
+          // Run detection on the offscreen canvas
+          const predictions = await model.detect(offscreenCanvas);
+          // Filter out predictions below 60% confidence
+          const validPredictions = predictions.filter(pred => pred.score >= 0.6);
+          // Filter out predictions already sent for this stream
+          const newPredictions = validPredictions.filter(pred => !sentObjectsRef.current.has(pred.class));
 
-          // Run TensorFlow detection
-          const img = new Image();
-          img.src = imageData;
-          await img.decode();
-          const predictions = await model.detect(img);
+          // Always update canvas with full-resolution video frame
+          ctx.clearRect(0, 0, displayWidth, displayHeight);
+          ctx.drawImage(video, 0, 0, displayWidth, displayHeight);
 
-          // Draw detections on canvas
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          predictions.forEach(pred => {
+          // Draw detections on the display canvas (scaling the coordinates)
+          validPredictions.forEach(pred => {
             const [x, y, width, height] = pred.bbox;
+            const scaleX = displayWidth / offscreenCanvas.width;
+            const scaleY = displayHeight / offscreenCanvas.height;
             ctx.strokeStyle = '#FF0000';
             ctx.lineWidth = 2;
-            ctx.strokeRect(x, y, width, height);
+            ctx.strokeRect(x * scaleX, y * scaleY, width * scaleX, height * scaleY);
             ctx.fillStyle = '#FF0000';
             ctx.font = '14px Arial';
             ctx.fillText(
               `${pred.class} (${Math.round(pred.score * 100)}%)`,
-              x,
-              y > 10 ? y - 5 : 10
+              x * scaleX,
+              (y * scaleY) > 10 ? (y * scaleY) - 5 : 10
             );
           });
 
-          // Get annotated image
-          const annotatedImage = canvas.toDataURL('image/jpeg');
+          // If there are new detections, send them and update the sent objects record.
+          if (newPredictions.length > 0) {
+            newPredictions.forEach(pred => sentObjectsRef.current.add(pred.class));
 
-          // Send detection data to backend
-          await axios.post('/api/detect-objects', {
-            stream_url: m3u8Url,
-            timestamp: new Date().toISOString(),
-            detections: predictions.map(p => ({
-              class: p.class,
-              confidence: p.score,
-              bbox: p.bbox,
-            })),
-            annotated_image: annotatedImage,
-            captured_image: imageData,
-          });
+            // Capture the annotated image from the display canvas
+            const annotatedImage = canvas.toDataURL('image/jpeg');
 
-          if (onDetection) onDetection(predictions);
-          setTimeout(() => setDetectionCooldown(false), 10000);
+            // Capture the full-resolution frame for reporting using a temporary canvas
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = displayWidth;
+            tempCanvas.height = displayHeight;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(video, 0, 0, displayWidth, displayHeight);
+            const capturedImage = tempCanvas.toDataURL('image/jpeg');
+
+            // Send detection data to backend with only the new predictions
+            await axios.post('/api/detect-objects', {
+              stream_url: m3u8Url,
+              timestamp: new Date().toISOString(),
+              detections: newPredictions.map(p => ({
+                class: p.class,
+                confidence: p.score,
+                bbox: p.bbox, // Note: bbox coordinates are relative to the low-res canvas
+              })),
+              annotated_image: annotatedImage,
+              captured_image: capturedImage,
+            });
+
+            if (onDetection) onDetection(newPredictions);
+          }
+          // Suspend further detection on this stream for 10 seconds,
+          // then clear the record of sent objects.
+          setDetectionCooldown(true);
+          setTimeout(() => {
+            setDetectionCooldown(false);
+            sentObjectsRef.current.clear();
+          }, 10000);
         }
       } catch (err) {
         console.error("Detection error:", err);
@@ -140,7 +205,7 @@ const HlsPlayer = ({ m3u8Url, onDetection, isModalOpen, posterUrl }) => {
       video.removeEventListener('ended', handlePause);
       clearInterval(detectionInterval);
     };
-  }, [onDetection, m3u8Url, detectionCooldown, model]);
+  }, [onDetection, m3u8Url, detectionCooldown, model, isComponentVisible]);
 
   // HLS player initialization with proper cleanup
   useEffect(() => {

@@ -19,6 +19,9 @@ class User(db.Model):
     # Relationship with Assignment
     assignments = db.relationship('Assignment', back_populates='agent', lazy='selectin')
 
+    def __repr__(self):
+        return f"<User {self.username}>"
+
     def serialize(self):
         """Serialize the User model into a dictionary."""
         return {
@@ -35,7 +38,7 @@ class User(db.Model):
 class Stream(db.Model):
     """
     Stream model serves as a base class for different streaming platforms.
-    It uses polymorphic identity to distinguish between Chaturbate and Stripchat streams.
+    Uses polymorphic identity to distinguish between Chaturbate and Stripchat streams.
     """
     __tablename__ = "streams"
     id = db.Column(db.Integer, primary_key=True)
@@ -50,6 +53,9 @@ class Stream(db.Model):
         'polymorphic_on': type,
         'polymorphic_identity': 'stream',
     }
+
+    def __repr__(self):
+        return f"<Stream {self.room_url}>"
 
     def serialize(self):
         """Serialize the Stream model into a dictionary."""
@@ -73,6 +79,9 @@ class ChaturbateStream(Stream):
         'polymorphic_identity': 'chaturbate'
     }
 
+    def __repr__(self):
+        return f"<ChaturbateStream {self.room_url}>"
+
     def serialize(self):
         """Serialize the ChaturbateStream model into a dictionary."""
         data = super().serialize()
@@ -94,6 +103,9 @@ class StripchatStream(Stream):
     __mapper_args__ = {
         'polymorphic_identity': 'stripchat'
     }
+
+    def __repr__(self):
+        return f"<StripchatStream {self.room_url}>"
 
     def serialize(self):
         """Serialize the StripchatStream model into a dictionary."""
@@ -122,6 +134,9 @@ class Assignment(db.Model):
         db.Index('idx_assignment_agent_stream', 'agent_id', 'stream_id'),
     )
 
+    def __repr__(self):
+        return f"<Assignment Agent:{self.agent_id} Stream:{self.stream_id}>"
+
     def serialize(self):
         """Serialize the Assignment model into a dictionary."""
         return {
@@ -148,6 +163,9 @@ class Log(db.Model):
         db.Index('idx_logs_timestamp_read', 'timestamp', 'read'),
     )
 
+    def __repr__(self):
+        return f"<Log {self.event_type} @ {self.room_url}>"
+
     def serialize(self):
         """Serialize the Log model into a dictionary."""
         return {
@@ -167,6 +185,9 @@ class ChatKeyword(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     keyword = db.Column(db.String(100), unique=True, nullable=False, index=True)
 
+    def __repr__(self):
+        return f"<ChatKeyword {self.keyword}>"
+
     def serialize(self):
         """Serialize the ChatKeyword model into a dictionary."""
         return {"id": self.id, "keyword": self.keyword}
@@ -180,6 +201,9 @@ class FlaggedObject(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     object_name = db.Column(db.String(100), unique=True, nullable=False, index=True)
     confidence_threshold = db.Column(db.Numeric(3, 2), default=0.8)
+
+    def __repr__(self):
+        return f"<FlaggedObject {self.object_name}>"
 
     def serialize(self):
         """Serialize the FlaggedObject model into a dictionary."""
@@ -197,6 +221,9 @@ class TelegramRecipient(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     telegram_username = db.Column(db.String(50), unique=True, nullable=False, index=True)
     chat_id = db.Column(db.String(50), nullable=False, index=True)
+
+    def __repr__(self):
+        return f"<TelegramRecipient {self.telegram_username}>"
 
     def serialize(self):
         """Serialize the TelegramRecipient model into a dictionary."""

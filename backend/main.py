@@ -3,10 +3,13 @@ from extensions import db
 from models import User
 from routes import *
 from cleanup import start_chat_cleanup_thread, start_detection_cleanup_thread
+from monitoring import start_notification_monitor
 import logging
 
 with app.app_context():
+    # Create all database tables if they do not exist.
     db.create_all()
+
     # Create default admin if none exists.
     if not User.query.filter_by(role="admin").first():
         admin = User(
@@ -20,6 +23,7 @@ with app.app_context():
         )
         db.session.add(admin)
         db.session.commit()
+
     # Create default agent if none exists.
     if not User.query.filter_by(role="agent").first():
         agent = User(
@@ -34,13 +38,11 @@ with app.app_context():
         db.session.add(agent)
         db.session.commit()
 
-
 # Start background tasks.
-start_notification_monitor()
-start_chat_cleanup_thread()
-start_detection_cleanup_thread()
+start_notification_monitor()      # Monitors new detection logs and sends notifications
+start_chat_cleanup_thread()         # Cleans up old chat logs periodically
+start_detection_cleanup_thread()    # Cleans up old detection logs periodically
 
 if __name__ == "__main__":
+    # Run the Flask application on all interfaces at port 5000.
     app.run(host="0.0.0.0", port=5000, threaded=True, debug=False)
-
-# gunicorn --workers 5 --bind 0.0.0.0:5000 main:app 
