@@ -300,21 +300,7 @@ const FlagSettingsPage = () => {
         </table>
       </div>
 
-      {/* Send Message to All Telegram Recipients Section */}
-      <div className="flag-section">
-        <h4>Send Message to All Telegram Recipients</h4>
-        <div className="form-container">
-          <textarea
-            placeholder="Enter your message here"
-            value={telegramMessage}
-            onChange={(e) => setTelegramMessage(e.target.value)}
-            rows={5}
-          />
-          <button onClick={handleSendTelegramMessage}>Send Message to All Telegram Users</button>
-        </div>
-        {telegramError && <div className="error">{telegramError}</div>}
-        {telegramMsg && <div className="message">{telegramMsg}</div>}
-      </div>
+    
 
       {/* Styles */}
       <style jsx>{`

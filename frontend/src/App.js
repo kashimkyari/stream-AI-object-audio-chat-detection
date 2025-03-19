@@ -46,64 +46,7 @@ function App() {
     checkSession();
   }, []);
 
-  // Set up real-time notifications using EventSource
-  useEffect(() => {
-    if (!role) return;
-
-    const eventSource = new EventSource('/api/notification-events');
-    eventSource.onmessage = (e) => {
-      const data = JSON.parse(e.data);
-      if (data.type === 'detection') {
-        // Find matching stream info from dashboardData
-        const stream = dashboardData.streams.find(s => s.room_url === data.stream);
-        const agentName = stream?.agent?.username || 'Unassigned';
-        // Build a detailed message – replace fallback text with real info when available
-        const notificationMessage = `🚨 Detected ${data.object} (${(data.confidence * 100).toFixed(1)}%) in ${stream?.streamer_username || 'Unknown'}`;
-        
-        // Increase unread count
-        setUnreadCount(prev => prev + 1);
-        // Set a toast notification with details
-        setToast({
-          message: notificationMessage,
-          type: 'alert',
-          image: data.image_url, // Expect backend to send image URL (base64 or hosted)
-          details: {
-            stream: stream?.id || 'N/A',
-            agent: agentName,
-            model: stream?.streamer_username || 'Unknown',
-            confidence: `${(data.confidence * 100).toFixed(1)}%`
-          }
-        });
-        // Add notification to state (prepend)
-        setNotifications(prev => [
-          { 
-            id: Date.now().toString(),
-            message: notificationMessage,
-            timestamp: new Date().toISOString(),
-            image: data.image_url,
-            type: 'detection',
-            read: false,
-            details: {
-              stream: stream?.id || 'N/A',
-              agent: agentName,
-              model: stream?.streamer_username || 'Unknown',
-              confidence: `${(data.confidence * 100).toFixed(1)}%`
-            }
-          },
-          ...prev
-        ]);
-        // Auto-dismiss toast after 5 seconds
-        setTimeout(() => setToast(null), 5000);
-      }
-    };
-
-    eventSource.onerror = (err) => {
-      console.error('Notification error:', err);
-      eventSource.close();
-    };
-
-    return () => eventSource.close();
-  }, [role, dashboardData.streams]);
+ 
 
   const handleLogin = (role) => {
     setRole(role);
@@ -198,13 +141,7 @@ function App() {
                 <button onClick={() => handleTabClick('agents')} className={activeTab === 'agents' ? 'active' : ''}>Agents</button>
                 <button onClick={() => handleTabClick('streams')} className={activeTab === 'streams' ? 'active' : ''}>Streams</button>
                 <button onClick={() => handleTabClick('flag')} className={activeTab === 'flag' ? 'active' : ''}>Settings</button>
-                <button 
-                  onClick={handleNotificationClick} 
-                  className={activeTab === 'notifications' ? 'active' : ''}
-                >
-                  Notifications
-                  {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
-                </button>
+               
                 {isMobile && (
                   <button className="mobile-logout-button" onClick={handleLogout}>Logout</button>
                 )}
@@ -222,16 +159,7 @@ function App() {
         {!role && <Login onLogin={handleLogin} />}
         {role === 'admin' && activeTab !== 'notifications' && <AdminPanel activeTab={activeTab} isMobile={isMobile} />}
         {role === 'agent' && <AgentDashboard isMobile={isMobile} />}
-        {role === 'admin' && activeTab === 'notifications' && (
-          <NotificationsPage 
-            notifications={notifications}
-            markAsRead={markAsRead}
-            markAllAsRead={markAllAsRead}
-            deleteNotification={deleteNotification}
-            deleteAllNotifications={deleteAllNotifications}
-            isMobile={isMobile}
-          />
-        )}
+        
       </div>
 
       {/* Toast notification */}
