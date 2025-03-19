@@ -42,155 +42,108 @@ def update_job_progress(job_id, percent, message):
     }
     logging.info("Job %s progress: %s%% - %s", job_id, percent, message)
 
-
 def fetch_m3u8_from_page(url, timeout=90):
-    """Fetch M3U8 URL with retry fallback mechanisms"""
-    # Define configuration attempts (primary and fallback)
-    configs = [
-        {  # Primary configuration (headless)
-            "headless": True,
-            "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36",
-            "extra_args": [
-                "--disable-blink-features=AutomationControlled",
-                "--disable-infobars"
-            ]
-        },
-        {  # Fallback configuration (non-headless with different UA)
-            "headless": False,
-            "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-            "extra_args": [
-                "--window-size=1920,1080",
-                "--start-maximized",
-                "--disable-web-security"
-            ]
-        }
-    ]
+    """Fetch the M3U8 URL from the given page using Selenium."""
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--ignore-certificate-errors")  # Ignore TLS errors
+    unique_user_data_dir = tempfile.mkdtemp()
+    chrome_options.add_argument(f"--user-data-dir={unique_user_data_dir}")
 
-    for attempt, config in enumerate(configs, 1):
-        logging.info(f"Attempt {attempt} with config: {config}")
-        chrome_options = Options()
-        
-        if config["headless"]:
-            chrome_options.add_argument("--headless=new")
-        chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--ignore-certificate-errors")
-        chrome_options.add_argument(f"user-agent={config['user_agent']}")
-        
-        for arg in config["extra_args"]:
-            chrome_options.add_argument(arg)
+    driver = webdriver.Chrome(options=chrome_options)
+    driver.scopes = ['.*\\.m3u8']
 
-        unique_user_data_dir = tempfile.mkdtemp()
-        chrome_options.add_argument(f"--user-data-dir={unique_user_data_dir}")
-
-        try:
-            driver = webdriver.Chrome(options=chrome_options)
-            driver.scopes = ['.*\\.m3u8']
-            
-            logging.info(f"Loading page (Attempt {attempt})")
-            driver.get(url)
-            
-            # Increased initial load time
-            time.sleep(8 if attempt == 1 else 15)
-            
-            found_url = None
-            start_time = time.time()
-            
-            while time.time() - start_time < timeout:
-                for request in driver.requests:
-                    if request.response and ".m3u8" in request.url:
-                        found_url = request.url
-                        logging.info(f"M3U8 found in attempt {attempt}")
-                        return found_url
-                time.sleep(2)
-            
-            logging.warning(f"Attempt {attempt} timed out")
-        
-        except Exception as e:
-            logging.error(f"Attempt {attempt} failed: {str(e)}")
-        
-        finally:
-            try:
-                driver.quit()
-            except Exception as e:
-                logging.error(f"Error closing driver: {str(e)}")
-
-    logging.error("All scraping attempts failed")
-    return None
-
-def scrape_chaturbate_data(url, progress_callback=None):
-    """Enhanced with fallback scraping"""
     try:
-        if progress_callback:
-            progress_callback(10, "Initial scraping attempt")
-        
-        # First try direct API call
-        try:
-            api_url = f"https://chaturbate.com/api/chatvideocontext/{url.split('/')[-2]}/"
-            response = requests.get(api_url, timeout=10)
-            if response.status_code == 200:
-                data = response.json()
-                if 'hls_url' in data:
-                    return {
-                        "streamer_username": url.rstrip("/").split("/")[-1],
-                        "chaturbate_m3u8_url": data['hls_url']
-                    }
-        except Exception as api_error:
-            logging.info("API method failed, falling back to Selenium")
+        logging.info(f"Opening URL: {url}")
+        driver.get(url)
+        time.sleep(5)  # Allow page to load network requests.
 
-        # If API method fails, use Selenium with retries
-        chaturbate_m3u8_url = fetch_m3u8_from_page(url)
-        
-        if not chaturbate_m3u8_url:
-            raise ValueError("Failed to fetch m3u8 URL after multiple attempts")
-        
-        return {
-            "streamer_username": url.rstrip("/").split("/")[-1],
-            "chaturbate_m3u8_url": chaturbate_m3u8_url
-        }
+        found_url = None
+        elapsed = 0
+
+        while elapsed < timeout:
+            for request in driver.requests:
+                if request.response and ".m3u8" in request.url:
+                    found_url = request.url
+                    logging.info(f"Found M3U8 URL: {found_url}")
+                    break
+            if found_url:
+                break
+            time.sleep(1)
+            elapsed += 1
+
+        return found_url if found_url else None
 
     except Exception as e:
-        logging.error(f"Final scraping error: {str(e)}")
+        logging.error(f"Error fetching M3U8 URL: {e}")
+        return None
+
+    finally:
+        driver.quit()
+
+def scrape_chaturbate_data(url, progress_callback=None):
+    """Scrape Chaturbate data and update progress."""
+    try:
         if progress_callback:
-            progress_callback(100, f"Error: {str(e)}")
+            progress_callback(10, "Fetching Chaturbate page")
+
+        chaturbate_m3u8_url = fetch_m3u8_from_page(url)
+        if not chaturbate_m3u8_url:
+            logging.error("Failed to fetch m3u8 URL for Chaturbate stream.")
+            if progress_callback:
+                progress_callback(100, "Error: Failed to fetch m3u8 URL")
+            return None
+
+        streamer_username = url.rstrip("/").split("/")[-1]
+
+        result = {
+            "streamer_username": streamer_username,
+            "chaturbate_m3u8_url": chaturbate_m3u8_url,
+        }
+        logging.info("Scraped details: %s", result)
+
+        if progress_callback:
+            progress_callback(100, "Scraping complete")
+        return result
+    except Exception as e:
+        logging.error("Error scraping Chaturbate URL %s: %s", url, e)
+        if progress_callback:
+            progress_callback(100, f"Error: {e}")
         return None
 
 def scrape_stripchat_data(url, progress_callback=None):
-    """Enhanced with multiple fallback strategies"""
+    """Scrape Stripchat data and update progress."""
     try:
         if progress_callback:
-            progress_callback(10, "Initial scraping attempt")
-        
-        # First try direct m3u8 pattern match
-        try:
-            response = requests.get(url, timeout=10)
-            match = re.search(r'(https://[\w./-]+\.m3u8)', response.text)
-            if match:
-                return {
-                    "streamer_username": url.rstrip("/").split("/")[-1],
-                    "stripchat_m3u8_url": match.group(1)
-                }
-        except Exception as direct_error:
-            logging.info("Direct method failed, falling back to Selenium")
+            progress_callback(10, "Fetching Stripchat page")
 
-        # If direct method fails, use Selenium with retries
         stripchat_m3u8_url = fetch_m3u8_from_page(url)
-        
         if not stripchat_m3u8_url:
-            raise ValueError("Failed to fetch m3u8 URL after multiple attempts")
-        
+            logging.error("Failed to fetch m3u8 URL for Stripchat stream.")
+            if progress_callback:
+                progress_callback(100, "Error: Failed to fetch m3u8 URL")
+            return None
+
         if "playlistType=lowLatency" in stripchat_m3u8_url:
             stripchat_m3u8_url = stripchat_m3u8_url.split('?')[0]
 
-        return {
-            "streamer_username": url.rstrip("/").split("/")[-1],
-            "stripchat_m3u8_url": stripchat_m3u8_url
-        }
+        streamer_username = url.rstrip("/").split("/")[-1]
 
-    except Exception as e:
-        logging.error(f"Final scraping error: {str(e)}")
+        result = {
+            "streamer_username": streamer_username,
+            "stripchat_m3u8_url": stripchat_m3u8_url,
+        }
+        logging.info("Scraped details: %s", result)
+
         if progress_callback:
-            progress_callback(100, f"Error: {str(e)}")
+            progress_callback(100, "Scraping complete")
+        return result
+    except Exception as e:
+        logging.error("Error scraping Stripchat URL %s: %s", url, e)
+        if progress_callback:
+            progress_callback(100, f"Error: {e}")
         return None
 
 def run_scrape_job(job_id, url):
