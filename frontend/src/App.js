@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-// Directly import components (lazy loading removed for faster rendering)
+// Directly import components (no lazy loading for speed)
 import Login from './components/Login';
 import AdminPanel from './components/AdminPanel';
 import AgentDashboard from './components/AgentDashboard';
@@ -27,44 +27,46 @@ function App() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  const checkSession = async () => {
-    try {
-      const res = await axios.get('/api/session');
-      if (res.data.logged_in) {
-        setRole(res.data.user.role);
-        if (res.data.user.role === 'admin') {
-          const dashboardRes = await axios.get('/api/dashboard');
-          setDashboardData(dashboardRes.data);
-        }
-      }
-    } catch (error) {
-      console.log("No active session.");
-    }
-  };
-
   // Check session on mount
   useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const res = await axios.get('/api/session');
+        if (res.data.logged_in) {
+          setRole(res.data.user.role);
+          if (res.data.user.role === 'admin') {
+            const dashboardRes = await axios.get('/api/dashboard');
+            setDashboardData(dashboardRes.data);
+          }
+        }
+      } catch (error) {
+        console.log("No active session.");
+      }
+    };
     checkSession();
   }, []);
 
-  // Set up notification event source
+  // Set up real-time notifications using EventSource
   useEffect(() => {
     if (!role) return;
 
     const eventSource = new EventSource('/api/notification-events');
-
     eventSource.onmessage = (e) => {
       const data = JSON.parse(e.data);
       if (data.type === 'detection') {
+        // Find matching stream info from dashboardData
         const stream = dashboardData.streams.find(s => s.room_url === data.stream);
         const agentName = stream?.agent?.username || 'Unassigned';
+        // Build a detailed message – replace fallback text with real info when available
         const notificationMessage = `🚨 Detected ${data.object} (${(data.confidence * 100).toFixed(1)}%) in ${stream?.streamer_username || 'Unknown'}`;
         
+        // Increase unread count
         setUnreadCount(prev => prev + 1);
+        // Set a toast notification with details
         setToast({
           message: notificationMessage,
           type: 'alert',
-          image: data.image_url,
+          image: data.image_url, // Expect backend to send image URL (base64 or hosted)
           details: {
             stream: stream?.id || 'N/A',
             agent: agentName,
@@ -72,7 +74,7 @@ function App() {
             confidence: `${(data.confidence * 100).toFixed(1)}%`
           }
         });
-
+        // Add notification to state (prepend)
         setNotifications(prev => [
           { 
             id: Date.now().toString(),
@@ -87,10 +89,10 @@ function App() {
               model: stream?.streamer_username || 'Unknown',
               confidence: `${(data.confidence * 100).toFixed(1)}%`
             }
-          }, 
+          },
           ...prev
         ]);
-        
+        // Auto-dismiss toast after 5 seconds
         setTimeout(() => setToast(null), 5000);
       }
     };
@@ -123,23 +125,19 @@ function App() {
   const handleNotificationClick = () => {
     setActiveTab('notifications');
     setUnreadCount(0);
-    if (isMobile) {
-      setMenuOpen(false);
-    }
+    if (isMobile) setMenuOpen(false);
   };
 
   const handleTabClick = (tab) => {
     setActiveTab(tab);
-    if (isMobile) {
-      setMenuOpen(false);
-    }
+    if (isMobile) setMenuOpen(false);
   };
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
   };
 
-  // Notification management functions
+  // Notification management functions (client‑side simulation)
   const markAsRead = async (notificationId) => {
     try {
       setNotifications(notifications.map(notification => 
@@ -178,22 +176,6 @@ function App() {
     }
   };
 
-  const fetchNotifications = async (filter = 'all') => {
-    try {
-      if (filter === 'all') {
-        return notifications;
-      } else if (filter === 'unread') {
-        return notifications.filter(n => !n.read);
-      } else if (filter === 'detection') {
-        return notifications.filter(n => n.type === 'detection');
-      }
-      return notifications;
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-      return [];
-    }
-  };
-
   return (
     <div className="app-container">
       {role && (
@@ -208,7 +190,6 @@ function App() {
                 )}
               </button>
             )}
-            
             {/* Admin navigation */}
             {role === 'admin' && (!isMobile || (isMobile && menuOpen)) && (
               <nav className={`admin-nav ${isMobile ? 'mobile-nav' : ''}`}>
@@ -224,14 +205,11 @@ function App() {
                   Notifications
                   {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
                 </button>
-                
-                {/* Mobile logout button (inside menu) */}
                 {isMobile && (
                   <button className="mobile-logout-button" onClick={handleLogout}>Logout</button>
                 )}
               </nav>
             )}
-            
             {/* Desktop logout button */}
             {(!isMobile || role !== 'admin') && (
               <button className="logout-button" onClick={handleLogout}>Logout</button>
@@ -240,22 +218,20 @@ function App() {
         </header>
       )}
 
-      {/* Main content area (Suspense removed for faster rendering) */}
       <div className="main-content">
-          {!role && <Login onLogin={handleLogin} />}
-          {role === 'admin' && activeTab !== 'notifications' && activeTab !== 'hls-tester' && <AdminPanel activeTab={activeTab} isMobile={isMobile} />}
-          {role === 'agent' && <AgentDashboard isMobile={isMobile} />}
-          {role === 'admin' && activeTab === 'notifications' && (
-            <NotificationsPage 
-              notifications={notifications}
-              fetchNotifications={fetchNotifications}
-              markAsRead={markAsRead}
-              markAllAsRead={markAllAsRead}
-              deleteNotification={deleteNotification}
-              deleteAllNotifications={deleteAllNotifications}
-              isMobile={isMobile}
-            />
-          )}
+        {!role && <Login onLogin={handleLogin} />}
+        {role === 'admin' && activeTab !== 'notifications' && <AdminPanel activeTab={activeTab} isMobile={isMobile} />}
+        {role === 'agent' && <AgentDashboard isMobile={isMobile} />}
+        {role === 'admin' && activeTab === 'notifications' && (
+          <NotificationsPage 
+            notifications={notifications}
+            markAsRead={markAsRead}
+            markAllAsRead={markAllAsRead}
+            deleteNotification={deleteNotification}
+            deleteAllNotifications={deleteAllNotifications}
+            isMobile={isMobile}
+          />
+        )}
       </div>
 
       {/* Toast notification */}
@@ -286,7 +262,6 @@ function App() {
         * {
           box-sizing: border-box;
         }
-        
         body {
           background: #121212;
           margin: 0;
@@ -296,8 +271,6 @@ function App() {
           -moz-osx-font-smoothing: grayscale;
           overflow-x: hidden;
         }
-        
-        /* Removed loading fallback and modal styles to optimize performance */
       `}</style>
 
       <style jsx>{`
@@ -305,12 +278,10 @@ function App() {
           from { opacity: 0; transform: translateY(20px); }
           to { opacity: 1; transform: translateY(0); }
         }
-
         .app-container {
           min-height: 100vh;
           animation: slideUp 0.6s cubic-bezier(0.22, 1, 0.36, 1);
         }
-
         .app-header {
           position: sticky;
           top: 0;
@@ -319,7 +290,6 @@ function App() {
           background: #1a1a1a;
           border-bottom: 1px solid #2d2d2d;
         }
-
         .nav-container {
           display: flex;
           justify-content: space-between;
@@ -328,7 +298,6 @@ function App() {
           margin: 0 auto;
           position: relative;
         }
-
         .menu-toggle {
           padding: 8px;
           background: #2d2d2d;
@@ -340,7 +309,6 @@ function App() {
           position: relative;
           z-index: 1010;
         }
-
         .mobile-notification-badge {
           position: absolute;
           top: -5px;
@@ -355,14 +323,12 @@ function App() {
           align-items: center;
           justify-content: center;
         }
-
         .admin-nav {
           display: flex;
           gap: ${isMobile ? '8px' : '12px'};
           flex-wrap: ${isMobile ? 'nowrap' : 'wrap'};
           position: relative;
         }
-
         .mobile-nav {
           position: fixed;
           top: 0;
@@ -377,12 +343,10 @@ function App() {
           overflow-y: auto;
           animation: fadeIn 0.3s ease;
         }
-
         @keyframes fadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
         }
-
         .admin-nav button {
           padding: ${isMobile ? '14px 12px' : '12px 24px'};
           border: none;
@@ -398,7 +362,6 @@ function App() {
           margin-bottom: ${isMobile ? '8px' : '0'};
           text-align: ${isMobile ? 'left' : 'center'};
         }
-
         .admin-nav button::before {
           content: '';
           position: absolute;
@@ -410,18 +373,15 @@ function App() {
           transform: scaleX(0);
           transition: transform 0.3s ease;
         }
-
         .admin-nav button.active, 
         .admin-nav button:hover {
           background: #333;
           color: #fff;
           transform: ${isMobile ? 'none' : 'translateY(-2px)'};
         }
-
         .admin-nav button.active::before {
           transform: scaleX(1);
         }
-
         .notification-badge {
           position: absolute;
           top: -8px;
@@ -437,20 +397,17 @@ function App() {
           justify-content: center;
           animation: pulse 1.5s infinite;
         }
-
         .mobile-logout-button {
           margin-top: auto !important;
           background: linear-gradient(135deg, #007bff, #0056b3) !important;
           color: white !important;
           font-weight: 500 !important;
         }
-
         @keyframes pulse {
           0% { transform: scale(1); }
           50% { transform: scale(1.1); }
           100% { transform: scale(1); }
         }
-
         .logout-button {
           padding: 12px 24px;
           background: linear-gradient(135deg, #007bff, #0056b3);
@@ -461,18 +418,15 @@ function App() {
           transition: all 0.3s ease;
           font-weight: 500;
         }
-
         .logout-button:hover {
           transform: translateY(-2px);
           box-shadow: 0 5px 15px rgba(0,123,255,0.3);
         }
-
         .main-content {
           max-width: 1200px;
           margin: ${isMobile ? '20px auto' : '40px auto'};
           padding: 0 ${isMobile ? '12px' : '20px'};
         }
-
         .toast {
           position: fixed;
           bottom: 20px;
@@ -489,7 +443,6 @@ function App() {
           z-index: 2000;
           max-width: 400px;
         }
-
         .mobile-toast {
           bottom: 10px;
           right: 10px;
@@ -498,22 +451,18 @@ function App() {
           flex-direction: column;
           max-width: none;
         }
-
         .toast.alert {
           border-left: 4px solid #ff4444;
         }
-
         .toast-image {
           width: ${isMobile ? '100%' : '80px'};
           height: ${isMobile ? 'auto' : '60px'};
           border-radius: 4px;
           margin-bottom: ${isMobile ? '8px' : '0'};
         }
-
         .toast-content {
           flex: 1;
         }
-
         .toast-details {
           font-size: 0.9em;
           margin-top: 8px;
@@ -521,7 +470,6 @@ function App() {
           grid-template-columns: repeat(2, 1fr);
           gap: 4px;
         }
-
         .toast-progress {
           position: absolute;
           bottom: 0;
@@ -530,12 +478,10 @@ function App() {
           background: #ffffff44;
           animation: progress 5s linear;
         }
-
         @keyframes slideIn {
           from { transform: translateX(100%); }
           to { transform: translateX(0); }
         }
-
         @keyframes progress {
           from { width: 100%; }
           to { width: 0%; }

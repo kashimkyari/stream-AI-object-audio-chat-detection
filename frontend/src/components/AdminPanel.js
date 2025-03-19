@@ -125,101 +125,9 @@ const AdminPanel = ({ activeTab }) => {
     }
   };
 
-  // EventSource with better error handling and compatibility check
-  useEffect(() => {
-    let eventSource = null;
-    
-    try {
-      if (typeof window === 'undefined' || !window.EventSource) {
-        console.log("EventSource not supported, using fallback polling");
-        // Implement fallback polling here if needed
-        return;
-      }
-      
-      console.log("Setting up EventSource connection...");
-      eventSource = new EventSource('/api/detection-events');
-      
-      eventSource.onopen = () => {
-        console.log("EventSource connection established");
-      };
-      
-      eventSource.onmessage = (e) => {
-        try {
-          console.log("EventSource message received");
-          const data = JSON.parse(e.data);
-          if (!data.error) {
-            setDetectionAlerts(prev => ({
-              ...prev,
-              [data.stream_url]: data.detections
-            }));
 
-            if (data.detections?.length > 0) {
-              handleNotification(data);
-            }
-          }
-        } catch (error) {
-          console.error("Error processing EventSource message:", error);
-        }
-      };
 
-      eventSource.onerror = (err) => {
-        console.error('EventSource failed:', err);
-        if (eventSource.readyState === EventSource.CLOSED) {
-          console.log("Attempting to reconnect EventSource in 5 seconds...");
-          setTimeout(() => {
-            try {
-              eventSource = new EventSource('/api/detection-events');
-            } catch (reconnectError) {
-              console.error("EventSource reconnection failed:", reconnectError);
-            }
-          }, 5000);
-        }
-      };
-    } catch (error) {
-      console.error("EventSource setup error:", error);
-    }
 
-    return () => {
-      if (eventSource) {
-        console.log("Closing EventSource connection");
-        eventSource.close();
-      }
-    };
-  }, []);
-
-  // Safely handle notifications
-  const handleNotification = (data) => {
-    try {
-      if (typeof window !== 'undefined' && 
-          'Notification' in window && 
-          Notification.permission === 'granted' && 
-          Date.now() - lastNotification > 60000) {
-        
-        const detectedItems = data.detections.map(d => d.class).join(', ');
-        new Notification('Object Detected', {
-          body: `Detected ${detectedItems} in ${data.stream_url}`
-        });
-        setLastNotification(Date.now());
-      }
-    } catch (err) {
-      console.error("Notification error:", err);
-    }
-  };
-
-  // Notification permission request with better error handling
-  useEffect(() => {
-    try {
-      if (typeof window !== 'undefined' && 'Notification' in window) {
-        if (Notification.permission !== 'granted') {
-          Notification.requestPermission().catch(err => 
-            console.error("Notification permission error:", err)
-          );
-        }
-      }
-    } catch (error) {
-      console.error("Notification setup error:", error);
-    }
-  }, []);
 
   // Dashboard data fetching with cleanup
   useEffect(() => {
@@ -232,7 +140,7 @@ const AdminPanel = ({ activeTab }) => {
         if (isMounted) {
           fetchDashboard();
         }
-      }, 10000);
+      }, 100000);
     }
     
     return () => {

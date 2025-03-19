@@ -26,4 +26,7 @@ webdriver_manager
 fake_useragent
 SpeechRecognition
 tensorflow
+ultralytics
+av
+vosk
 

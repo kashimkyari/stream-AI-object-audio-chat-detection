@@ -232,3 +232,29 @@ class TelegramRecipient(db.Model):
             "telegram_username": self.telegram_username,
             "chat_id": self.chat_id,
         }
+
+# --------------------------------------------------------------------
+# New Model: DetectionLog
+# --------------------------------------------------------------------
+class DetectionLog(db.Model):
+    """
+    DetectionLog model stores detection events, including the annotated image.
+    """
+    __tablename__ = "detection_logs"
+    id = db.Column(db.Integer, primary_key=True)
+    room_url = db.Column(db.String(255), nullable=False)
+    event_type = db.Column(db.String(50), nullable=False)
+    details = db.Column(db.JSON, nullable=True)
+    detection_image = db.Column(db.LargeBinary, nullable=True)  # JPEG image bytes
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    read = db.Column(db.Boolean, default=False)
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "room_url": self.room_url,
+            "event_type": self.event_type,
+            "details": self.details,
+            "timestamp": self.timestamp.isoformat(),
+            "read": self.read,
+        }

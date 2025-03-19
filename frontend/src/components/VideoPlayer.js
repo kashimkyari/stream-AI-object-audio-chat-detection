@@ -1,33 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import Hls from 'hls.js';
 import axios from 'axios';
-import '@tensorflow/tfjs';
-import * as cocoSsd from '@tensorflow-models/coco-ssd';
 
-const HlsPlayer = ({ m3u8Url, onDetection, isModalOpen, posterUrl }) => {
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  
-  // Visual detection states
-  const [flaggedObjects, setFlaggedObjects] = useState([]);
-  const [notificationSent, setNotificationSent] = useState(false);
-  
-  // Audio detection states
-  const [flaggedKeywords, setFlaggedKeywords] = useState([]);
-  const [audioNotificationSent, setAudioNotificationSent] = useState(false);
-
-  // Playback states
-  const [isMuted, setIsMuted] = useState(true);
-  const [volume, setVolume] = useState(0);
+const HlsPlayer = ({ m3u8Url, isModalOpen, posterUrl, platform, streamerName }) => {
+  const videoRef = React.useRef(null);
   const [isStreamLoaded, setIsStreamLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [isMuted, setIsMuted] = useState(true);
+  const [volume, setVolume] = useState(0);
 
-  // Refs for the detection model (coco-ssd)
-  const modelRef = useRef(null);
-
-  // Sync volume/mute state with video element
+  // Sync volume/mute state with video element.
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.muted = isMuted;
@@ -35,238 +19,7 @@ const HlsPlayer = ({ m3u8Url, onDetection, isModalOpen, posterUrl }) => {
     }
   }, [isMuted, volume]);
 
-  // Load the coco-ssd model once on mount
-  useEffect(() => {
-    const loadCocoModel = async () => {
-      try {
-        modelRef.current = await cocoSsd.load();
-        console.log("coco-ssd model loaded successfully");
-      } catch (error) {
-        console.error("Failed to load coco-ssd model:", error);
-      }
-    };
-    loadCocoModel();
-  }, []);
-
-  // Fetch flagged objects from backend API (flag settings from admin panel)
-  useEffect(() => {
-    const fetchFlaggedObjects = async () => {
-      try {
-        const response = await fetch('/api/objects');
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        const data = await response.json();
-        // Convert to lower case for consistency.
-        const flagged = data.map(item =>
-          typeof item === 'string'
-            ? item.toLowerCase()
-            : item.object_name.toLowerCase()
-        );
-        setFlaggedObjects(flagged);
-      } catch (error) {
-        console.error("Error fetching flagged objects:", error);
-        setFlaggedObjects([]);
-      }
-    };
-    fetchFlaggedObjects();
-  }, []);
-
-  // Fetch flagged keywords from the backend API for audio detection
-  useEffect(() => {
-    const fetchFlaggedKeywords = async () => {
-      try {
-        const response = await fetch('/api/keywords');
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        const data = await response.json();
-        const keywords = data.map(item =>
-          typeof item === 'string'
-            ? item.toLowerCase()
-            : item.keyword.toLowerCase()
-        );
-        setFlaggedKeywords(keywords);
-      } catch (error) {
-        console.error("Error fetching flagged keywords:", error);
-        setFlaggedKeywords([]);
-      }
-    };
-    fetchFlaggedKeywords();
-  }, []);
-
-  // Visual detection: process video frames and annotate flagged objects
-  useEffect(() => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas) return;
-    const ctx = canvas.getContext('2d');
-    let detectionInterval;
-
-    // Update canvas size to match video display dimensions
-    const updateCanvasSize = () => {
-      if (!video.parentElement) return;
-      const rect = video.getBoundingClientRect();
-      canvas.width = rect.width;
-      canvas.height = rect.height;
-      canvas.style.width = `${rect.width}px`;
-      canvas.style.height = `${rect.height}px`;
-    };
-
-    const detectObjects = async () => {
-      try {
-        if (video.videoWidth === 0 || video.videoHeight === 0) return;
-        updateCanvasSize();
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        // Draw the current video frame onto the canvas before adding annotations.
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        const predictions = [];
-
-        // Advanced object detection via coco-ssd
-        if (modelRef.current) {
-          const cocoPredictions = await modelRef.current.detect(video);
-          cocoPredictions.forEach(pred => {
-            predictions.push({
-              class: pred.class.toLowerCase(),
-              score: pred.score,
-              bbox: pred.bbox, // [x, y, width, height]
-            });
-          });
-        }
-
-        // Filter predictions: only include those that are flagged
-        const flaggedPredictions = predictions.filter(prediction =>
-          flaggedObjects.includes(prediction.class)
-        );
-
-        // Determine the detected object (highest confidence) from flagged predictions
-        let detectedObject = null;
-        if (flaggedPredictions.length > 0) {
-          detectedObject = flaggedPredictions.reduce((prev, curr) =>
-            prev.score > curr.score ? prev : curr
-          ).class;
-        }
-
-        // Draw annotations for flagged predictions.
-        flaggedPredictions.forEach(prediction => {
-          const [x, y, width, height] = prediction.bbox;
-          const label = `${prediction.class} (${(prediction.score * 100).toFixed(1)}%)`;
-          ctx.strokeStyle = 'red';
-          ctx.lineWidth = 2;
-          ctx.strokeRect(x, y, width, height);
-          ctx.fillStyle = 'red';
-          ctx.font = '14px Arial';
-          ctx.fillText(label, x, y > 10 ? y - 5 : y + 15);
-        });
-
-        // Notify parent component with flagged detections.
-        if (onDetection) onDetection(flaggedPredictions);
-
-        // Send detection to backend for logging
-        if (flaggedPredictions.length > 0 && !notificationSent) {
-          // Create a hidden canvas to capture the image without annotations
-          const hiddenCanvas = document.createElement('canvas');
-          hiddenCanvas.width = video.videoWidth;
-          hiddenCanvas.height = video.videoHeight;
-          const hiddenCtx = hiddenCanvas.getContext('2d');
-          hiddenCtx.drawImage(video, 0, 0, hiddenCanvas.width, hiddenCanvas.height);
-
-          // Capture the annotated frame from the canvas (video frame + annotations)
-          const annotatedImage = canvas.toDataURL('image/jpeg', 0.8);
-          const capturedImage = hiddenCanvas.toDataURL('image/jpeg', 0.8);
-
-          axios.post('/api/detect-objects', {
-            stream_url: m3u8Url,
-            detections: flaggedPredictions,
-            timestamp: new Date().toISOString(),
-            annotated_image: annotatedImage,
-            captured_image: capturedImage, // Image without annotations
-            detected_object: detectedObject, // Detected object label
-          });
-
-          // Set notification sent to true and reset after 10 seconds
-          setNotificationSent(true);
-          setTimeout(() => setNotificationSent(false), 10000);
-        }
-      } catch (error) {
-        console.error("Detection error:", error);
-      }
-    };
-
-    const handlePlay = () => {
-      updateCanvasSize();
-      detectionInterval = setInterval(detectObjects, 1000); // Detect objects every second
-    };
-
-    const handlePause = () => {
-      clearInterval(detectionInterval);
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    };
-
-    video.addEventListener('play', handlePlay);
-    video.addEventListener('pause', handlePause);
-    video.addEventListener('ended', handlePause);
-
-    return () => {
-      video.removeEventListener('play', handlePlay);
-      video.removeEventListener('pause', handlePause);
-      video.removeEventListener('ended', handlePause);
-      clearInterval(detectionInterval);
-    };
-  }, [onDetection, flaggedObjects, m3u8Url, notificationSent]);
-
-  // Audio processing: analyze audio stream for flagged keyword detection
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    const audioCtx = new AudioContext();
-    const source = audioCtx.createMediaElementSource(video);
-    const analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 2048;
-    const bufferLength = analyser.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
-    source.connect(analyser);
-    analyser.connect(audioCtx.destination);
-
-    // Ensure video is muted on frontend
-    video.muted = true;
-
-    const processAudio = () => {
-      analyser.getByteFrequencyData(dataArray);
-      let sum = 0;
-      for (let i = 0; i < bufferLength; i++) {
-        sum += dataArray[i];
-      }
-      const average = sum / bufferLength;
-      // If average amplitude exceeds threshold, simulate flagged keyword detection
-      if (average > 100 && flaggedKeywords.length > 0 && !audioNotificationSent) {
-        const detectedKeyword = flaggedKeywords[Math.floor(Math.random() * flaggedKeywords.length)];
-        console.log("Audio detection: keyword", detectedKeyword);
-
-        axios.post('/api/detect-keyword', {
-          stream_url: m3u8Url,
-          keyword: detectedKeyword,
-          timestamp: new Date().toISOString()
-        })
-        .then(response => console.log("Audio detection logged:", response.data))
-        .catch(error => console.error("Error sending audio detection:", error));
-
-        setAudioNotificationSent(true);
-        setTimeout(() => setAudioNotificationSent(false), 10000); // 10 sec cooldown
-      }
-      requestAnimationFrame(processAudio);
-    };
-
-    processAudio();
-
-    return () => {
-      audioCtx.close();
-    };
-  }, [flaggedKeywords, audioNotificationSent, m3u8Url]);
-
-  // HLS player initialization logic
+  // Initialize HLS player.
   useEffect(() => {
     let hls;
     if (!m3u8Url) {
@@ -275,7 +28,6 @@ const HlsPlayer = ({ m3u8Url, onDetection, isModalOpen, posterUrl }) => {
       setErrorMessage("Invalid stream URL");
       return;
     }
-
     const initializePlayer = () => {
       if (Hls.isSupported()) {
         hls = new Hls({ autoStartLoad: true, startLevel: -1, debug: false });
@@ -313,17 +65,52 @@ const HlsPlayer = ({ m3u8Url, onDetection, isModalOpen, posterUrl }) => {
     return () => hls?.destroy();
   }, [m3u8Url]);
 
+  // Trigger detection when the stream is online.
+  useEffect(() => {
+    if (isStreamLoaded && m3u8Url) {
+      axios.post('/api/trigger-detection', {
+        stream_url: m3u8Url,
+        timestamp: new Date().toISOString(),
+        platform: platform,
+        streamer_name: streamerName
+      })
+      .then(response => {
+        console.log("Server-side detection triggered:", response.data);
+      })
+      .catch(error => {
+        console.error("Error triggering server-side detection:", error);
+      });
+    }
+  }, [isStreamLoaded, m3u8Url, platform, streamerName]);
+
   return (
     <div className="hls-player-container">
-      {/* Live Indicator */}
       {isStreamLoaded && (
         <div className="live-indicator">
           <div className="red-dot"></div>
           <span className="live-text">LIVE</span>
         </div>
       )}
-
-      {/* Volume Controls (in modal view) */}
+      {isLoading && (
+        <div className="loading-overlay">
+          <div className="loading-spinner"></div>
+          <div className="loading-text">Loading stream...</div>
+        </div>
+      )}
+      {hasError && (
+        <div className="error-overlay">
+          <div className="error-icon">⚠️</div>
+          <div className="error-text">{errorMessage}</div>
+        </div>
+      )}
+      <video
+        ref={videoRef}
+        muted
+        autoPlay
+        playsInline
+        poster={posterUrl}
+        style={{ width: '100%', height: '100%' }}
+      />
       {isModalOpen && (
         <div className="volume-controls">
           <button 
@@ -347,42 +134,6 @@ const HlsPlayer = ({ m3u8Url, onDetection, isModalOpen, posterUrl }) => {
           />
         </div>
       )}
-
-      {isLoading && (
-        <div className="loading-overlay">
-          <div className="loading-spinner"></div>
-          <div className="loading-text">Loading stream...</div>
-        </div>
-      )}
-
-      {hasError && (
-        <div className="error-overlay">
-          <div className="error-icon">⚠️</div>
-          <div className="error-text">{errorMessage}</div>
-        </div>
-      )}
-
-      <video
-        ref={videoRef}
-        muted
-        autoPlay
-        playsInline
-        poster={posterUrl} // Add poster URL here
-        style={{ width: '100%', height: '100%' }}
-      />
-
-      <canvas
-        ref={canvasRef}
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          pointerEvents: 'none',
-        }}
-      />
-
       <style jsx>{`
         .hls-player-container {
           position: absolute;
@@ -511,9 +262,9 @@ const VideoPlayer = ({
   const [loading, setLoading] = useState(true);
   const [m3u8Url, setM3u8Url] = useState(null);
   const [fetchedStreamerUsername, setFetchedStreamerUsername] = useState(null);
-  const [posterUrl, setPosterUrl] = useState(null); // State for fallback poster URL
+  const [posterUrl, setPosterUrl] = useState(null);
 
-  // Fetch the m3u8 URL for both Chaturbate and Stripchat streams based on streamerName
+  // Fetch m3u8 URL based on platform and streamerName.
   useEffect(() => {
     if (platform.toLowerCase() === 'chaturbate' && streamerName) {
       const fetchM3u8Url = async () => {
@@ -531,7 +282,6 @@ const VideoPlayer = ({
         } catch (error) {
           console.error("Error fetching m3u8 URL for Chaturbate:", error);
           setIsOnline(false);
-          // Set fallback poster URL if the scrape fails
           const fallbackPosterUrl = `https://jpeg.live.mmcdn.com/stream?room=${streamerName}&f=${Math.random()}`;
           setPosterUrl(fallbackPosterUrl);
         } finally {
@@ -575,22 +325,63 @@ const VideoPlayer = ({
     setIsModalOpen(!isModalOpen);
   };
 
+  // Use Page Visibility API to stop detection when the page is hidden.
+  useEffect(() => {
+    const triggerDetection = () => {
+      if (m3u8Url) {
+        axios.post('/api/trigger-detection', {
+          stream_url: m3u8Url,
+          timestamp: new Date().toISOString(),
+          platform: platform,
+          streamer_name: streamerName
+        })
+        .then(res => console.log("Detection started:", res.data))
+        .catch(err => console.error("Error triggering detection:", err));
+      }
+    };
+
+    const stopDetection = () => {
+      if (m3u8Url) {
+        axios.post('/api/stop-detection', { stream_url: m3u8Url })
+          .then(res => console.log("Detection stopped:", res.data))
+          .catch(err => console.error("Error stopping detection:", err));
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        stopDetection();
+      } else if (document.visibilityState === 'visible') {
+        triggerDetection();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    if (m3u8Url && document.visibilityState === 'visible') {
+      triggerDetection();
+    }
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (m3u8Url) {
+        stopDetection();
+      }
+    };
+  }, [m3u8Url, platform, streamerName]);
+
   const renderPlayer = (isModal) => {
-    if (platform.toLowerCase() === 'stripchat') {
-      return m3u8Url ? (
-        <HlsPlayer m3u8Url={m3u8Url} onDetection={onDetection} isModalOpen={isModal} posterUrl={posterUrl} />
-      ) : (
-        <div className="error-message">No valid m3u8 URL provided for Stripchat.</div>
-      );
-    }
-    if (platform.toLowerCase() === 'chaturbate') {
-      return m3u8Url ? (
-        <HlsPlayer m3u8Url={m3u8Url} onDetection={onDetection} isModalOpen={isModal} posterUrl={posterUrl} />
-      ) : (
-        <div className="error-message">No valid m3u8 URL provided for Chaturbate.</div>
-      );
-    }
-    return <div className="error-message">Unsupported platform: {platform}.</div>;
+    return m3u8Url ? (
+      <HlsPlayer
+        m3u8Url={m3u8Url}
+        isModalOpen={isModal}
+        posterUrl={posterUrl}
+        platform={platform}
+        streamerName={streamerName}
+      />
+    ) : (
+      <div className="error-message">No valid m3u8 URL provided for {platform}.</div>
+    );
   };
 
   return (
