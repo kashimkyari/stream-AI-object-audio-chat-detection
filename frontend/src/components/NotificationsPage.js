@@ -17,21 +17,39 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
 
   const [selectedNotification, setSelectedNotification] = useState(null);
 
+  // Helper function to extract platform and streamer from stream URL
+  const extractStreamInfo = useCallback((streamUrl) => {
+    let platform = 'Chaturbate';
+    let streamer = '';
+    if (streamUrl && streamUrl.includes('edge-hls.doppiocdn.live')) {
+      platform = 'Stripchat';
+    }
+    if (streamUrl) {
+      const parts = streamUrl.split('/');
+      streamer = parts[parts.length - 1].split('?')[0];
+    }
+    return { platform, streamer };
+  }, []);
+
   // Fetch all notifications from the backend.
   const fetchNotifications = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      // Using the notifications endpoint (the default filter is "all")
       const res = await axios.get('/api/notifications');
       if (res.status === 200) {
         const processedNotifications = res.data.map(notification => {
+          // Extract platform/streamer from URL for object detections
+          const fromUrl = extractStreamInfo(notification.room_url);
+          
           const details = {
             annotated_image: notification.details?.annotated_image || null,
             captured_image: notification.details?.captured_image || null,
-            streamer_name: notification.details?.streamer_name || '',
+            streamer_name: notification.details?.streamer_name || 
+                          (notification.event_type === 'object_detection' ? fromUrl.streamer : ''),
             assigned_agent: notification.details?.assigned_agent || '',
-            platform: notification.details?.platform || '',
+            platform: notification.details?.platform || 
+                     (notification.event_type === 'object_detection' ? fromUrl.platform : ''),
             detections: (notification.details?.detections || []).map(det => ({
               ...det,
               confidence: det.score || det.confidence || 0,
@@ -68,7 +86,7 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
     } finally {
       setLoading(false);
     }
-  }, [ongoingStreams]);
+  }, [ongoingStreams, extractStreamInfo]);
 
   // Set up real-time updates via EventSource.
   useEffect(() => {

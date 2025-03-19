@@ -26,10 +26,15 @@ _yolo_model = None
 _yolo_lock = threading.Lock()
 _vosk_model = None
 _vosk_lock = threading.Lock()
+
 # Global dictionary to track when an alert was last sent.
 # Keys: (streamer, alert_type, object_or_keyword) and value: datetime of last alert.
 last_alerts = {}
 ALERT_INTERVAL = timedelta(minutes=10)  # One alert per object/keyword per streamer every 10 minutes
+
+# Global dictionary to track consecutive detections.
+# Keys: (streamer, object) and value: count of consecutive detections.
+consecutive_detection_counts = {}
 
 # Global dictionary to store stream info.
 # Keys: stream_url, values: (platform, streamer_name)
@@ -38,7 +43,6 @@ stream_info = {}
 def update_stream_info(stream_url, platform, streamer_name):
     """
     Called by the detection trigger endpoint to update the global mapping of stream info.
-    This allows the detection code to use the real platform and streamer name.
     """
     global stream_info
     stream_info[stream_url] = (platform, streamer_name)
@@ -151,12 +155,27 @@ def async_send_notifications(log_id, platform_name, streamer_name):
 def log_detection(detections, stream_url, annotated_image, platform_name, streamer_name):
     """
     Log video detections into the database and send notifications.
-    Only detections that pass the throttling check trigger an alert.
+    For each detection, if it is the same object for a given streamer detected consecutively three times,
+    sleep for 120 seconds.
     """
+    global consecutive_detection_counts
     filtered_detections = []
     for det in detections:
         if should_send_alert(streamer_name, "object_detection", det["class"]):
             filtered_detections.append(det)
+            # Update consecutive detection count.
+            key = (streamer_name, det["class"])
+            count = consecutive_detection_counts.get(key, 0) + 1
+            consecutive_detection_counts[key] = count
+            if count >= 3:
+                logging.info("Detected %s three times in a row for streamer %s. Sleeping for 120 seconds.", det["class"], streamer_name)
+                time.sleep(120)
+                consecutive_detection_counts[key] = 0  # Reset after sleep.
+        else:
+            # Reset counter if this object isn't alertable now.
+            key = (streamer_name, det["class"])
+            consecutive_detection_counts[key] = 0
+
     if not filtered_detections:
         logging.info("Skipping duplicate video alert for streamer: %s", streamer_name)
         return
@@ -186,17 +205,17 @@ def log_detection(detections, stream_url, annotated_image, platform_name, stream
 def extract_stream_info(stream_url):
     """
     Extract platform and streamer name from the stream URL.
-    First check if the global stream_info mapping contains this stream URL;
-    if not, then if the URL contains "edge-hls.doppiocdn.live", platform is Stripchat;
-    otherwise, assume Chaturbate. The streamer name is taken as the last URL segment.
+    If the URL contains "edge-hls.doppiocdn.live", platform is Stripchat;
+    otherwise, platform is Chaturbate. The streamer name is taken as the last URL segment.
     """
-    if stream_url in stream_info:
-        return stream_info[stream_url]
     if "edge-hls.doppiocdn.live" in stream_url:
         platform = "Stripchat"
     else:
         platform = "Chaturbate"
     streamer = stream_url.split('/')[-1].split('?')[0]
+    # If stream_info mapping exists for this URL, override.
+    if stream_url in stream_info:
+        platform, streamer = stream_info[stream_url]
     return platform, streamer
 
 def process_stream(stream_url, cancel_event):
@@ -215,7 +234,7 @@ def process_stream(stream_url, cancel_event):
         logging.error("No video stream found in: %s", stream_url)
         container.close()
         return
-    
+
     for frame in container.decode(video=video_stream.index):
         if cancel_event.is_set():
             logging.info("Stopping video detection for stream: %s", stream_url)
@@ -226,7 +245,12 @@ def process_stream(stream_url, cancel_event):
         if detections:
             annotated = annotate_frame(img, detections)
             log_detection(detections, stream_url, annotated, platform_name, streamer_name)
-        
+        else:
+            # Reset consecutive detection counts for this streamer if no detection.
+            for key in list(consecutive_detection_counts.keys()):
+                if key[0] == streamer_name:
+                    consecutive_detection_counts[key] = 0
+
         time.sleep(1)
     
     container.close()
@@ -364,4 +388,4 @@ if __name__ == "__main__":
     # Start video processing
     process_stream(stream_url, cancel_event)
     # Process audio detection
-    process_audio_stream(stream_url, cancel_event)
+    # process_audio_stream(stream_url, cancel_event)

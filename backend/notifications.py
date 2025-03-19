@@ -49,7 +49,8 @@ async def send_telegram_image_async(photo_file, caption, chat_id, token=None):
 
 def send_text_message(msg, chat_id, token=None):
     """Wrapper to run the async function in a synchronous context."""
-    return asyncio.run(send_text_message_async(msg, chat_id, token))
+    recipients = TelegramRecipient.query.all()
+    return asyncio.run(send_text_message_async(msg, recipients.chat_id, token))
 
 def send_telegram_image(photo_file, caption, chat_id, token=None):
     """Wrapper to run the async function in a synchronous context."""
