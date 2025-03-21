@@ -1,6 +1,6 @@
 import sys
 import types
-import tempfile  # New import for generating unique user-data directories
+import tempfile  # For generating unique user-data directories
 import os
 
 # --- Monkey Patch for blinker._saferef ---
@@ -29,18 +29,57 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from seleniumwire import webdriver
 from selenium.webdriver.chrome.options import Options
+from flask import jsonify
 
-# Global dictionary to hold scraping job statuses.
+# Import models and database session for stream creation.
+from models import ChaturbateStream, StripchatStream, Assignment
+from extensions import db
+from config import app  # Use the Flask app for application context
+
+# Global dictionaries to hold job statuses.
 scrape_jobs = {}
+stream_creation_jobs = {}
 executor = ThreadPoolExecutor(max_workers=5)  # Thread pool for parallel scraping
 
 def update_job_progress(job_id, percent, message):
-    """Update the progress of a scraping job."""
-    scrape_jobs[job_id] = {
+    """Update the progress of a scraping job with interactive data."""
+    now = time.time()
+    if job_id not in scrape_jobs or 'start_time' not in scrape_jobs[job_id]:
+        scrape_jobs[job_id] = {'start_time': now}
+    elapsed = now - scrape_jobs[job_id]['start_time']
+    estimated = None
+    if percent > 0:
+        estimated = (100 - percent) / percent * elapsed
+    scrape_jobs[job_id].update({
         "progress": percent,
         "message": message,
-    }
-    logging.info("Job %s progress: %s%% - %s", job_id, percent, message)
+        "elapsed": round(elapsed, 1),
+        "estimated_time": round(estimated, 1) if estimated is not None else None,
+    })
+    logging.info("Job %s progress: %s%% - %s (Elapsed: %ss, Est: %ss)",
+                 job_id, percent, message,
+                 scrape_jobs[job_id]['elapsed'],
+                 scrape_jobs[job_id]['estimated_time'])
+
+def update_stream_job_progress(job_id, percent, message):
+    """Update the progress of a stream creation job with interactive data."""
+    now = time.time()
+    if job_id not in stream_creation_jobs or 'start_time' not in stream_creation_jobs[job_id]:
+        stream_creation_jobs[job_id] = {'start_time': now}
+    elapsed = now - stream_creation_jobs[job_id]['start_time']
+    estimated = None
+    if percent > 0:
+        estimated = (100 - percent) / percent * elapsed
+    stream_creation_jobs[job_id].update({
+        "progress": percent,
+        "message": message,
+        "elapsed": round(elapsed, 1),
+        "estimated_time": round(estimated, 1) if estimated is not None else None,
+    })
+    logging.info("Stream Job %s progress: %s%% - %s (Elapsed: %ss, Est: %ss)",
+                 job_id, percent, message,
+                 stream_creation_jobs[job_id]['elapsed'],
+                 stream_creation_jobs[job_id]['estimated_time'])
 
 def fetch_m3u8_from_page(url, timeout=90):
     """Fetch the M3U8 URL from the given page using Selenium."""
@@ -48,7 +87,7 @@ def fetch_m3u8_from_page(url, timeout=90):
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--ignore-certificate-errors")  # Ignore TLS errors
+    chrome_options.add_argument("--ignore-certificate-errors")
     unique_user_data_dir = tempfile.mkdtemp()
     chrome_options.add_argument(f"--user-data-dir={unique_user_data_dir}")
 
@@ -58,11 +97,9 @@ def fetch_m3u8_from_page(url, timeout=90):
     try:
         logging.info(f"Opening URL: {url}")
         driver.get(url)
-        time.sleep(5)  # Allow page to load network requests.
-
+        time.sleep(5)
         found_url = None
         elapsed = 0
-
         while elapsed < timeout:
             for request in driver.requests:
                 if request.response and ".m3u8" in request.url:
@@ -73,13 +110,10 @@ def fetch_m3u8_from_page(url, timeout=90):
                 break
             time.sleep(1)
             elapsed += 1
-
         return found_url if found_url else None
-
     except Exception as e:
         logging.error(f"Error fetching M3U8 URL: {e}")
         return None
-
     finally:
         driver.quit()
 
@@ -88,22 +122,18 @@ def scrape_chaturbate_data(url, progress_callback=None):
     try:
         if progress_callback:
             progress_callback(10, "Fetching Chaturbate page")
-
         chaturbate_m3u8_url = fetch_m3u8_from_page(url)
         if not chaturbate_m3u8_url:
             logging.error("Failed to fetch m3u8 URL for Chaturbate stream.")
             if progress_callback:
                 progress_callback(100, "Error: Failed to fetch m3u8 URL")
             return None
-
         streamer_username = url.rstrip("/").split("/")[-1]
-
         result = {
             "streamer_username": streamer_username,
             "chaturbate_m3u8_url": chaturbate_m3u8_url,
         }
         logging.info("Scraped details: %s", result)
-
         if progress_callback:
             progress_callback(100, "Scraping complete")
         return result
@@ -118,25 +148,20 @@ def scrape_stripchat_data(url, progress_callback=None):
     try:
         if progress_callback:
             progress_callback(10, "Fetching Stripchat page")
-
         stripchat_m3u8_url = fetch_m3u8_from_page(url)
         if not stripchat_m3u8_url:
             logging.error("Failed to fetch m3u8 URL for Stripchat stream.")
             if progress_callback:
                 progress_callback(100, "Error: Failed to fetch m3u8 URL")
             return None
-
         if "playlistType=lowLatency" in stripchat_m3u8_url:
             stripchat_m3u8_url = stripchat_m3u8_url.split('?')[0]
-
         streamer_username = url.rstrip("/").split("/")[-1]
-
         result = {
             "streamer_username": streamer_username,
             "stripchat_m3u8_url": stripchat_m3u8_url,
         }
         logging.info("Scraped details: %s", result)
-
         if progress_callback:
             progress_callback(100, "Scraping complete")
         return result
@@ -147,7 +172,7 @@ def scrape_stripchat_data(url, progress_callback=None):
         return None
 
 def run_scrape_job(job_id, url):
-    """Run a scraping job and update progress."""
+    """Run a scraping job and update progress interactively."""
     update_job_progress(job_id, 0, "Starting scrape job")
     if "chaturbate.com" in url:
         result = scrape_chaturbate_data(url, progress_callback=lambda p, m: update_job_progress(job_id, p, m))
@@ -162,29 +187,30 @@ def run_scrape_job(job_id, url):
         scrape_jobs[job_id]["error"] = "Scraping failed"
     update_job_progress(job_id, 100, scrape_jobs[job_id].get("error", "Scraping complete"))
 
-
-def run_stream_creation_job(job_id, room_url, platform):
-    # Create application context
+def run_stream_creation_job(job_id, room_url, platform, agent_id=None):
+    """
+    Run a stream creation job and update progress interactively.
+    Accepts an optional agent_id for assignment.
+    Runs within an application context.
+    """
     with app.app_context():
         try:
-            stream_creation_jobs[job_id].update({"progress": 10, "message": "Scraping data..."})
-            
-            # Scrape data
+            update_stream_job_progress(job_id, 5, "Initializing scraping...")
+            # Map scraping progress from 5% to 50%
             if platform == "chaturbate":
-                scraped_data = scrape_chaturbate_data(room_url)
+                scraped_data = scrape_chaturbate_data(
+                    room_url,
+                    progress_callback=lambda p, m: update_stream_job_progress(job_id, 5 + p * 0.45, m)
+                )
             else:
-                scraped_data = scrape_stripchat_data(room_url)
-            
+                scraped_data = scrape_stripchat_data(
+                    room_url,
+                    progress_callback=lambda p, m: update_stream_job_progress(job_id, 5 + p * 0.45, m)
+                )
             if not scraped_data:
-                stream_creation_jobs[job_id].update({
-                    "progress": 100,
-                    "message": "Scraping failed",
-                    "status": "error"
-                })
+                update_stream_job_progress(job_id, 100, "Scraping failed")
                 return
-
-            stream_creation_jobs[job_id].update({"progress": 50, "message": "Creating stream..."})
-            
+            update_stream_job_progress(job_id, 50, "Creating stream...")
             # Create stream object
             streamer_username = room_url.rstrip("/").split("/")[-1]
             if platform == "chaturbate":
@@ -199,20 +225,20 @@ def run_stream_creation_job(job_id, room_url, platform):
                     streamer_username=streamer_username,
                     stripchat_m3u8_url=scraped_data["stripchat_m3u8_url"]
                 )
-            
             db.session.add(stream)
             db.session.commit()
-            
-            stream_creation_jobs[job_id].update({
-                "progress": 100,
-                "message": "Stream created",
-                "status": "completed",
-                "stream": stream.serialize()
-            })
-
+            # Assign agent if provided
+            if agent_id:
+                assignment = Assignment(agent_id=agent_id, stream_id=stream.id)
+                db.session.add(assignment)
+                db.session.commit()
+            # Refresh stream so that relationships (assignments) are loaded.
+            db.session.refresh(stream)
+            # Simulate additional processing delay
+            for prog in range(51, 101, 10):
+                time.sleep(0.5)
+                update_stream_job_progress(job_id, prog, "Finalizing stream...")
+            update_stream_job_progress(job_id, 100, "Stream created")
+            stream_creation_jobs[job_id]["stream"] = stream.serialize()
         except Exception as e:
-            stream_creation_jobs[job_id].update({
-                "progress": 100,
-                "message": f"Error: {str(e)}",
-                "status": "error"
-            })
+            update_stream_job_progress(job_id, 100, f"Error: {str(e)}")

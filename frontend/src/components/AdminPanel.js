@@ -3,9 +3,6 @@ import axios from 'axios';
 import VideoPlayer from './VideoPlayer';
 
 // Lazy load components
-const ScraperPage = lazy(() => import('./ScraperPage'));
-const VisualTestPage = lazy(() => import('./VisualTestPage'));
-const AssignmentPage = lazy(() => import('./AssignmentPage'));
 const StreamsPage = lazy(() => import('./StreamsPage'));
 const FlagSettingsPage = lazy(() => import('./FlagSettingsPage'));
 const AgentsPage = lazy(() => import('./AgentsPage'));

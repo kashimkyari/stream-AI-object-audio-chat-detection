@@ -49,8 +49,7 @@ async def send_telegram_image_async(photo_file, caption, chat_id, token=None):
 
 def send_text_message(msg, chat_id, token=None):
     """Wrapper to run the async function in a synchronous context."""
-    recipients = TelegramRecipient.query.all()
-    return asyncio.run(send_text_message_async(msg, recipients.chat_id, token))
+    return asyncio.run(send_text_message_async(msg, chat_id, token))
 
 def send_telegram_image(photo_file, caption, chat_id, token=None):
     """Wrapper to run the async function in a synchronous context."""
@@ -59,20 +58,16 @@ def send_telegram_image(photo_file, caption, chat_id, token=None):
 def send_notifications(log_entry, platform_name=None, streamer_name=None):
     """
     Sends notifications based on the log_entry from the unified detection API.
-    For object detection events, if a stored annotated image is available in the
-    log entry, it is sent as an image via a BytesIO object.
-    
-    Optional parameters platform_name and streamer_name override values in log_entry.details.
+    For object detection events, if a stored annotated image is available, it is sent as an image.
+    For chat detection events, a Telegram text message is sent with details about the flagged chat message.
     """
     try:
-        # Wrap all database operations in the app context.
         with app.app_context():
             details = log_entry.details or {}
-            # Use provided platform_name/streamer_name if available; otherwise fall back to log_entry details.
             platform = platform_name if platform_name is not None else details.get('platform', 'Unknown Platform')
             streamer = streamer_name if streamer_name is not None else details.get('streamer_name', 'Unknown Streamer')
 
-            # For object detection, get detection details.
+            # For object detection.
             detections_list = details.get('detections') or []
             confidence = None
             if detections_list and isinstance(detections_list, list):
@@ -94,7 +89,6 @@ def send_notifications(log_entry, platform_name=None, streamer_name=None):
                     f"🔍 Confidence: {conf_str}"
                 )
                 if log_entry.detection_image:
-                    # Create a new BytesIO object for each recipient
                     for recipient in recipients:
                         photo_file = BytesIO(log_entry.detection_image)
                         photo_file.seek(0)
@@ -117,14 +111,15 @@ def send_notifications(log_entry, platform_name=None, streamer_name=None):
                     executor.submit(send_text_message, message, recipient.chat_id, None)
 
             elif log_entry.event_type == 'chat_detection':
+                # For chat detection, we use the 'keywords' and 'ocr_text' fields from the log details.
                 keywords = details.get('keywords', [])
-                ocr_excerpt = details.get('ocr_text', 'No OCR data available.')
+                ocr_excerpt = details.get('ocr_text', 'No message available.')
                 message = (
                     f"💬 **Chat Detection Alert**\n"
                     f"🎥 Platform: {platform}\n"
                     f"📡 Streamer: {streamer}\n"
                     f"🔍 Keywords: {', '.join(keywords) if keywords else 'None'}\n"
-                    f"📝 OCR Excerpt: {ocr_excerpt[:300]}..."
+                    f"📝 Message: {ocr_excerpt[:300]}..."
                 )
                 for recipient in recipients:
                     executor.submit(send_text_message, message, recipient.chat_id, None)

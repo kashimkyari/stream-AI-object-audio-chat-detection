@@ -6,16 +6,17 @@ import Login from './components/Login';
 import AdminPanel from './components/AdminPanel';
 import AgentDashboard from './components/AgentDashboard';
 import NotificationsPage from './components/NotificationsPage';
+import { ToastProvider, useToast } from './ToastContext';
 
-function App() {
+function AppContent() {
   const [role, setRole] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [unreadCount, setUnreadCount] = useState(0);
-  const [toast, setToast] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [dashboardData, setDashboardData] = useState({ streams: [] });
   const [isMobile, setIsMobile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const { showToast } = useToast();
 
   // Check if device is mobile
   useEffect(() => {
@@ -46,13 +47,12 @@ function App() {
     checkSession();
   }, []);
 
- 
-
   const handleLogin = (role) => {
     setRole(role);
     if (role === 'admin') {
       axios.get('/api/dashboard').then(res => setDashboardData(res.data));
     }
+    showToast("Login successful", "success");
   };
 
   const handleLogout = async () => {
@@ -60,8 +60,10 @@ function App() {
       await axios.post('/api/logout');
       setRole(null);
       setMenuOpen(false);
+      showToast("Logged out successfully", "info");
     } catch (err) {
       console.error("Logout error", err);
+      showToast("Logout failed", "error");
     }
   };
 
@@ -80,51 +82,19 @@ function App() {
     setMenuOpen(!menuOpen);
   };
 
-  // Notification management functions (client‑side simulation)
-  const markAsRead = async (notificationId) => {
-    try {
-      setNotifications(notifications.map(notification => 
-        notification.id === notificationId 
-          ? { ...notification, read: true }
-          : notification
-      ));
-    } catch (error) {
-      console.error('Error marking notification as read:', error);
-    }
+  // Example function to handle successful agent creation
+  const handleAgentCreated = (newAgent) => {
+    showToast("Agent created successfully", "success");
   };
 
-  const markAllAsRead = async () => {
-    try {
-      setNotifications(notifications.map(notification => ({ ...notification, read: true })));
-      setUnreadCount(0);
-    } catch (error) {
-      console.error('Error marking all notifications as read:', error);
-    }
-  };
-
-  const deleteNotification = async (notificationId) => {
-    try {
-      setNotifications(notifications.filter(notification => notification.id !== notificationId));
-    } catch (error) {
-      console.error('Error deleting notification:', error);
-    }
-  };
-
-  const deleteAllNotifications = async () => {
-    try {
-      setNotifications([]);
-      setUnreadCount(0);
-    } catch (error) {
-      console.error('Error deleting all notifications:', error);
-    }
-  };
+  // Similarly, you can call showToast() after activities like deleting/editing agents,
+  // creating/deleting streams, flagged keywords/objects, and telegram users.
 
   return (
     <div className="app-container">
       {role && (
         <header className="app-header">
           <div className="nav-container">
-            {/* Mobile menu toggle button */}
             {isMobile && role === 'admin' && (
               <button className="menu-toggle" onClick={toggleMenu}>
                 {menuOpen ? '✕' : '☰'}
@@ -133,21 +103,17 @@ function App() {
                 )}
               </button>
             )}
-            {/* Admin navigation */}
             {role === 'admin' && (!isMobile || (isMobile && menuOpen)) && (
               <nav className={`admin-nav ${isMobile ? 'mobile-nav' : ''}`}>
                 <button onClick={() => handleTabClick('dashboard')} className={activeTab === 'dashboard' ? 'active' : ''}>Dashboard</button>
-                <button onClick={() => handleTabClick('assign')} className={activeTab === 'assign' ? 'active' : ''}>Assignments</button>
                 <button onClick={() => handleTabClick('agents')} className={activeTab === 'agents' ? 'active' : ''}>Agents</button>
                 <button onClick={() => handleTabClick('streams')} className={activeTab === 'streams' ? 'active' : ''}>Streams</button>
                 <button onClick={() => handleTabClick('flag')} className={activeTab === 'flag' ? 'active' : ''}>Settings</button>
-               
                 {isMobile && (
                   <button className="mobile-logout-button" onClick={handleLogout}>Logout</button>
                 )}
               </nav>
             )}
-            {/* Desktop logout button */}
             {(!isMobile || role !== 'admin') && (
               <button className="logout-button" onClick={handleLogout}>Logout</button>
             )}
@@ -157,39 +123,19 @@ function App() {
 
       <div className="main-content">
         {!role && <Login onLogin={handleLogin} />}
-        {role === 'admin' && activeTab !== 'notifications' && <AdminPanel activeTab={activeTab} isMobile={isMobile} />}
+        {role === 'admin' && activeTab !== 'notifications' && (
+          <AdminPanel 
+            activeTab={activeTab} 
+            isMobile={isMobile}
+            onAgentCreated={handleAgentCreated}  // Example prop for agent creation
+            // Similarly, pass down callbacks for other activities to trigger showToast
+          />
+        )}
         {role === 'agent' && <AgentDashboard isMobile={isMobile} />}
-        
       </div>
 
-      {/* Toast notification */}
-      {toast && (
-        <div className={`toast ${toast.type} ${isMobile ? 'mobile-toast' : ''}`}>
-          {toast.image && (
-            <img 
-              src={toast.image} 
-              alt="Detection" 
-              className="toast-image"
-            />
-          )}
-          <div className="toast-content">
-            <div className="toast-message">{toast.message}</div>
-            <div className="toast-details">
-              {Object.entries(toast.details).map(([key, value]) => (
-                <div key={key} className="detail-item">
-                  <strong>{key}:</strong> {value}
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="toast-progress" />
-        </div>
-      )}
-
       <style jsx global>{`
-        * {
-          box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
         body {
           background: #121212;
           margin: 0;
@@ -310,32 +256,6 @@ function App() {
         .admin-nav button.active::before {
           transform: scaleX(1);
         }
-        .notification-badge {
-          position: absolute;
-          top: -8px;
-          right: -8px;
-          background: #ff4444;
-          color: white;
-          width: 20px;
-          height: 20px;
-          border-radius: 50%;
-          font-size: 0.7em;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          animation: pulse 1.5s infinite;
-        }
-        .mobile-logout-button {
-          margin-top: auto !important;
-          background: linear-gradient(135deg, #007bff, #0056b3) !important;
-          color: white !important;
-          font-weight: 500 !important;
-        }
-        @keyframes pulse {
-          0% { transform: scale(1); }
-          50% { transform: scale(1.1); }
-          100% { transform: scale(1); }
-        }
         .logout-button {
           padding: 12px 24px;
           background: linear-gradient(135deg, #007bff, #0056b3);
@@ -355,67 +275,16 @@ function App() {
           margin: ${isMobile ? '20px auto' : '40px auto'};
           padding: 0 ${isMobile ? '12px' : '20px'};
         }
-        .toast {
-          position: fixed;
-          bottom: 20px;
-          right: 20px;
-          background: #2d2d2d;
-          color: white;
-          padding: 16px 24px;
-          border-radius: 8px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-          animation: slideIn 0.3s ease-out;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          z-index: 2000;
-          max-width: 400px;
-        }
-        .mobile-toast {
-          bottom: 10px;
-          right: 10px;
-          left: 10px;
-          padding: 12px;
-          flex-direction: column;
-          max-width: none;
-        }
-        .toast.alert {
-          border-left: 4px solid #ff4444;
-        }
-        .toast-image {
-          width: ${isMobile ? '100%' : '80px'};
-          height: ${isMobile ? 'auto' : '60px'};
-          border-radius: 4px;
-          margin-bottom: ${isMobile ? '8px' : '0'};
-        }
-        .toast-content {
-          flex: 1;
-        }
-        .toast-details {
-          font-size: 0.9em;
-          margin-top: 8px;
-          display: ${isMobile ? 'grid' : 'block'};
-          grid-template-columns: repeat(2, 1fr);
-          gap: 4px;
-        }
-        .toast-progress {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          height: 3px;
-          background: #ffffff44;
-          animation: progress 5s linear;
-        }
-        @keyframes slideIn {
-          from { transform: translateX(100%); }
-          to { transform: translateX(0); }
-        }
-        @keyframes progress {
-          from { width: 100%; }
-          to { width: 0%; }
-        }
       `}</style>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <ToastProvider>
+      <AppContent />
+    </ToastProvider>
   );
 }
 

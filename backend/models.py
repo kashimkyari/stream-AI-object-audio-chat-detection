@@ -17,14 +17,14 @@ class User(db.Model):
     role = db.Column(db.String(10), nullable=False, default="agent", index=True)
 
     # Relationship with Assignment
-    assignments = db.relationship('Assignment', back_populates='agent', lazy='selectin')
+    assignments = db.relationship('Assignment', back_populates='agent', lazy='selectin', cascade="all, delete")
 
     def __repr__(self):
         return f"<User {self.username}>"
 
-    def serialize(self):
+    def serialize(self, include_relationships=True):
         """Serialize the User model into a dictionary."""
-        return {
+        data = {
             "id": self.id,
             "username": self.username,
             "email": self.email,
@@ -34,6 +34,13 @@ class User(db.Model):
             "staffid": self.staffid,
             "role": self.role,
         }
+        
+        # Only include assignments if explicitly requested and prevent circular references
+        if include_relationships and hasattr(self, 'assignments'):
+            data["assignments"] = [assignment.serialize(include_relationships=False) for assignment in self.assignments]
+            
+        return data
+
 
 class Stream(db.Model):
     """
@@ -47,7 +54,7 @@ class Stream(db.Model):
     type = db.Column(db.String(50), index=True)  # Discriminator column for polymorphic identity
 
     # Relationship with Assignment
-    assignments = db.relationship('Assignment', back_populates='stream', lazy='selectin')
+    assignments = db.relationship('Assignment', back_populates='stream', lazy='selectin', cascade="all, delete")
 
     __mapper_args__ = {
         'polymorphic_on': type,
@@ -57,14 +64,21 @@ class Stream(db.Model):
     def __repr__(self):
         return f"<Stream {self.room_url}>"
 
-    def serialize(self):
+    def serialize(self, include_relationships=True):
         """Serialize the Stream model into a dictionary."""
-        return {
+        data = {
             "id": self.id,
             "room_url": self.room_url,
             "streamer_username": self.streamer_username,
             "platform": self.type.capitalize() if self.type else None,
         }
+        
+        # Only include assignments if explicitly requested and prevent circular references
+        if include_relationships and hasattr(self, 'assignments'):
+            data["assignments"] = [assignment.serialize(include_relationships=False) for assignment in self.assignments]
+            
+        return data
+
 
 class ChaturbateStream(Stream):
     """
@@ -82,14 +96,15 @@ class ChaturbateStream(Stream):
     def __repr__(self):
         return f"<ChaturbateStream {self.room_url}>"
 
-    def serialize(self):
+    def serialize(self, include_relationships=True):
         """Serialize the ChaturbateStream model into a dictionary."""
-        data = super().serialize()
+        data = super().serialize(include_relationships=include_relationships)
         data.update({
             "platform": "Chaturbate",
             "chaturbate_m3u8_url": self.chaturbate_m3u8_url,
         })
         return data
+
 
 class StripchatStream(Stream):
     """
@@ -107,14 +122,15 @@ class StripchatStream(Stream):
     def __repr__(self):
         return f"<StripchatStream {self.room_url}>"
 
-    def serialize(self):
+    def serialize(self, include_relationships=True):
         """Serialize the StripchatStream model into a dictionary."""
-        data = super().serialize()
+        data = super().serialize(include_relationships=include_relationships)
         data.update({
             "platform": "Stripchat",
             "stripchat_m3u8_url": self.stripchat_m3u8_url,
         })
         return data
+
 
 class Assignment(db.Model):
     """
@@ -126,25 +142,35 @@ class Assignment(db.Model):
     stream_id = db.Column(db.Integer, db.ForeignKey('streams.id'), nullable=False, index=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
 
-    # Relationships
-    agent = db.relationship('User', back_populates='assignments')
-    stream = db.relationship('Stream', back_populates='assignments')
+    # Relationships: load agent eagerly so it is available immediately on creation.
+    agent = db.relationship('User', back_populates='assignments', lazy='joined')
+    stream = db.relationship('Stream', back_populates='assignments', lazy='selectin')
 
     __table_args__ = (
         db.Index('idx_assignment_agent_stream', 'agent_id', 'stream_id'),
     )
 
     def __repr__(self):
-        return f"<Assignment Agent:{self.agent_id} Stream:{self.stream_id}>"
+        # Use a safe fallback in case agent is not loaded
+        agent_username = self.agent.username if self.agent else "Unassigned"
+        return f"<Assignment Agent:{agent_username} Stream:{self.stream_id}>"
 
-    def serialize(self):
+    def serialize(self, include_relationships=True):
         """Serialize the Assignment model into a dictionary."""
-        return {
+        data = {
             "id": self.id,
             "agent_id": self.agent_id,
             "stream_id": self.stream_id,
             "created_at": self.created_at.isoformat(),
         }
+        
+        # Only include related objects if explicitly requested; provide safe fallbacks
+        if include_relationships:
+            data["agent"] = self.agent.serialize(include_relationships=False) if self.agent else None
+            data["stream"] = self.stream.serialize(include_relationships=False) if self.stream else None
+                
+        return data
+
 
 class Log(db.Model):
     """
@@ -177,6 +203,7 @@ class Log(db.Model):
             "read": self.read,
         }
 
+
 class ChatKeyword(db.Model):
     """
     ChatKeyword model stores keywords for flagging chat messages.
@@ -191,6 +218,7 @@ class ChatKeyword(db.Model):
     def serialize(self):
         """Serialize the ChatKeyword model into a dictionary."""
         return {"id": self.id, "keyword": self.keyword}
+
 
 class FlaggedObject(db.Model):
     """
@@ -213,6 +241,7 @@ class FlaggedObject(db.Model):
             "confidence_threshold": float(self.confidence_threshold),
         }
 
+
 class TelegramRecipient(db.Model):
     """
     TelegramRecipient model stores Telegram user information for notifications.
@@ -233,9 +262,7 @@ class TelegramRecipient(db.Model):
             "chat_id": self.chat_id,
         }
 
-# --------------------------------------------------------------------
-# New Model: DetectionLog
-# --------------------------------------------------------------------
+
 class DetectionLog(db.Model):
     """
     DetectionLog model stores detection events, including the annotated image.
@@ -257,4 +284,28 @@ class DetectionLog(db.Model):
             "details": self.details,
             "timestamp": self.timestamp.isoformat(),
             "read": self.read,
+        }
+
+
+# New model for realtime messaging
+class ChatMessage(db.Model):
+    """
+    ChatMessage model stores messages exchanged between users (admin/agent).
+    """
+    __tablename__ = "chat_messages"
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    receiver_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    message = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    read = db.Column(db.Boolean, default=False, index=True)
+
+    def serialize(self):
+        return {
+            'id': self.id,
+            'sender_id': self.sender_id,
+            'receiver_id': self.receiver_id,
+            'message': self.message,
+            'timestamp': self.timestamp.isoformat(),
+            'read': self.read,
         }

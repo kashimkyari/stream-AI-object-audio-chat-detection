@@ -12,7 +12,8 @@ import numpy as np
 from PIL import Image
 import m3u8
 import requests
-from flask import request, jsonify, session, send_from_directory, current_app
+from flask import request, jsonify, session, send_from_directory, current_app, Response
+from sqlalchemy.orm import joinedload  # Added for eager loading
 from config import app
 from extensions import db
 from models import (
@@ -20,10 +21,12 @@ from models import (
     TelegramRecipient, ChaturbateStream, StripchatStream
 )
 from utils import allowed_file, login_required
-from notifications import *
-from scraping import scrape_stripchat_data, scrape_chaturbate_data, run_scrape_job, scrape_jobs
+from notifications import send_notifications
+from scraping import (
+    scrape_stripchat_data, scrape_chaturbate_data, run_scrape_job, scrape_jobs,
+    stream_creation_jobs, run_stream_creation_job
+)
 from detection import *
-from monitoring import *
 import speech_recognition as sr
 from werkzeug.utils import secure_filename
 
@@ -31,9 +34,8 @@ from werkzeug.utils import secure_filename
 detection_threads = {}
 
 # --------------------------------------------------------------------
-# Endpoints
+# Authentication Endpoints
 # --------------------------------------------------------------------
-
 @app.route("/api/login", methods=["POST"])
 def login():
     data = request.get_json()
@@ -61,6 +63,9 @@ def check_session():
         return jsonify({"logged_in": True, "user": user.serialize()})
     return jsonify({"logged_in": False}), 401
 
+# --------------------------------------------------------------------
+# Agent Management Endpoints
+# --------------------------------------------------------------------
 @app.route("/api/agents", methods=["GET"])
 @login_required(role="admin")
 def get_agents():
@@ -117,19 +122,26 @@ def delete_agent(agent_id):
     db.session.commit()
     return jsonify({"message": "Agent deleted"})
 
+# --------------------------------------------------------------------
+# Stream Management Endpoints
+# --------------------------------------------------------------------
 @app.route("/api/streams", methods=["GET"])
 @login_required(role="admin")
 def get_streams():
     platform = request.args.get("platform", "").strip().lower()
     streamer = request.args.get("streamer", "").strip().lower()
-
     if platform == "chaturbate":
-        streams = ChaturbateStream.query.filter(ChaturbateStream.streamer_username.ilike(f"%{streamer}%")).all()
+        streams = ChaturbateStream.query.options(
+            joinedload(ChaturbateStream.assignments).joinedload(Assignment.agent)
+        ).filter(ChaturbateStream.streamer_username.ilike(f"%{streamer}%")).all()
     elif platform == "stripchat":
-        streams = StripchatStream.query.filter(StripchatStream.streamer_username.ilike(f"%{streamer}%")).all()
+        streams = StripchatStream.query.options(
+            joinedload(StripchatStream.assignments).joinedload(Assignment.agent)
+        ).filter(StripchatStream.streamer_username.ilike(f"%{streamer}%")).all()
     else:
-        streams = Stream.query.all()
-
+        streams = Stream.query.options(
+            joinedload(Stream.assignments).joinedload(Assignment.agent)
+        ).all()
     return jsonify([stream.serialize() for stream in streams])
 
 @app.route("/api/streams", methods=["POST"])
@@ -138,25 +150,19 @@ def create_stream():
     data = request.get_json()
     room_url = data.get("room_url", "").strip().lower()
     platform = data.get("platform", "Chaturbate").strip()
-
     if not room_url:
         return jsonify({"message": "Room URL required"}), 400
-
     if platform.lower() == "chaturbate" and "chaturbate.com/" not in room_url:
         return jsonify({"message": "Invalid Chaturbate URL"}), 400
     if platform.lower() == "stripchat" and "stripchat.com/" not in room_url:
         return jsonify({"message": "Invalid Stripchat URL"}), 400
-
     if Stream.query.filter_by(room_url=room_url).first():
         return jsonify({"message": "Stream exists"}), 400
-
     streamer_username = room_url.rstrip("/").split("/")[-1]
-
     if platform.lower() == "chaturbate":
         scraped_data = scrape_chaturbate_data(room_url)
         if not scraped_data:
             return jsonify({"message": "Failed to scrape Chaturbate details"}), 500
-
         stream = ChaturbateStream(
             room_url=room_url,
             streamer_username=streamer_username,
@@ -167,7 +173,6 @@ def create_stream():
         scraped_data = scrape_stripchat_data(room_url)
         if not scraped_data:
             return jsonify({"message": "Failed to scrape Stripchat details"}), 500
-
         stream = StripchatStream(
             room_url=room_url,
             streamer_username=streamer_username,
@@ -176,26 +181,92 @@ def create_stream():
         )
     else:
         return jsonify({"message": "Invalid platform"}), 400
-
     db.session.add(stream)
     db.session.commit()
-
     log_entry = Log(
-    room_url=room_url,
-    event_type="stream_added",
-    details={
-        "message": "Stream added",
-        "streamer_username": streamer_username,
-        "platform": platform.lower()
-    }
-)
+        room_url=room_url,
+        event_type="stream_added",
+        details={
+            "message": "Stream added",
+            "streamer_username": streamer_username,
+            "platform": platform.lower()
+        }
+    )
     db.session.add(log_entry)
     db.session.commit()
-
     return jsonify({"message": "Stream created", "stream": stream.serialize()}), 201
 
+@app.route("/api/streams/<int:stream_id>", methods=["DELETE"])
+@login_required(role="admin")
+def delete_stream(stream_id):
+    stream = Stream.query.get(stream_id)
+    if not stream:
+        return jsonify({"message": "Stream not found"}), 404
+
+    if stream.type == 'chaturbate':
+        child_stream = ChaturbateStream.query.get(stream_id)
+    elif stream.type == 'stripchat':
+        child_stream = StripchatStream.query.get(stream_id)
+    else:
+        child_stream = None
+
+    if child_stream:
+        db.session.delete(child_stream)
+
+    db.session.delete(stream)
+    db.session.commit()
+    return jsonify({"message": "Stream deleted"}), 200
+
 # --------------------------------------------------------------------
-# New Endpoint: Create Agent Assignment
+# Interactive Stream Creation Endpoints
+# --------------------------------------------------------------------
+@app.route("/api/streams/interactive", methods=["POST"])
+@login_required(role="admin")
+def interactive_create_stream():
+    data = request.get_json()
+    room_url = data.get("room_url", "").strip().lower()
+    platform = data.get("platform", "Chaturbate").strip().lower()
+    agent_id = data.get("agent_id")
+    
+    if not room_url:
+        return jsonify({"message": "Room URL required"}), 400
+    if platform == "chaturbate" and "chaturbate.com/" not in room_url:
+        return jsonify({"message": "Invalid Chaturbate URL"}), 400
+    if platform == "stripchat" and "stripchat.com/" not in room_url:
+        return jsonify({"message": "Invalid Stripchat URL"}), 400
+    if Stream.query.filter_by(room_url=room_url).first():
+        return jsonify({"message": "Stream exists"}), 400
+    job_id = str(uuid.uuid4())
+    stream_creation_jobs[job_id] = {"progress": 0, "message": "Job initialized"}
+    
+    threading.Thread(
+        target=run_stream_creation_job, 
+        args=(job_id, room_url, platform, agent_id),
+        daemon=True
+    ).start()
+    
+    return jsonify({"message": "Stream creation job started", "job_id": job_id}), 202
+
+@app.route("/api/streams/interactive/sse")
+@login_required(role="admin")
+def stream_creation_sse():
+    job_id = request.args.get("job_id")
+    if not job_id:
+        return jsonify({"message": "Job id required"}), 400
+    def event_stream():
+        from scraping import stream_creation_jobs
+        while True:
+            job_status = stream_creation_jobs.get(job_id)
+            if job_status:
+                data = json.dumps(job_status)
+                yield f"data: {data}\n\n"
+                if job_status.get("progress", 0) >= 100:
+                    break
+            time.sleep(1)
+    return Response(event_stream(), mimetype="text/event-stream")
+
+# --------------------------------------------------------------------
+# Assignment Endpoints
 # --------------------------------------------------------------------
 @app.route("/api/assign", methods=["POST"])
 @login_required(role="admin")
@@ -339,16 +410,19 @@ def delete_telegram_recipient(recipient_id):
     db.session.commit()
     return jsonify({"message": "Recipient deleted"})
 
+# --------------------------------------------------------------------
+# Dashboard Endpoints
+# --------------------------------------------------------------------
 @app.route("/api/dashboard", methods=["GET"])
 @login_required(role="admin")
 def get_dashboard():
-    streams = Stream.query.all()
+    streams = Stream.query.options(joinedload(Stream.assignments).joinedload(Assignment.agent)).all()
     data = []
     for stream in streams:
         assignment = stream.assignments[0] if stream.assignments else None
         data.append({
             **stream.serialize(),
-            "agent": assignment.agent.serialize() if assignment else None,
+            "agent": assignment.agent.serialize() if assignment and assignment.agent else None,
             "confidence": 0.8
         })
     return jsonify({"ongoing_streams": len(data), "streams": data})
@@ -363,6 +437,9 @@ def get_agent_dashboard():
         "assignments": [a.stream.serialize() for a in assignments if a.stream]
     })
 
+# --------------------------------------------------------------------
+# Detection and Notification Endpoints
+# --------------------------------------------------------------------
 @app.route("/detection-images/<filename>")
 def serve_detection_image(filename):
     return send_from_directory("detections", filename)
@@ -437,9 +514,6 @@ def get_livestream():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# --------------------------------------------------------------------
-# New Endpoint: Trigger Detection
-# --------------------------------------------------------------------
 @app.route("/api/trigger-detection", methods=["POST"])
 def trigger_detection():
     data = request.get_json()
@@ -447,7 +521,6 @@ def trigger_detection():
     if not stream_url:
         return jsonify({"error": "Missing stream_url"}), 400
 
-    # Check if the stream is online
     try:
         response = requests.get(stream_url, timeout=10)
         if response.status_code != 200:
@@ -455,76 +528,54 @@ def trigger_detection():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-    # Import the necessary detection modules
     try:
-        from detection import process_audio_stream
-        from detection import process_stream
+        from detection import process_audio_stream, process_stream, chat_detection_loop
     except ImportError as e:
         return jsonify({"error": f"Detection module not available: {str(e)}"}), 500
 
-    # Check if detection is already running for this stream
     if stream_url in detection_threads:
         return jsonify({"message": "Detection already running for this stream"}), 200
 
-    # Create a cancellation event for stopping the detection threads
     cancel_event = threading.Event()
-
-    # Start the video detection thread
     video_thread = threading.Thread(
         target=process_stream,
         args=(stream_url, cancel_event),
         daemon=True
     )
     video_thread.start()
-
-    # Start the audio detection thread
     audio_thread = threading.Thread(
         target=process_audio_stream,
         args=(stream_url, cancel_event),
         daemon=True
     )
     audio_thread.start()
-
-    # Store the threads and cancellation event in the global dictionary
-    detection_threads[stream_url] = (video_thread, audio_thread, cancel_event)
+    chat_thread = threading.Thread(
+        target=chat_detection_loop,
+        args=(stream_url, cancel_event, 60),  # Run every 60 seconds.
+        daemon=True
+    )
+    chat_thread.start()
+    detection_threads[stream_url] = (video_thread, audio_thread, chat_thread, cancel_event)
 
     return jsonify({"message": "Detection started"}), 200
 
-
-# --------------------------------------------------------------------
-# Unified Detection API Endpoint (Advanced)
-# --------------------------------------------------------------------
 @app.route("/api/detect-advanced", methods=["POST"])
 def advanced_detect():
-    """
-    Unified detection endpoint:
-    - For audio file uploads: Uses Vosk to transcribe and check for flagged keywords.
-    - For chat image uploads: Uses OCR (pytesseract) to detect flagged chat keywords.
-    - For JSON events: Logs visual (object) or audio detections as provided.
-    """
     try:
-        # ---------------------------
-        # AUDIO DETECTION (File Upload) using Vosk
-        # ---------------------------
         if 'audio' in request.files:
             audio_file = request.files['audio']
             stream_url = request.form.get('stream_url')
             timestamp = request.form.get('timestamp')
             audio_bytes = audio_file.read()
-
             try:
                 wf = wave.open(BytesIO(audio_bytes), "rb")
             except Exception as e:
                 return jsonify({"message": "Error processing audio file", "error": str(e)}), 500
-
-            # Check that the audio file is in the required format: mono, 16-bit, 16kHz WAV.
             if wf.getnchannels() != 1 or wf.getsampwidth() != 2 or wf.getframerate() != 16000:
                 return jsonify({"message": "Audio file must be mono, 16-bit, 16kHz WAV"}), 400
-
             model = load_vosk_model()
             if model is None:
                 return jsonify({"message": "Vosk model not loaded"}), 500
-
             recognizer = KaldiRecognizer(model, 16000)
             recognizer.SetWords(True)
             while True:
@@ -534,7 +585,6 @@ def advanced_detect():
                 recognizer.AcceptWaveform(data)
             final_result = json.loads(recognizer.FinalResult())
             text = final_result.get("text", "").lower()
-
             keywords = [kw.keyword.lower() for kw in ChatKeyword.query.all()]
             detected_keywords = [kw for kw in keywords if kw in text]
             if detected_keywords:
@@ -544,20 +594,16 @@ def advanced_detect():
                     event_type='audio_detection',
                     details={
                         'keywords': detected_keywords,
-                        'timestamp': timestamp,
                         'transcript': text,
-                        'audio_file_data': audio_file_data
+                        'audio_file_data': audio_file_data,
+                        'timestamp': timestamp
                     }
                 )
                 db.session.add(log_entry)
                 db.session.commit()
-                send_notifications(log_entry, {'keywords': detected_keywords})
+                send_notifications(log_entry, {"keywords": detected_keywords})
                 return jsonify({"message": "Audio keywords detected", "keywords": detected_keywords}), 200
             return jsonify({"message": "No audio keywords detected"}), 200
-
-        # ---------------------------
-        # CHAT / KEYWORD DETECTION (Image Upload)
-        # ---------------------------
         if 'chat_image' in request.files:
             file = request.files["chat_image"]
             stream_url = request.form.get("stream_url")
@@ -579,7 +625,6 @@ def advanced_detect():
                         'ocr_text': ocr_text,
                         'streamer_name': stream.streamer_username if stream else "Unknown",
                         'platform': stream.type if stream else "Unknown",
-                        'flagged_image_data': flagged_image_data
                     }
                 )
                 db.session.add(log_entry)
@@ -588,26 +633,19 @@ def advanced_detect():
                 return jsonify({"message": "Chat keywords detected", "keywords": detected_keywords}), 200
             else:
                 return jsonify({"message": "No chat keywords detected"}), 200
-
-        # ---------------------------
-        # JSON-BASED DETECTION EVENTS
-        # ---------------------------
         data = request.get_json(silent=True)
         if data is None:
             return jsonify({"message": "No valid JSON or files provided"}), 400
-
         if "type" in data:
             event_type = data.get('type')
             stream_url = data.get('stream_url')
             timestamp_str = data.get('timestamp')
             timestamp_obj = datetime.fromisoformat(timestamp_str) if timestamp_str else datetime.utcnow()
-            
             log_entry = Log(
                 room_url=stream_url,
                 timestamp=timestamp_obj,
                 read=False
             )
-            
             if event_type == 'visual':
                 log_entry.event_type = 'object_detection'
                 log_entry.details = {
@@ -627,12 +665,10 @@ def advanced_detect():
                 }
             else:
                 return jsonify({"error": "Invalid event type"}), 400
-            
             db.session.add(log_entry)
             db.session.commit()
             send_notifications(log_entry)
             return jsonify({"message": "JSON-based detection logged"}), 201
-
         if "keyword" in data:
             keyword = data.get("keyword")
             timestamp = data.get("timestamp")
@@ -651,7 +687,6 @@ def advanced_detect():
             db.session.commit()
             send_notifications(log_entry, {"keyword": keyword})
             return jsonify({"message": "Keyword detection logged successfully"}), 201
-
         if "detections" in data:
             stream_url = data.get("stream_url")
             detections = data.get("detections", [])
@@ -663,6 +698,10 @@ def advanced_detect():
             stream = Stream.query.filter_by(room_url=stream_url).first()
             platform = stream.type if stream else "unknown"
             streamer_name = stream.streamer_username if stream else "unknown"
+            # Safely determine the assigned agent username
+            assigned_agent = "Unassigned"
+            if stream and stream.assignments and len(stream.assignments) > 0 and stream.assignments[0].agent:
+                assigned_agent = stream.assignments[0].agent.username
             log_entry = Log(
                 room_url=stream_url,
                 event_type="object_detection",
@@ -673,7 +712,7 @@ def advanced_detect():
                     "timestamp": timestamp,
                     "streamer_name": streamer_name,
                     "platform": platform,
-                    "assigned_agent": stream.assignments[0].agent.username if stream and stream.assignments else "Unassigned"
+                    "assigned_agent": assigned_agent
                 }
             )
             db.session.add(log_entry)
@@ -684,15 +723,10 @@ def advanced_detect():
                 "message": "Object detection logged",
                 "detections": detections
             }), 200
-
         return jsonify({"message": "No valid detection type provided"}), 400
-
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# --------------------------------------------------------------------
-# New Endpoint: Stop Detection
-# --------------------------------------------------------------------
 @app.route("/api/stop-detection", methods=["POST"])
 def stop_detection_route():
     data = request.get_json()
@@ -701,13 +735,16 @@ def stop_detection_route():
         return jsonify({"error": "Missing stream_url"}), 400
     if stream_url not in detection_threads:
         return jsonify({"message": "No detection running for this stream"}), 404
-        
-    video_thread, audio_thread, cancel_event = detection_threads.pop(stream_url)
+    video_thread, audio_thread, chat_thread, cancel_event = detection_threads.pop(stream_url)
     cancel_event.set()
     video_thread.join(timeout=5)
     audio_thread.join(timeout=5)
+    chat_thread.join(timeout=5)
     return jsonify({"message": "Detection stopped"}), 200
 
+# --------------------------------------------------------------------
+# Health Check
+# --------------------------------------------------------------------
 @app.route("/health")
 def health():
     return "OK", 200
