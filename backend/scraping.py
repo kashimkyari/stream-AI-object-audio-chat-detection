@@ -188,30 +188,17 @@ def run_scrape_job(job_id, url):
     update_job_progress(job_id, 100, scrape_jobs[job_id].get("error", "Scraping complete"))
 
 def run_stream_creation_job(job_id, room_url, platform, agent_id=None):
-    """
-    Run a stream creation job and update progress interactively.
-    Accepts an optional agent_id for assignment.
-    Runs within an application context.
-    """
     with app.app_context():
         try:
             update_stream_job_progress(job_id, 5, "Initializing scraping...")
-            # Map scraping progress from 5% to 50%
             if platform == "chaturbate":
-                scraped_data = scrape_chaturbate_data(
-                    room_url,
-                    progress_callback=lambda p, m: update_stream_job_progress(job_id, 5 + p * 0.45, m)
-                )
+                scraped_data = scrape_chaturbate_data(room_url, progress_callback=lambda p, m: update_stream_job_progress(job_id, 5 + p * 0.45, m))
             else:
-                scraped_data = scrape_stripchat_data(
-                    room_url,
-                    progress_callback=lambda p, m: update_stream_job_progress(job_id, 5 + p * 0.45, m)
-                )
+                scraped_data = scrape_stripchat_data(room_url, progress_callback=lambda p, m: update_stream_job_progress(job_id, 5 + p * 0.45, m))
             if not scraped_data:
                 update_stream_job_progress(job_id, 100, "Scraping failed")
                 return
             update_stream_job_progress(job_id, 50, "Creating stream...")
-            # Create stream object
             streamer_username = room_url.rstrip("/").split("/")[-1]
             if platform == "chaturbate":
                 stream = ChaturbateStream(
@@ -227,14 +214,12 @@ def run_stream_creation_job(job_id, room_url, platform, agent_id=None):
                 )
             db.session.add(stream)
             db.session.commit()
-            # Assign agent if provided
+            # Assign agent if agent_id is provided
             if agent_id:
                 assignment = Assignment(agent_id=agent_id, stream_id=stream.id)
                 db.session.add(assignment)
                 db.session.commit()
-            # Refresh stream so that relationships (assignments) are loaded.
             db.session.refresh(stream)
-            # Simulate additional processing delay
             for prog in range(51, 101, 10):
                 time.sleep(0.5)
                 update_stream_job_progress(job_id, prog, "Finalizing stream...")

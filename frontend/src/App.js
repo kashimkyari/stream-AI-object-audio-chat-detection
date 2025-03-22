@@ -6,10 +6,11 @@ import Login from './components/Login';
 import AdminPanel from './components/AdminPanel';
 import AgentDashboard from './components/AgentDashboard';
 import NotificationsPage from './components/NotificationsPage';
+import MessageComponent from './components/MessageComponent'; // Import the messaging component
 import { ToastProvider, useToast } from './ToastContext';
 
 function AppContent() {
-  const [role, setRole] = useState(null);
+  const [user, setUser] = useState(null); // Store full user object
   const [activeTab, setActiveTab] = useState('dashboard');
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
@@ -34,7 +35,7 @@ function AppContent() {
       try {
         const res = await axios.get('/api/session');
         if (res.data.logged_in) {
-          setRole(res.data.user.role);
+          setUser(res.data.user);
           if (res.data.user.role === 'admin') {
             const dashboardRes = await axios.get('/api/dashboard');
             setDashboardData(dashboardRes.data);
@@ -47,9 +48,9 @@ function AppContent() {
     checkSession();
   }, []);
 
-  const handleLogin = (role) => {
-    setRole(role);
-    if (role === 'admin') {
+  const handleLogin = (loggedInUser) => {
+    setUser(loggedInUser);
+    if (loggedInUser.role === 'admin') {
       axios.get('/api/dashboard').then(res => setDashboardData(res.data));
     }
     showToast("Login successful", "success");
@@ -58,7 +59,7 @@ function AppContent() {
   const handleLogout = async () => {
     try {
       await axios.post('/api/logout');
-      setRole(null);
+      setUser(null);
       setMenuOpen(false);
       showToast("Logged out successfully", "info");
     } catch (err) {
@@ -87,15 +88,12 @@ function AppContent() {
     showToast("Agent created successfully", "success");
   };
 
-  // Similarly, you can call showToast() after activities like deleting/editing agents,
-  // creating/deleting streams, flagged keywords/objects, and telegram users.
-
   return (
     <div className="app-container">
-      {role && (
+      {user && (
         <header className="app-header">
           <div className="nav-container">
-            {isMobile && role === 'admin' && (
+            {isMobile && user.role === 'admin' && (
               <button className="menu-toggle" onClick={toggleMenu}>
                 {menuOpen ? '✕' : '☰'}
                 {unreadCount > 0 && !menuOpen && (
@@ -103,35 +101,74 @@ function AppContent() {
                 )}
               </button>
             )}
-            {role === 'admin' && (!isMobile || (isMobile && menuOpen)) && (
+            {user && (!isMobile || (isMobile && menuOpen)) && (
               <nav className={`admin-nav ${isMobile ? 'mobile-nav' : ''}`}>
-                <button onClick={() => handleTabClick('dashboard')} className={activeTab === 'dashboard' ? 'active' : ''}>Dashboard</button>
-                <button onClick={() => handleTabClick('agents')} className={activeTab === 'agents' ? 'active' : ''}>Agents</button>
-                <button onClick={() => handleTabClick('streams')} className={activeTab === 'streams' ? 'active' : ''}>Streams</button>
-                <button onClick={() => handleTabClick('flag')} className={activeTab === 'flag' ? 'active' : ''}>Settings</button>
+                {/* Navigation buttons */}
+                <button onClick={() => handleTabClick('dashboard')} className={activeTab === 'dashboard' ? 'active' : ''}>
+                  Dashboard
+                </button>
+                {user.role === 'admin' && (
+                  <>
+                    
+                    <button onClick={() => handleTabClick('streams')} className={activeTab === 'streams' ? 'active' : ''}>
+                      Management
+                    </button>
+                    <button onClick={() => handleTabClick('flag')} className={activeTab === 'flag' ? 'active' : ''}>
+                      Settings
+                    </button>
+                  </>
+                )}
+                <button onClick={() => handleTabClick('messaging')} className={activeTab === 'messaging' ? 'active' : ''}>
+                  Messaging
+                </button>
+                <button onClick={() => handleTabClick('notifications')} className={activeTab === 'notifications' ? 'active' : ''}>
+                  Notifications {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
+                </button>
                 {isMobile && (
-                  <button className="mobile-logout-button" onClick={handleLogout}>Logout</button>
+                  <button className="mobile-logout-button" onClick={handleLogout}>
+                    Logout
+                  </button>
                 )}
               </nav>
             )}
-            {(!isMobile || role !== 'admin') && (
-              <button className="logout-button" onClick={handleLogout}>Logout</button>
+            {(!isMobile || user.role !== 'admin') && (
+              <button className="logout-button" onClick={handleLogout}>
+                Logout
+              </button>
             )}
           </div>
         </header>
       )}
 
       <div className="main-content">
-        {!role && <Login onLogin={handleLogin} />}
-        {role === 'admin' && activeTab !== 'notifications' && (
+        {!user && <Login onLogin={handleLogin} />}
+        {user && activeTab === 'dashboard' && user.role === 'admin' && (
           <AdminPanel 
             activeTab={activeTab} 
             isMobile={isMobile}
-            onAgentCreated={handleAgentCreated}  // Example prop for agent creation
-            // Similarly, pass down callbacks for other activities to trigger showToast
+            onAgentCreated={handleAgentCreated}
           />
         )}
-        {role === 'agent' && <AgentDashboard isMobile={isMobile} />}
+        
+        {user && activeTab === 'streams' && user.role === 'admin' && (
+          <AdminPanel activeTab={activeTab} isMobile={isMobile} />
+        )}
+        {user && activeTab === 'flag' && user.role === 'admin' && (
+          <AdminPanel activeTab={activeTab} isMobile={isMobile} />
+        )}
+        {user && activeTab === 'messaging' && (
+          // Messaging component entrypoint. The component receives the user object and admin flag.
+          <MessageComponent user={user} isAdmin={user.role === 'admin'} />
+        )}
+        {user && activeTab === 'notifications' && (
+          <NotificationsPage 
+            notifications={notifications} 
+            onNotificationClick={handleNotificationClick} 
+          />
+        )}
+        {user && user.role === 'agent' && activeTab !== 'messaging' && activeTab !== 'notifications' && (
+          <AgentDashboard isMobile={isMobile} />
+        )}
       </div>
 
       <style jsx global>{`
@@ -274,6 +311,14 @@ function AppContent() {
           max-width: 1200px;
           margin: ${isMobile ? '20px auto' : '40px auto'};
           padding: 0 ${isMobile ? '12px' : '20px'};
+        }
+        .notification-badge {
+          background: #ff4444;
+          color: white;
+          border-radius: 50%;
+          padding: 2px 6px;
+          font-size: 0.8rem;
+          margin-left: 4px;
         }
       `}</style>
     </div>

@@ -2,20 +2,70 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import Hls from 'hls.js';
 
-const AgentDashboard = ({ onLogout }) => {
+// Error Boundary Component to catch runtime errors and display fallback UI.
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null, errorInfo: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error("AgentDashboard Error:", error, errorInfo);
+    this.setState({ error, errorInfo });
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="error-container">
+          <h3>Something went wrong.</h3>
+          <p>Please try refreshing the page.</p>
+          <button onClick={() => window.location.reload()}>Refresh</button>
+          <style jsx>{`
+            .error-container {
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+              align-items: center;
+              height: 200px;
+              color: #e0e0e0;
+              background: #2a2a2a;
+              border-radius: 8px;
+              padding: 20px;
+            }
+            button {
+              background: #007bff;
+              color: white;
+              border: none;
+              padding: 8px 16px;
+              border-radius: 4px;
+              margin-top: 10px;
+              cursor: pointer;
+            }
+          `}</style>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const AgentDashboard = () => {
   const [dashboardData, setDashboardData] = useState({ ongoing_streams: 0, assignments: [] });
   const [selectedAssignment, setSelectedAssignment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [agentName, setAgentName] = useState('');
   const [detectionAlerts, setDetectionAlerts] = useState({});
-  const [lastNotification, setLastNotification] = useState(0);
+  // Use a ref to throttle notifications (one per minute)
+  const lastNotificationRef = useRef(Date.now());
 
-  // Video player states
+  // Video player state refs and HLS instances
   const videoRefs = useRef({});
   const hlsInstances = useRef({});
   const [streamStates, setStreamStates] = useState({});
 
-  // Fetch agent session information and assigned streams
+  // Fetch session and assigned streams
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
@@ -24,13 +74,10 @@ const AgentDashboard = ({ onLogout }) => {
         if (sessionRes.data.logged_in) {
           setAgentName(`${sessionRes.data.user.firstname} ${sessionRes.data.user.lastname}`);
         }
-        
-        // Fetch assigned streams
+        // Fetch assigned streams for the agent
         const dashboardRes = await axios.get('/api/agent/dashboard');
-        console.log('Assigned streams:', dashboardRes.data);
-        
         const assignments = dashboardRes.data.assignments || [];
-        
+
         // Initialize stream states for each assignment
         const initialStreamStates = {};
         assignments.forEach(assignment => {
@@ -44,7 +91,6 @@ const AgentDashboard = ({ onLogout }) => {
             volume: 0
           };
         });
-        
         setStreamStates(initialStreamStates);
         setDashboardData({
           ongoing_streams: dashboardRes.data.ongoing_streams,
@@ -60,8 +106,7 @@ const AgentDashboard = ({ onLogout }) => {
     fetchInitialData();
 
     // Set up EventSource for real-time detection events
-    const eventSource = new EventSource('/api/detection-events');
-    
+    const eventSource = new EventSource('/api/notification-events');
     eventSource.onmessage = (e) => {
       const data = JSON.parse(e.data);
       if (!data.error) {
@@ -69,47 +114,42 @@ const AgentDashboard = ({ onLogout }) => {
           ...prev,
           [data.stream_url]: data.detections
         }));
-
-        if (data.detections?.length > 0 && Date.now() - lastNotification > 60000) {
+        // Throttle notifications to one per minute.
+        if (data.detections?.length > 0 && Date.now() - lastNotificationRef.current > 60000) {
           const detectedItems = data.detections.map(d => d.class).join(', ');
           if (Notification.permission === 'granted') {
             new Notification('Object Detected', {
               body: `Detected ${detectedItems} in ${data.stream_url}`
             });
-            setLastNotification(Date.now());
+            lastNotificationRef.current = Date.now();
           }
         }
       }
     };
-
     eventSource.onerror = (err) => {
-      console.error('EventSource failed:', err);
+      console.error('EventSource error:', err);
       eventSource.close();
     };
 
     return () => {
-      // Clean up HLS instances
+      // Clean up HLS instances on unmount
       Object.values(hlsInstances.current).forEach(hls => {
         if (hls) hls.destroy();
       });
-      
       eventSource.close();
     };
-  }, [lastNotification]);
+  }, []);
 
-  // Initialize HLS player for a specific assignment
+  // Initialize HLS player for a given assignment and video element.
   const initializePlayer = (assignment, videoElement) => {
     if (!videoElement) return;
-
     const assignmentId = assignment.id;
-    
-    // Cleanup existing HLS instance if any
+    // Clean up any existing HLS instance for this assignment.
     if (hlsInstances.current[assignmentId]) {
       hlsInstances.current[assignmentId].destroy();
       delete hlsInstances.current[assignmentId];
     }
-
-    // Determine the m3u8 URL based on the platform
+    // Choose the appropriate m3u8 URL based on the stream's platform.
     const m3u8Url = assignment.platform.toLowerCase() === 'chaturbate'
       ? assignment.chaturbate_m3u8_url
       : assignment.stripchat_m3u8_url;
@@ -128,14 +168,11 @@ const AgentDashboard = ({ onLogout }) => {
       return;
     }
 
-    // Create new HLS instance
     if (Hls.isSupported()) {
       const hls = new Hls({ autoStartLoad: true, startLevel: -1, debug: false });
-      
       hls.loadSource(m3u8Url);
       hls.attachMedia(videoElement);
       hlsInstances.current[assignmentId] = hls;
-
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         setStreamStates(prev => ({
           ...prev,
@@ -148,7 +185,6 @@ const AgentDashboard = ({ onLogout }) => {
         }));
         videoElement.play().catch(console.error);
       });
-
       hls.on(Hls.Events.ERROR, (event, data) => {
         if (data.fatal) {
           setStreamStates(prev => ({
@@ -164,7 +200,7 @@ const AgentDashboard = ({ onLogout }) => {
         }
       });
     } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
-      // For Safari
+      // For Safari support.
       videoElement.src = m3u8Url;
       videoElement.addEventListener('loadedmetadata', () => {
         setStreamStates(prev => ({
@@ -178,7 +214,6 @@ const AgentDashboard = ({ onLogout }) => {
         }));
         videoElement.play().catch(console.error);
       });
-      
       videoElement.addEventListener('error', () => {
         setStreamStates(prev => ({
           ...prev,
@@ -205,11 +240,10 @@ const AgentDashboard = ({ onLogout }) => {
     }
   };
 
-  // Handle reference for video elements
+  // Handle video element references.
   const handleVideoRef = (element, assignmentId) => {
     if (element && !videoRefs.current[assignmentId]) {
       videoRefs.current[assignmentId] = element;
-      
       const assignment = dashboardData.assignments.find(a => a.id === assignmentId);
       if (assignment) {
         initializePlayer(assignment, element);
@@ -217,19 +251,17 @@ const AgentDashboard = ({ onLogout }) => {
     }
   };
 
-  // Toggle mute for a specific stream
+  // Toggle mute for a given stream.
   const toggleMute = (assignmentId) => {
     setStreamStates(prev => {
       const currentState = prev[assignmentId];
       const newMutedState = !currentState.isMuted;
-      
       if (videoRefs.current[assignmentId]) {
         videoRefs.current[assignmentId].muted = newMutedState;
         if (!newMutedState) {
           videoRefs.current[assignmentId].volume = currentState.volume > 0 ? currentState.volume : 0.5;
         }
       }
-      
       return {
         ...prev,
         [assignmentId]: {
@@ -241,16 +273,14 @@ const AgentDashboard = ({ onLogout }) => {
     });
   };
 
-  // Set volume for a specific stream
+  // Set volume for a given stream.
   const setStreamVolume = (assignmentId, newVolume) => {
     setStreamStates(prev => {
       const currentState = prev[assignmentId];
-      
       if (videoRefs.current[assignmentId]) {
         videoRefs.current[assignmentId].volume = newVolume;
         videoRefs.current[assignmentId].muted = newVolume === 0;
       }
-      
       return {
         ...prev,
         [assignmentId]: {
@@ -264,7 +294,7 @@ const AgentDashboard = ({ onLogout }) => {
 
   const closeModal = () => setSelectedAssignment(null);
 
-  // Function to render stream video with controls and status indicators
+  // Render the video container with controls and stream status.
   const renderStreamVideo = (assignment, isModal = false) => {
     const assignmentId = assignment.id;
     const streamState = streamStates[assignmentId] || {
@@ -276,7 +306,7 @@ const AgentDashboard = ({ onLogout }) => {
       isMuted: true,
       volume: 0
     };
-    
+
     return (
       <div className="video-container">
         <video
@@ -286,40 +316,32 @@ const AgentDashboard = ({ onLogout }) => {
           playsInline
           style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}
         />
-        
         {streamState.isStreamLoaded && streamState.isStreamOnline && (
           <div className="live-indicator">
             <div className="red-dot"></div>
             <span className="live-text">LIVE</span>
           </div>
         )}
-        
         {streamState.isLoadingStream && (
           <div className="loading-overlay">
             <div className="loading-spinner"></div>
             <div className="loading-text">Loading stream...</div>
           </div>
         )}
-        
         {streamState.hasError && (
           <div className="error-overlay">
             <div className="error-icon">⚠️</div>
             <div className="error-text">{streamState.errorMessage}</div>
           </div>
         )}
-        
         {!streamState.isStreamOnline && !streamState.isLoadingStream && (
           <div className="offline-message">
             <span>Offline</span>
           </div>
         )}
-        
         {isModal && (
           <div className="volume-controls">
-            <button 
-              className="mute-button"
-              onClick={() => toggleMute(assignmentId)}
-            >
+            <button className="mute-button" onClick={() => toggleMute(assignmentId)}>
               {streamState.isMuted ? '🔇' : streamState.volume > 0 ? '🔊' : '🔈'}
             </button>
             <input
@@ -337,7 +359,6 @@ const AgentDashboard = ({ onLogout }) => {
     );
   };
 
-  // Render loading state
   if (loading) {
     return (
       <div className="agent-dashboard">
@@ -345,91 +366,89 @@ const AgentDashboard = ({ onLogout }) => {
           <div className="loading-spinner"></div>
           <div className="loading-text">Loading dashboard...</div>
         </div>
-        <style>{styles}</style>
+        <style jsx>{styles}</style>
       </div>
     );
   }
 
   return (
-    <div className="agent-dashboard">
-      <div className="dashboard-content">
-        <h1>Welcome, {agentName}</h1>
-        <section className="streams-section">
-          <h2>Assigned Streams ({dashboardData.ongoing_streams})</h2>
-          <div className="assignment-grid">
-            {dashboardData.assignments.length > 0 ? (
-              dashboardData.assignments.map((assignment) => (
-                <div 
-                  key={assignment.id} 
-                  className="assignment-card" 
-                  onClick={() => setSelectedAssignment(assignment)}
-                >
-                  {renderStreamVideo(assignment)}
-                  
-                  {(detectionAlerts[assignment.room_url]?.length > 0) && (
-                    <div className="detection-alert-badge">
-                      {detectionAlerts[assignment.room_url].length} DETECTIONS
-                      <div className="detection-preview">
-                        <img 
-                          src={detectionAlerts[assignment.room_url][0].image_url} 
-                          alt="Detection preview" 
-                          className="preview-image"
-                        />
-                        <div className="detection-info">
-                          <span>{detectionAlerts[assignment.room_url][0].class} </span>
-                          <span>({(detectionAlerts[assignment.room_url][0].confidence * 100).toFixed(1)}%)</span>
+    <ErrorBoundary>
+      <div className="agent-dashboard">
+        <div className="dashboard-content">
+          <h1>Welcome, {agentName}</h1>
+          <section className="streams-section">
+            <h2>Assigned Streams ({dashboardData.ongoing_streams})</h2>
+            <div className="assignment-grid">
+              {dashboardData.assignments.length > 0 ? (
+                dashboardData.assignments.map((assignment) => (
+                  <div 
+                    key={assignment.id} 
+                    className="assignment-card" 
+                    onClick={() => setSelectedAssignment(assignment)}
+                  >
+                    {renderStreamVideo(assignment)}
+                    {(detectionAlerts[assignment.room_url]?.length > 0) && (
+                      <div className="detection-alert-badge">
+                        {detectionAlerts[assignment.room_url].length} DETECTIONS
+                        <div className="detection-preview">
+                          <img 
+                            src={detectionAlerts[assignment.room_url][0].image_url} 
+                            alt="Detection preview" 
+                            className="preview-image"
+                          />
+                          <div className="detection-info">
+                            <span>{detectionAlerts[assignment.room_url][0].class} </span>
+                            <span>({(detectionAlerts[assignment.room_url][0].confidence * 100).toFixed(1)}%)</span>
+                          </div>
                         </div>
                       </div>
+                    )}
+                    <div className="assignment-details">
+                      <p><strong>Streamer:</strong> {assignment.streamer_username}</p>
+                      <p><strong>Platform:</strong> {assignment.platform}</p>
                     </div>
-                  )}
-                  
-                  <div className="assignment-details">
-                    <p><strong>Streamer:</strong> {assignment.streamer_username}</p>
-                    <p><strong>Platform:</strong> {assignment.platform}</p>
                   </div>
-                </div>
-              ))
-            ) : (
-              <p className="no-streams-message">No assigned streams found.</p>
-            )}
-          </div>
-        </section>
-      </div>
-
-      {selectedAssignment && (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <button className="close-button" onClick={closeModal}>×</button>
-            <h2>{selectedAssignment.streamer_username}'s Stream</h2>
-            
-            {renderStreamVideo(selectedAssignment, true)}
-            
-            <div className="stream-info">
-              <p><strong>Platform:</strong> {selectedAssignment.platform}</p>
-              <p><strong>URL:</strong> {selectedAssignment.room_url}</p>
-              {detectionAlerts[selectedAssignment.room_url]?.length > 0 && (
-                <div className="detections-list">
-                  <h3>Recent Detections</h3>
-                  <ul>
-                    {detectionAlerts[selectedAssignment.room_url].map((detection, index) => (
-                      <li key={index}>
-                        {detection.class} ({(detection.confidence * 100).toFixed(1)}%)
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                ))
+              ) : (
+                <p className="no-streams-message">No streams assigned.</p>
               )}
             </div>
-          </div>
+          </section>
         </div>
-      )}
 
-      <style>{styles}</style>
-    </div>
+        {selectedAssignment && (
+          <div className="modal-overlay" onClick={closeModal}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <button className="close-button" onClick={closeModal}>×</button>
+              <h2>{selectedAssignment.streamer_username}'s Stream</h2>
+              {renderStreamVideo(selectedAssignment, true)}
+              <div className="stream-info">
+                <p><strong>Platform:</strong> {selectedAssignment.platform}</p>
+                <p><strong>URL:</strong> {selectedAssignment.room_url}</p>
+                {detectionAlerts[selectedAssignment.room_url]?.length > 0 && (
+                  <div className="detections-list">
+                    <h3>Recent Detections</h3>
+                    <ul>
+                      {detectionAlerts[selectedAssignment.room_url].map((detection, index) => (
+                        <li key={index}>
+                          {detection.class} ({(detection.confidence * 100).toFixed(1)}%)
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <style jsx>{styles}</style>
+      </div>
+    </ErrorBoundary>
   );
 };
 
-// CSS styles
+// CSS styles (inspired by your AdminPanel/StreamsPage styling)
 const styles = `
   .agent-dashboard {
     min-height: 100vh;
@@ -438,7 +457,6 @@ const styles = `
     font-family: 'Inter', sans-serif;
     animation: slideUp 0.6s cubic-bezier(0.22, 1, 0.36, 1);
   }
-
   .dashboard-content {
     max-width: 1200px;
     margin: 40px auto;
@@ -447,7 +465,6 @@ const styles = `
     border-radius: 15px;
     box-shadow: 0 8px 30px rgba(0,0,0,0.5);
   }
-
   h1 {
     margin-bottom: 2rem;
     font-size: 2rem;
@@ -455,21 +472,17 @@ const styles = `
     border-bottom: 1px solid #333;
     padding-bottom: 1rem;
   }
-
   h2, h3 {
     margin-bottom: 1rem;
   }
-
   .streams-section {
     margin-bottom: 2rem;
   }
-
   .assignment-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 20px;
   }
-
   .assignment-card {
     background: #2d2d2d;
     border-radius: 12px;
@@ -479,18 +492,15 @@ const styles = `
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     position: relative;
   }
-
   .assignment-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 8px 20px rgba(0,0,0,0.3);
     border-color: #007bff;
   }
-
   .assignment-details {
     padding: 15px;
     background: #252525;
   }
-
   .detection-alert-badge {
     position: absolute;
     top: 10px;
@@ -504,7 +514,6 @@ const styles = `
     animation: pulse 1s infinite;
     z-index: 2;
   }
-
   .detection-preview {
     position: absolute;
     display: none;
@@ -517,23 +526,19 @@ const styles = `
     box-shadow: 0 5px 15px rgba(0,0,0,0.5);
     z-index: 3;
   }
-
   .detection-alert-badge:hover .detection-preview {
     display: block;
   }
-
   .preview-image {
     width: 100%;
     border-radius: 4px;
     margin-bottom: 8px;
   }
-
   .detection-info {
     display: flex;
     justify-content: space-between;
     font-size: 0.8rem;
   }
-
   .modal-overlay {
     position: fixed;
     top: 0;
@@ -547,7 +552,6 @@ const styles = `
     z-index: 1000;
     backdrop-filter: blur(5px);
   }
-
   .modal-content {
     background: #2d2d2d;
     padding: 1.5rem;
@@ -559,7 +563,6 @@ const styles = `
     border: 1px solid #3d3d3d;
     box-shadow: 0 15px 30px rgba(0,0,0,0.4);
   }
-
   .close-button {
     position: absolute;
     top: 1rem;
@@ -577,33 +580,9 @@ const styles = `
     justify-content: center;
     transition: all 0.3s ease;
   }
-
   .close-button:hover {
     transform: rotate(90deg) scale(1.1);
   }
-
-  .stream-info {
-    margin-top: 1rem;
-    padding: 1rem;
-    background: #252525;
-    border-radius: 8px;
-  }
-
-  .detections-list {
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid #333;
-  }
-
-  .detections-list ul {
-    margin: 0;
-    padding-left: 1.5rem;
-  }
-
-  .detections-list li {
-    margin-bottom: 0.5rem;
-  }
-
   .video-container {
     position: relative;
     width: 100%;
@@ -613,7 +592,6 @@ const styles = `
     background: #000;
     border-radius: 8px;
   }
-
   .live-indicator {
     position: absolute;
     top: 10px;
@@ -627,7 +605,6 @@ const styles = `
     z-index: 10;
     color: white;
   }
-
   .red-dot {
     width: 8px;
     height: 8px;
@@ -635,7 +612,6 @@ const styles = `
     border-radius: 50%;
     animation: pulse 1.5s infinite;
   }
-
   .loading-page {
     display: flex;
     flex-direction: column;
@@ -643,7 +619,6 @@ const styles = `
     justify-content: center;
     height: 100vh;
   }
-
   .loading-overlay {
     position: absolute;
     top: 0;
@@ -657,7 +632,6 @@ const styles = `
     background: rgba(0, 0, 0, 0.7);
     z-index: 5;
   }
-
   .loading-spinner {
     width: 40px;
     height: 40px;
@@ -666,13 +640,11 @@ const styles = `
     border-top: 4px solid white;
     animation: spin 1s linear infinite;
   }
-
   .loading-text {
     color: white;
     margin-top: 10px;
     font-size: 14px;
   }
-
   .error-overlay {
     position: absolute;
     top: 0;
@@ -687,17 +659,14 @@ const styles = `
     z-index: 5;
     color: white;
   }
-
   .error-icon {
     font-size: 32px;
     margin-bottom: 10px;
   }
-
   .error-text {
     text-align: center;
     max-width: 80%;
   }
-
   .volume-controls {
     position: absolute;
     bottom: 10px;
@@ -710,7 +679,6 @@ const styles = `
     border-radius: 20px;
     z-index: 10;
   }
-
   .mute-button {
     background: none;
     border: none;
@@ -719,13 +687,11 @@ const styles = `
     font-size: 20px;
     padding: 0;
   }
-
   .volume-slider {
     width: 80px;
     height: 4px;
     accent-color: white;
   }
-
   .offline-message {
     position: absolute;
     top: 50%;
@@ -737,7 +703,6 @@ const styles = `
     border-radius: 4px;
     font-size: 14px;
   }
-
   .no-streams-message {
     grid-column: 1 / -1;
     text-align: center;
@@ -745,38 +710,31 @@ const styles = `
     background: #252525;
     border-radius: 8px;
   }
-
   @keyframes pulse {
     0% { transform: scale(1); }
     50% { transform: scale(1.05); }
     100% { transform: scale(1); }
   }
-
   @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
   }
-
   @keyframes slideUp {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
   }
-
   @keyframes zoomIn {
     from { transform: scale(0.8); opacity: 0; }
-    to { transform: scale(1); opacity: 1); }
+    to { transform: scale(1); opacity: 1; }
   }
-
   @media (max-width: 768px) {
     .dashboard-content {
       margin: 20px auto;
       padding: 20px;
     }
-
     .assignment-grid {
       grid-template-columns: 1fr;
     }
-
     .modal-content {
       padding: 1rem;
       width: 95%;

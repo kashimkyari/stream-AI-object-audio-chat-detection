@@ -1,23 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
-// Ensure credentials (cookies) are sent with every request.
 axios.defaults.withCredentials = true;
 
 const NotificationsPage = ({ ongoingStreams = [] }) => {
-  // Main component states
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // Main filter: "All", "Unread", "Detections"
   const [mainFilter, setMainFilter] = useState('All');
-  // When mainFilter === "Detections", use a sub-filter for detection type:
-  const [detectionSubFilter, setDetectionSubFilter] = useState('Visual'); // "Visual", "Audio", "Chat"
-
+  const [detectionSubFilter, setDetectionSubFilter] = useState('Visual');
   const [selectedNotification, setSelectedNotification] = useState(null);
 
-  // Helper function to extract platform and streamer from stream URL
+  // Extract platform and streamer info from a stream URL.
   const extractStreamInfo = useCallback((streamUrl) => {
     let platform = 'Chaturbate';
     let streamer = '';
@@ -31,142 +25,158 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
     return { platform, streamer };
   }, []);
 
-  // Fetch all notifications from the backend.
+  // Process and format fetched notifications.
+  const processNotifications = useCallback((data) => {
+    return data.map(notification => {
+      const fromUrl = extractStreamInfo(notification.room_url);
+      const details = {
+        annotated_image: notification.details?.annotated_image || null,
+        captured_image: notification.details?.captured_image || null,
+        streamer_name: notification.details?.streamer_name || (notification.event_type === 'object_detection' ? fromUrl.streamer : ''),
+        assigned_agent: notification.details?.assigned_agent || '',
+        platform: notification.details?.platform || (notification.event_type === 'object_detection' ? fromUrl.platform : ''),
+        detections: (notification.details?.detections || []).map(det => ({
+          ...det,
+          confidence: det.score || det.confidence || 0,
+        })),
+        keyword: notification.details?.keyword || '',
+        message: notification.details?.message || '',
+      };
+
+      // If no assigned agent and ongoing streams available, try to match.
+      if (!details.assigned_agent && details.streamer_name && ongoingStreams.length) {
+        const match = ongoingStreams.find(stream =>
+          stream.streamer_username &&
+          stream.streamer_username.toLowerCase() === details.streamer_name.toLowerCase() &&
+          stream.assignments &&
+          stream.assignments.length > 0
+        );
+        if (match) {
+          details.assigned_agent = match.assignments[0].agent.username;
+        }
+      }
+      return { ...notification, details, event_type: notification.event_type };
+    });
+  }, [ongoingStreams, extractStreamInfo]);
+
+  // Fetch notifications via Axios.
   const fetchNotifications = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await axios.get('/api/notifications');
-      if (res.status === 200) {
-        const processedNotifications = res.data.map(notification => {
-          // Extract platform/streamer from URL for object detections
-          const fromUrl = extractStreamInfo(notification.room_url);
-          
-          const details = {
-            annotated_image: notification.details?.annotated_image || null,
-            captured_image: notification.details?.captured_image || null,
-            streamer_name: notification.details?.streamer_name || 
-                          (notification.event_type === 'object_detection' ? fromUrl.streamer : ''),
-            assigned_agent: notification.details?.assigned_agent || '',
-            platform: notification.details?.platform || 
-                     (notification.event_type === 'object_detection' ? fromUrl.platform : ''),
-            detections: (notification.details?.detections || []).map(det => ({
-              ...det,
-              confidence: det.score || det.confidence || 0,
-            })),
-            keyword: notification.details?.keyword || '',
-            message: notification.details?.message || '',
-          };
-
-          // If assigned_agent is blank, try to match by streamer_name from ongoingStreams.
-          if (!details.assigned_agent && details.streamer_name && ongoingStreams.length) {
-            const match = ongoingStreams.find(stream =>
-              stream.streamer_username &&
-              stream.streamer_username.toLowerCase() === details.streamer_name.toLowerCase() &&
-              stream.assignments &&
-              stream.assignments.length > 0
-            );
-            if (match) {
-              details.assigned_agent = match.assignments[0].agent.username;
-            }
-          }
-          return {
-            ...notification,
-            details,
-            event_type: notification.event_type, // using backend field
-          };
-        });
-        setNotifications(processedNotifications);
+      const res = await axios.get('/api/logs', { timeout: 10000 });
+      if (res.status === 200 && Array.isArray(res.data)) {
+        const processed = processNotifications(res.data);
+        setNotifications(processed);
       } else {
-        setError('Failed to load notifications. Please try again.');
+        setError('Unexpected response from server.');
       }
     } catch (err) {
       console.error('Error fetching notifications:', err);
-      setError('Failed to load notifications. Please try again.');
+      setError('Failed to load notifications.');
     } finally {
       setLoading(false);
     }
-  }, [ongoingStreams, extractStreamInfo]);
+  }, [processNotifications]);
 
-  // Set up real-time updates via EventSource.
+  // Set up SSE for real-time notifications.
   useEffect(() => {
-    const eventSource = new EventSource('/api/notification-events');
-    eventSource.onmessage = (e) => {
-      // On any new message, refresh notifications.
-      fetchNotifications();
+    let eventSource;
+    const connectSSE = () => {
+      eventSource = new EventSource('/api/notification-events', { withCredentials: true });
+      eventSource.onopen = () => {
+        console.log('SSE connection established.');
+      };
+      eventSource.onmessage = (e) => {
+        try {
+          if (!e.data) return;
+          const eventData = JSON.parse(e.data);
+          if (eventData.type === 'notification') {
+            setNotifications(prev => {
+              const exists = prev.some(n => n.id === eventData.id);
+              if (!exists) {
+                return [{
+                  id: eventData.id,
+                  event_type: eventData.event_type,
+                  timestamp: eventData.timestamp,
+                  details: eventData.details,
+                  read: false,
+                }, ...prev];
+              }
+              return prev;
+            });
+          }
+        } catch (err) {
+          console.error('Error parsing SSE data:', err);
+        }
+      };
+      eventSource.onerror = (err) => {
+        console.error('SSE error:', err);
+        eventSource.close();
+        setTimeout(connectSSE, 2000);
+      };
     };
-    eventSource.onerror = (err) => {
-      console.error("EventSource failed:", err);
-    };
-    return () => eventSource.close();
-  }, [fetchNotifications]);
 
-  // Poll notifications every 30 seconds as a fallback.
+    connectSSE();
+    return () => {
+      if (eventSource) eventSource.close();
+    };
+  }, []);
+
+  // Fallback polling every 30 seconds.
   useEffect(() => {
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, [fetchNotifications]);
 
-  // Determine which notifications to display based on filter(s)
+  // Auto-scroll the notifications list when updated.
+  useEffect(() => {
+    const listContainer = document.querySelector('.notifications-list');
+    if (listContainer && !loading && !error) {
+      listContainer.scrollTop = 0;
+    }
+  }, [notifications.length, loading, error]);
+
+  // Filter notifications based on main and sub-filters.
   const filteredNotifications = notifications.filter(notification => {
     if (mainFilter === 'All') return true;
     if (mainFilter === 'Unread') return !notification.read;
     if (mainFilter === 'Detections') {
-      if (
-        notification.event_type === 'audio_detection' ||
-        notification.event_type === 'object_detection' ||
-        notification.event_type === 'chat_detection'
-      ) {
-        if (detectionSubFilter === 'Visual') {
-          return notification.event_type === 'object_detection';
-        }
-        if (detectionSubFilter === 'Audio') {
-          return notification.event_type === 'audio_detection';
-        }
-        if (detectionSubFilter === 'Chat') {
-          return notification.event_type === 'chat_detection';
-        }
-      }
-      return false;
+      const typeMap = {
+        Visual: 'object_detection',
+        Audio: 'audio_detection',
+        Chat: 'chat_detection',
+      };
+      return notification.event_type === typeMap[detectionSubFilter];
     }
     return true;
   });
 
-  // Mark a single notification as read.
+  // Handlers for marking as read, deleting, etc.
   const markAsRead = useCallback(async (notificationId) => {
     try {
-      await axios.put(`/api/notifications/${notificationId}/read`);
-      setNotifications(prev =>
-        prev.map(notification =>
-          notification.id === notificationId ? { ...notification, read: true } : notification
-        )
-      );
+      await axios.put(`/api/logs/${notificationId}/read`);
+      setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, read: true } : n));
     } catch (err) {
       console.error('Error marking notification as read:', err);
     }
   }, []);
 
-  // Mark all notifications as read.
   const markAllAsRead = async () => {
     try {
-      await axios.put('/api/notifications/read-all');
-      setNotifications(prev =>
-        prev.map(notification => ({ ...notification, read: true }))
-      );
+      await axios.put('/api/logs/read-all');
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     } catch (err) {
       console.error('Error marking all notifications as read:', err);
     }
   };
 
-  // Delete a single notification.
   const deleteNotification = useCallback(async (notificationId) => {
     try {
-      await axios.delete(`/api/notifications/${notificationId}`);
-      setNotifications(prev =>
-        prev.filter(notification => notification.id !== notificationId)
-      );
-      if (selectedNotification && selectedNotification.id === notificationId) {
+      await axios.delete(`/api/logs/${notificationId}`);
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      if (selectedNotification?.id === notificationId) {
         setSelectedNotification(null);
       }
     } catch (err) {
@@ -174,10 +184,9 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
     }
   }, [selectedNotification]);
 
-  // Delete all notifications.
   const deleteAllNotifications = async () => {
     try {
-      await axios.delete('/api/notifications/delete-all');
+      await axios.delete('/api/logs/delete-all');
       setNotifications([]);
       setSelectedNotification(null);
     } catch (err) {
@@ -185,23 +194,15 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
     }
   };
 
-  // Handle click on a notification item.
   const handleNotificationClick = (notification) => {
-    if (!notification.read) {
-      markAsRead(notification.id);
-    }
+    if (!notification.read) markAsRead(notification.id);
     setSelectedNotification(notification);
   };
 
-  // Format confidence score as a percentage.
   const formatConfidence = (confidence) => {
-    if (typeof confidence === 'number' && confidence > 0) {
-      return `${(confidence * 100).toFixed(1)}%`;
-    }
-    return '';
+    return (typeof confidence === 'number' && confidence > 0) ? `${(confidence * 100).toFixed(1)}%` : '';
   };
 
-  // Get color based on confidence level.
   const getConfidenceColor = (confidence) => {
     const conf = typeof confidence === 'number' ? confidence : 0;
     if (conf >= 0.9) return '#ff4444';
@@ -210,7 +211,6 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
     return '#28a745';
   };
 
-  // Render notification details pane.
   const renderNotificationDetails = () => {
     if (!selectedNotification) {
       return (
@@ -253,114 +253,100 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
       </div>
     );
 
-    if (selectedNotification.event_type === 'audio_detection') {
-      return (
-        <div className="notification-detail">
-          {commonHeader}
-          {commonTimestamp}
-          <div className="audio-detection-content">
-            <p>
-              Detected keyword: <strong>{selectedNotification.details?.keyword}</strong>
-            </p>
-          </div>
-        </div>
-      );
-    }
-
-    if (selectedNotification.event_type === 'object_detection') {
-      return (
-        <div className="notification-detail">
-          {commonHeader}
-          {commonTimestamp}
-          <div className="detection-content">
-            <div className="image-gallery">
-              {selectedNotification.details?.annotated_image && (
-                <div className="image-card">
-                  <img
-                    src={selectedNotification.details.annotated_image}
-                    alt="Annotated Detection"
-                    className="detection-image"
-                  />
-                  <div className="image-label">Annotated Image</div>
-                </div>
-              )}
-              {selectedNotification.details?.captured_image && (
-                <div className="image-card">
-                  <img
-                    src={selectedNotification.details.captured_image}
-                    alt="Captured Image"
-                    className="detection-image"
-                  />
-                  <div className="image-label">Captured Image</div>
-                </div>
-              )}
-            </div>
-            <div className="streamer-info-card">
-              <div className="info-item">
-                <span className="info-label">Streamer:</span>
-                <span className="info-value">{selectedNotification.details?.streamer_name}</span>
-              </div>
-              <div className="info-item">
-                <span className="info-label">Assigned Agent:</span>
-                <span className="info-value">{selectedNotification.details?.assigned_agent}</span>
-              </div>
-              <div className="info-item">
-                <span className="info-label">Platform:</span>
-                <span className="info-value">{selectedNotification.details?.platform}</span>
-              </div>
-            </div>
-            <div className="detected-objects">
-              <h4>Detected Objects</h4>
-              {selectedNotification.details?.detections?.map((detection, index) => (
-                <div key={index} className="detection-item">
-                  <span className="detection-class">{detection.class}</span>
-                  <span
-                    className="confidence-badge"
-                    style={{ backgroundColor: getConfidenceColor(detection.confidence) }}
-                  >
-                    {formatConfidence(detection.confidence)}
-                  </span>
-                </div>
-              ))}
+    switch (selectedNotification.event_type) {
+      case 'audio_detection':
+        return (
+          <div className="notification-detail">
+            {commonHeader}
+            {commonTimestamp}
+            <div className="audio-detection-content">
+              <p>Detected keyword: <strong>{selectedNotification.details?.keyword}</strong></p>
             </div>
           </div>
-        </div>
-      );
-    }
-
-    if (selectedNotification.event_type === 'chat_detection') {
-      return (
-        <div className="notification-detail">
-          {commonHeader}
-          {commonTimestamp}
-          <div className="chat-detection-content">
-            <p>
-              Detected chat keyword: <strong>{selectedNotification.details?.keyword}</strong>
-            </p>
+        );
+      case 'object_detection':
+        return (
+          <div className="notification-detail">
+            {commonHeader}
+            {commonTimestamp}
+            <div className="detection-content">
+              <div className="image-gallery">
+                {selectedNotification.details?.annotated_image && (
+                  <div className="image-card">
+                    <img src={selectedNotification.details.annotated_image} 
+                         alt="Annotated Detection" 
+                         className="detection-image" />
+                    <div className="image-label">Annotated Image</div>
+                  </div>
+                )}
+                {selectedNotification.details?.captured_image && (
+                  <div className="image-card">
+                    <img src={selectedNotification.details.captured_image} 
+                         alt="Captured Image" 
+                         className="detection-image" />
+                    <div className="image-label">Captured Image</div>
+                  </div>
+                )}
+              </div>
+              <div className="streamer-info-card">
+                <div className="info-item">
+                  <span className="info-label">Streamer:</span>
+                  <span className="info-value">{selectedNotification.details?.streamer_name}</span>
+                </div>
+                <div className="info-item">
+                  <span className="info-label">Assigned Agent:</span>
+                  <span className="info-value">{selectedNotification.details?.assigned_agent}</span>
+                </div>
+                <div className="info-item">
+                  <span className="info-label">Platform:</span>
+                  <span className="info-value">{selectedNotification.details?.platform}</span>
+                </div>
+              </div>
+              <div className="detected-objects">
+                <h4>Detected Objects</h4>
+                {selectedNotification.details?.detections?.map((detection, index) => (
+                  <div key={index} className="detection-item">
+                    <span className="detection-class">{detection.class}</span>
+                    <span className="confidence-badge" 
+                          style={{ backgroundColor: getConfidenceColor(detection.confidence) }}>
+                      {formatConfidence(detection.confidence)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
-      );
-    }
-
-    if (selectedNotification.event_type === 'video_notification') {
-      return (
-        <div className="notification-detail">
-          {commonHeader}
-          {commonTimestamp}
-          <div className="video-notification-content">
-            <p>{selectedNotification.details?.message || 'Video event occurred'}</p>
+        );
+      case 'chat_detection':
+        return (
+          <div className="notification-detail">
+            {commonHeader}
+            {commonTimestamp}
+            <div className="chat-detection-content">
+              <p>Detected chat keyword: <strong>{selectedNotification.details?.keyword}</strong></p>
+              <p className="chat-excerpt">{selectedNotification.details?.ocr_text}</p>
+            </div>
           </div>
-        </div>
-      );
+        );
+      case 'video_notification':
+        return (
+          <div className="notification-detail">
+            {commonHeader}
+            {commonTimestamp}
+            <div className="video-notification-content">
+              <p>{selectedNotification.details?.message || 'Video event occurred'}</p>
+            </div>
+          </div>
+        );
+      default:
+        return (
+          <div className="notification-detail">
+            {commonHeader}
+            {commonTimestamp}
+            <p>{selectedNotification.message}</p>
+          </div>
+        );
     }
-
-    return (
-      <div className="notification-detail">
-        {commonHeader}
-        {commonTimestamp}
-        <p>{selectedNotification.message}</p>
-      </div>
-    );
   };
 
   return (
@@ -368,14 +354,12 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
       <div className="notifications-controls">
         <div className="main-filter-controls">
           {['All', 'Unread', 'Detections'].map(tab => (
-            <button
-              key={tab}
-              className={`filter-btn ${mainFilter === tab ? 'active' : ''}`}
-              onClick={() => {
-                setMainFilter(tab);
-                if (tab === 'Detections') setDetectionSubFilter('Visual');
-              }}
-            >
+            <button key={tab}
+                    className={`filter-btn ${mainFilter === tab ? 'active' : ''}`}
+                    onClick={() => {
+                      setMainFilter(tab);
+                      if (tab === 'Detections') setDetectionSubFilter('Visual');
+                    }}>
               {tab}
             </button>
           ))}
@@ -383,34 +367,27 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
         {mainFilter === 'Detections' && (
           <div className="sub-filter-controls">
             {['Visual', 'Audio', 'Chat'].map(subTab => (
-              <button
-                key={subTab}
-                className={`sub-filter-btn ${detectionSubFilter === subTab ? 'active' : ''}`}
-                onClick={() => setDetectionSubFilter(subTab)}
-              >
+              <button key={subTab}
+                      className={`sub-filter-btn ${detectionSubFilter === subTab ? 'active' : ''}`}
+                      onClick={() => setDetectionSubFilter(subTab)}>
                 {subTab}
               </button>
             ))}
           </div>
         )}
         <div className="action-controls">
-          <button
-            className="mark-all-read"
-            onClick={markAllAsRead}
-            disabled={notifications.filter(n => !n.read).length === 0}
-          >
+          <button className="mark-all-read" 
+                  onClick={markAllAsRead}
+                  disabled={notifications.filter(n => !n.read).length === 0}>
             Mark All as Read
           </button>
-          <button
-            className="delete-all"
-            onClick={deleteAllNotifications}
-            disabled={notifications.length === 0}
-          >
+          <button className="delete-all" 
+                  onClick={deleteAllNotifications}
+                  disabled={notifications.length === 0}>
             Delete All
           </button>
         </div>
       </div>
-
       <div className="notifications-container">
         <div className="notifications-list-container">
           <h3>Notifications ({filteredNotifications.length})</h3>
@@ -428,29 +405,22 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
             </div>
           ) : (
             <div className="notifications-list">
-              {filteredNotifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={`notification-item ${notification.read ? 'read' : 'unread'} ${
-                    selectedNotification && selectedNotification.id === notification.id ? 'selected' : ''
-                  }`}
-                  onClick={() => handleNotificationClick(notification)}
-                >
-                  <div
-                    className="notification-indicator"
-                    style={{
-                      backgroundColor:
-                        notification.event_type === 'object_detection'
-                          ? getConfidenceColor(notification.details?.detections?.[0]?.confidence)
-                          : notification.event_type === 'audio_detection'
-                          ? '#007bff'
-                          : notification.event_type === 'chat_detection'
-                          ? '#8a2be2'
-                          : notification.event_type === 'video_notification'
-                          ? '#dc3545'
-                          : '#28a745',
-                    }}
-                  ></div>
+              {filteredNotifications.map(notification => (
+                <div key={notification.id}
+                     className={`notification-item ${notification.read ? 'read' : 'unread'} ${selectedNotification?.id === notification.id ? 'selected' : ''}`}
+                     onClick={() => handleNotificationClick(notification)}>
+                  <div className="notification-indicator"
+                       style={{
+                         backgroundColor: notification.event_type === 'object_detection'
+                           ? getConfidenceColor(notification.details?.detections?.[0]?.confidence)
+                           : notification.event_type === 'audio_detection'
+                           ? '#007bff'
+                           : notification.event_type === 'chat_detection'
+                           ? '#8a2be2'
+                           : notification.event_type === 'video_notification'
+                           ? '#dc3545'
+                           : '#28a745'
+                       }}></div>
                   <div className="notification-content">
                     <div className="notification-message">
                       {notification.event_type === 'object_detection'
@@ -479,12 +449,10 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
             </div>
           )}
         </div>
-
         <div className="notification-detail-container">
           {renderNotificationDetails()}
         </div>
       </div>
-
       <style jsx>{`
         .notifications-page {
           background: #1a1a1a;
@@ -495,10 +463,12 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
           flex-direction: column;
           animation: fadeIn 0.3s ease-out;
         }
+
         @keyframes fadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
         }
+
         .notifications-controls {
           padding: 16px 20px;
           display: flex;
@@ -507,15 +477,18 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
           background: #252525;
           border-bottom: 1px solid #333;
         }
+
         .main-filter-controls {
           display: flex;
           gap: 8px;
         }
+
         .sub-filter-controls {
           display: flex;
           gap: 8px;
           margin-top: 4px;
         }
+
         .filter-btn,
         .sub-filter-btn,
         .mark-all-read,
@@ -528,49 +501,59 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
           cursor: pointer;
           transition: all 0.2s ease;
         }
+
         .filter-btn:hover,
         .sub-filter-btn:hover,
         .mark-all-read:hover,
         .delete-all:hover {
           background: #333;
         }
+
         .filter-btn.active,
         .sub-filter-btn.active {
           background: #3a3a3a;
           border-color: #666;
         }
+
         .mark-all-read:disabled,
         .delete-all:disabled {
           opacity: 0.5;
           cursor: not-allowed;
         }
+
         .delete-all {
           background: #3d1212;
           border-color: #541919;
         }
+
         .delete-all:hover {
           background: #4d1616;
         }
+
         .notifications-container {
           display: flex;
           flex: 1;
           overflow: hidden;
         }
+
         .notifications-list-container {
           width: 40%;
           border-right: 1px solid #333;
           display: flex;
           flex-direction: column;
         }
+
         .notifications-list-container h3 {
           padding: 16px 20px;
           margin: 0;
           border-bottom: 1px solid #333;
         }
+
         .notifications-list {
           overflow-y: auto;
           flex: 1;
         }
+
         .notification-item {
           display: flex;
           padding: 16px 20px;
@@ -578,30 +561,38 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
           cursor: pointer;
           transition: background-color 0.2s ease;
         }
+
         .notification-item:hover {
           background-color: #282828;
         }
+
         .notification-item.selected {
           background-color: #2d3748;
         }
+
         .notification-item.unread {
           background-color: #1e293b;
         }
+
         .notification-item.unread:hover {
           background-color: #233246;
         }
+
         .notification-item.unread.selected {
           background-color: #2c3e50;
         }
+
         .notification-indicator {
           width: 6px;
           min-width: 6px;
           border-radius: 3px;
           margin-right: 12px;
         }
+
         .notification-content {
           flex: 1;
         }
+
         .notification-message {
           font-size: 14px;
           margin-bottom: 4px;
@@ -609,44 +600,53 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
           overflow: hidden;
           text-overflow: ellipsis;
         }
+
         .notification-meta {
           display: flex;
           justify-content: space-between;
           font-size: 12px;
           color: #a0a0a0;
         }
+
         .notification-time {
           color: #888;
         }
+
         .notification-confidence {
           font-weight: 500;
           color: #f0f0f0;
         }
+
         .notification-detail-container {
           width: 60%;
           display: flex;
           flex-direction: column;
           overflow: hidden;
         }
+
         .notification-detail {
           padding: 20px;
           display: flex;
           flex-direction: column;
           height: 100%;
         }
+
         .detail-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
           margin-bottom: 16px;
         }
+
         .detail-header h3 {
           margin: 0;
         }
+
         .detail-actions {
           display: flex;
           gap: 8px;
         }
+
         .mark-read-btn,
         .delete-btn {
           padding: 6px 12px;
@@ -655,25 +655,31 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
           cursor: pointer;
           transition: all 0.2s ease;
         }
+
         .mark-read-btn {
           background: #2d2d2d;
           color: #e0e0e0;
         }
+
         .mark-read-btn:hover {
           background: #333;
         }
+
         .delete-btn {
           background: #3d1212;
           color: #e0e0e0;
         }
+
         .delete-btn:hover {
           background: #4d1616;
         }
+
         .detail-timestamp {
           font-size: 14px;
           color: #888;
           margin-bottom: 20px;
         }
+
         .detection-content {
           display: flex;
           flex-direction: column;
@@ -681,11 +687,13 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
           flex: 1;
           overflow-y: auto;
         }
+
         .image-gallery {
           display: flex;
           gap: 20px;
           margin-bottom: 20px;
         }
+
         .image-card {
           background: #252525;
           border-radius: 8px;
@@ -695,11 +703,13 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
           flex-direction: column;
           align-items: center;
         }
+
         .detection-image {
           max-width: 100%;
           max-height: 300px;
           object-fit: contain;
         }
+
         .image-label {
           padding: 10px;
           background: #333;
@@ -708,57 +718,68 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
           font-size: 14px;
           color: #e0e0e0;
         }
+
         .streamer-info-card {
           background: #252525;
           border-radius: 8px;
           padding: 16px;
           margin-bottom: 20px;
         }
+
         .streamer-info-card h4 {
           margin: 0 0 16px 0;
           font-size: 18px;
           color: #e0e0e0;
         }
+
         .info-item {
           display: flex;
           align-items: center;
           margin-bottom: 12px;
         }
+
         .info-label {
           width: 120px;
           font-weight: 500;
           color: #a0a0a0;
         }
+
         .info-value {
           flex: 1;
           color: #e0e0e0;
         }
+
         .detected-objects {
           background: #252525;
           border-radius: 8px;
           padding: 16px;
         }
+
         .detected-objects h4 {
           margin: 0 0 16px 0;
           font-size: 18px;
           color: #e0e0e0;
         }
+
         .detection-item {
           display: flex;
           justify-content: space-between;
           align-items: center;
           margin-bottom: 12px;
         }
+
         .detection-class {
           font-weight: 500;
           color: #e0e0e0;
         }
+
         .confidence-badge {
           padding: 4px 8px;
           border-radius: 12px;
           font-weight: 500;
           color: white;
         }
+
         .empty-detail,
         .empty-state,
         .loading-container,
@@ -772,11 +793,13 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
           text-align: center;
           padding: 20px;
         }
+
         .empty-icon {
           font-size: 48px;
           margin-bottom: 16px;
           opacity: 0.5;
         }
+
         .loading-spinner {
           width: 40px;
           height: 40px;
@@ -786,13 +809,16 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
           animation: spin 1s linear infinite;
           margin-bottom: 16px;
         }
+
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
+
         .error-message {
           color: #ff6b6b;
         }
+
         @media (max-width: 992px) {
           .notifications-container {
             flex-direction: column;
@@ -807,6 +833,7 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
             border-bottom: 1px solid #333;
           }
         }
+
         @media (max-width: 768px) {
           .notifications-controls {
             flex-direction: column;
@@ -828,3 +855,8 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
 };
 
 export default NotificationsPage;
+
+
+
+
+      

@@ -5,7 +5,6 @@ import VideoPlayer from './VideoPlayer';
 // Lazy load components
 const StreamsPage = lazy(() => import('./StreamsPage'));
 const FlagSettingsPage = lazy(() => import('./FlagSettingsPage'));
-const AgentsPage = lazy(() => import('./AgentsPage'));
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -232,14 +231,6 @@ const AdminPanel = ({ activeTab }) => {
               </div>
             </div>
           );
-        case 'assign':
-          return (
-            <ErrorBoundary>
-              <Suspense fallback={<LoadingFallback />}>
-                <AssignmentPage />
-              </Suspense>
-            </ErrorBoundary>
-          );
         case 'streams':
           return (
             <ErrorBoundary>
@@ -256,25 +247,8 @@ const AdminPanel = ({ activeTab }) => {
               </Suspense>
             </ErrorBoundary>
           );
-        case 'agents':
-          return (
-            <ErrorBoundary>
-              <Suspense fallback={<LoadingFallback />}>
-                <AgentsPage />
-              </Suspense>
-            </ErrorBoundary>
-          );
-        case 'scraper':
-          return (
-            <ErrorBoundary>
-              <Suspense fallback={<LoadingFallback />}>
-                <div className="tab-content">
-                  <h3>Scraper</h3>
-                  <ScraperPage />
-                </div>
-              </Suspense>
-            </ErrorBoundary>
-          );
+        
+        
         default:
           return <div className="tab-content">Please select a tab</div>;
       }

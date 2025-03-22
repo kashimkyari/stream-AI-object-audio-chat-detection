@@ -26,12 +26,17 @@ from scraping import (
     scrape_stripchat_data, scrape_chaturbate_data, run_scrape_job, scrape_jobs,
     stream_creation_jobs, run_stream_creation_job
 )
-from detection import *
+from detection import process_combined_detection, chat_detection_loop
 import speech_recognition as sr
 from werkzeug.utils import secure_filename
+from threading import Condition
+import queue
 
 # Global dictionary to store detection threads and their cancellation events keyed by stream_url.
 detection_threads = {}
+sse_clients = []
+sse_queue = queue.Queue()
+sse_condition = Condition()
 
 # --------------------------------------------------------------------
 # Authentication Endpoints
@@ -228,6 +233,15 @@ def interactive_create_stream():
     platform = data.get("platform", "Chaturbate").strip().lower()
     agent_id = data.get("agent_id")
     
+    # Convert agent_id to integer if provided and non-empty.
+    if agent_id and str(agent_id).strip() != "":
+        try:
+            agent_id = int(agent_id)
+        except ValueError:
+            return jsonify({"message": "Invalid agent ID"}), 400
+    else:
+        agent_id = None
+    
     if not room_url:
         return jsonify({"message": "Room URL required"}), 400
     if platform == "chaturbate" and "chaturbate.com/" not in room_url:
@@ -236,6 +250,7 @@ def interactive_create_stream():
         return jsonify({"message": "Invalid Stripchat URL"}), 400
     if Stream.query.filter_by(room_url=room_url).first():
         return jsonify({"message": "Stream exists"}), 400
+    
     job_id = str(uuid.uuid4())
     stream_creation_jobs[job_id] = {"progress": 0, "message": "Job initialized"}
     
@@ -460,41 +475,31 @@ def unified_detect():
         "visual": visual_results
     })
 
+def sse_notify(data):
+    """Notify all SSE clients with new data"""
+    with sse_condition:
+        sse_queue.put(data)
+        sse_condition.notify_all()
+
 @app.route("/api/notification-events")
 def notification_events():
-    def generate():
-        import json
-        import time
+    """SSE endpoint for real-time notifications"""
+    def event_stream():
         while True:
-            try:
-                cutoff = datetime.utcnow() - timedelta(seconds=30)
-                logs = Log.query.filter(
-                    Log.timestamp >= cutoff,
-                    Log.event_type.in_(["object_detection", "video_notification"])
-                ).order_by(Log.timestamp.desc()).all()
-                for log in logs:
-                    if log.event_type == "object_detection":
-                        for det in log.details.get("detections", []):
-                            payload = {
-                                "type": "detection",
-                                "stream": log.room_url,
-                                "object": det.get("class", "object"),
-                                "confidence": det.get("confidence", 0),
-                                "id": log.id,
-                            }
-                            yield "data: " + json.dumps(payload) + "\n\n"
-                    elif log.event_type == "video_notification":
-                        payload = {
-                            "type": "video",
-                            "stream": log.room_url,
-                            "message": log.details.get("message", "Video event occurred"),
-                            "id": log.id,
-                        }
-                        yield "data: " + json.dumps(payload) + "\n\n"
-                time.sleep(1)
-            except Exception as e:
-                time.sleep(5)
-    return current_app.response_class(generate(), mimetype="text/event-stream")
+            with sse_condition:
+                sse_condition.wait(timeout=10)
+                try:
+                    while True:
+                        data = sse_queue.get_nowait()
+                        yield f"data: {json.dumps(data)}\n\n"
+                except queue.Empty:
+                    pass
+
+    return Response(
+        event_stream(),
+        mimetype="text/event-stream",
+        headers={'Cache-Control': 'no-cache'}
+    )
 
 @app.route("/api/livestream", methods=["POST"])
 def get_livestream():
@@ -528,8 +533,9 @@ def trigger_detection():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+    # Use the combined detection function for audio and video detection
     try:
-        from detection import process_audio_stream, process_stream, chat_detection_loop
+        from detection import process_combined_detection, chat_detection_loop
     except ImportError as e:
         return jsonify({"error": f"Detection module not available: {str(e)}"}), 500
 
@@ -537,25 +543,21 @@ def trigger_detection():
         return jsonify({"message": "Detection already running for this stream"}), 200
 
     cancel_event = threading.Event()
-    video_thread = threading.Thread(
-        target=process_stream,
+    unified_thread = threading.Thread(
+        target=process_combined_detection,
         args=(stream_url, cancel_event),
         daemon=True
     )
-    video_thread.start()
-    audio_thread = threading.Thread(
-        target=process_audio_stream,
-        args=(stream_url, cancel_event),
-        daemon=True
-    )
-    audio_thread.start()
+    unified_thread.start()
+    # Chat detection still runs separately every 60 seconds
     chat_thread = threading.Thread(
         target=chat_detection_loop,
-        args=(stream_url, cancel_event, 60),  # Run every 60 seconds.
+        args=(stream_url, cancel_event, 60),
         daemon=True
     )
     chat_thread.start()
-    detection_threads[stream_url] = (video_thread, audio_thread, chat_thread, cancel_event)
+
+    detection_threads[stream_url] = (unified_thread, chat_thread, cancel_event)
 
     return jsonify({"message": "Detection started"}), 200
 
@@ -735,10 +737,9 @@ def stop_detection_route():
         return jsonify({"error": "Missing stream_url"}), 400
     if stream_url not in detection_threads:
         return jsonify({"message": "No detection running for this stream"}), 404
-    video_thread, audio_thread, chat_thread, cancel_event = detection_threads.pop(stream_url)
+    threads, chat_thread, cancel_event = detection_threads.pop(stream_url)
     cancel_event.set()
-    video_thread.join(timeout=5)
-    audio_thread.join(timeout=5)
+    threads.join(timeout=5)
     chat_thread.join(timeout=5)
     return jsonify({"message": "Detection stopped"}), 200
 
@@ -748,3 +749,15 @@ def stop_detection_route():
 @app.route("/health")
 def health():
     return "OK", 200
+
+@app.route("/api/logs", methods=["GET"])
+@login_required(role="admin")
+def get_logs():
+    logs = Log.query.order_by(Log.timestamp.desc()).limit(100).all()
+    return jsonify([{
+        "id": log.id,
+        "event_type": log.event_type,
+        "timestamp": log.timestamp.isoformat(),
+        "details": log.details,
+        "read": log.read
+    } for log in logs])
