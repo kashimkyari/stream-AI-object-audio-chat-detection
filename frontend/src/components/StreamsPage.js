@@ -410,7 +410,7 @@ const StreamTable = ({ streams, platform, onDelete, newStreamId }) => {
           <table className="streams-table">
             <thead>
               <tr>
-                {['ID', 'Username', 'M3U8 URL', 'Assigned Agent', 'Actions'].map((header) => (
+                {['ID', 'Username', 'M3U8 URL', 'Actions'].map((header) => (
                   <th key={header}>
                     <button
                       className="sort-header"
@@ -450,16 +450,7 @@ const StreamTable = ({ streams, platform, onDelete, newStreamId }) => {
                       'N/A'
                     )}
                   </td>
-                  <td data-label="Assigned Agent">
-                    {stream.agent ? (
-                      <div className="assigned-agent">
-                        <span className="agent-icon">👤</span>
-                        {stream.agent.username}
-                      </div>
-                    ) : (
-                      <span className="unassigned-badge">⚠️ UNASSIGNED</span>
-                    )}
-                  </td>
+                  
                   <td>
                     <button
                       onClick={() => onDelete(stream.id)}
