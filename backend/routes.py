@@ -1,24 +1,28 @@
-import os
 import time
-import json
-import uuid
-import base64
-import shutil
-import threading
-from collections import defaultdict
-from datetime import datetime, timedelta
 import cv2
+import threading
+import logging
 import numpy as np
-from PIL import Image
-import m3u8
+import json
+import base64
+import subprocess
+from datetime import datetime, timedelta
+import av  # PyAV for handling HLS streams
+from ultralytics import YOLO
+from flask import Flask, request, jsonify, session, send_from_directory, current_app, Response
 import requests
-from flask import request, jsonify, session, send_from_directory, current_app, Response
-from sqlalchemy.orm import joinedload  # Added for eager loading
+import whisper
+from PIL import Image
+import pytesseract
+from io import BytesIO
+from urllib.parse import urlparse
+from bs4 import BeautifulSoup
+from sqlalchemy.orm import joinedload
 from config import app
 from extensions import db
 from models import (
     User, Stream, Assignment, Log, ChatKeyword, FlaggedObject, 
-    TelegramRecipient, ChaturbateStream, StripchatStream
+    TelegramRecipient, ChaturbateStream, StripchatStream, DetectionLog
 )
 from utils import allowed_file, login_required
 from notifications import send_notifications
@@ -26,17 +30,16 @@ from scraping import (
     scrape_stripchat_data, scrape_chaturbate_data, run_scrape_job, scrape_jobs,
     stream_creation_jobs, run_stream_creation_job
 )
-from detection import process_combined_detection, chat_detection_loop
+from detection import chat_detection_loop, refresh_keywords
 import speech_recognition as sr
 from werkzeug.utils import secure_filename
 from threading import Condition
 import queue
+import uuid
+
 
 # Global dictionary to store detection threads and their cancellation events keyed by stream_url.
 detection_threads = {}
-sse_clients = []
-sse_queue = queue.Queue()
-sse_condition = Condition()
 
 # --------------------------------------------------------------------
 # Authentication Endpoints
@@ -163,6 +166,7 @@ def create_stream():
         return jsonify({"message": "Invalid Stripchat URL"}), 400
     if Stream.query.filter_by(room_url=room_url).first():
         return jsonify({"message": "Stream exists"}), 400
+
     streamer_username = room_url.rstrip("/").split("/")[-1]
     if platform.lower() == "chaturbate":
         scraped_data = scrape_chaturbate_data(room_url)
@@ -186,8 +190,10 @@ def create_stream():
         )
     else:
         return jsonify({"message": "Invalid platform"}), 400
+
     db.session.add(stream)
     db.session.commit()
+
     log_entry = Log(
         room_url=room_url,
         event_type="stream_added",
@@ -199,7 +205,27 @@ def create_stream():
     )
     db.session.add(log_entry)
     db.session.commit()
+
+    # Send Telegram alert to all recipients about the new stream.
+    try:
+        from models import TelegramRecipient
+        from notifications import send_text_message
+        # Using the executor already configured in notifications module.
+        with app.app_context():
+            recipients = TelegramRecipient.query.all()
+            alert_message = (
+                f"🚨 New Stream Created\n"
+                f"Platform: {platform}\n"
+                f"Streamer: {streamer_username}\n"
+                f"Room URL: {room_url}"
+            )
+            for recipient in recipients:
+                executor.submit(send_text_message, alert_message, recipient.chat_id, None)
+    except Exception as e:
+        logging.error("Error sending Telegram alert for stream creation: %s", e)
+
     return jsonify({"message": "Stream created", "stream": stream.serialize()}), 201
+
 
 @app.route("/api/streams/<int:stream_id>", methods=["DELETE"])
 @login_required(role="admin")
@@ -431,16 +457,25 @@ def delete_telegram_recipient(recipient_id):
 @app.route("/api/dashboard", methods=["GET"])
 @login_required(role="admin")
 def get_dashboard():
-    streams = Stream.query.options(joinedload(Stream.assignments).joinedload(Assignment.agent)).all()
-    data = []
-    for stream in streams:
-        assignment = stream.assignments[0] if stream.assignments else None
-        data.append({
-            **stream.serialize(),
-            "agent": assignment.agent.serialize() if assignment and assignment.agent else None,
-            "confidence": 0.8
-        })
-    return jsonify({"ongoing_streams": len(data), "streams": data})
+    try:
+        streams = Stream.query.options(joinedload(Stream.assignments).joinedload(Assignment.agent)).all()
+        data = []
+        for stream in streams:
+            assignment = stream.assignments[0] if stream.assignments else None
+            stream_data = {
+                **stream.serialize(),
+                "agent": assignment.agent.serialize() if assignment and assignment.agent else None,
+                "confidence": 0.8
+            }
+            data.append(stream_data)
+        return jsonify({
+            "ongoing_streams": len(data),
+            "streams": data
+        }), 200
+    except Exception as e:
+        app.logger.error("Error in /api/dashboard: %s", e)
+        return jsonify({"message": "Error fetching dashboard data", "error": str(e)}), 500
+
 
 @app.route("/api/agent/dashboard", methods=["GET"])
 @login_required(role="agent")
@@ -475,31 +510,7 @@ def unified_detect():
         "visual": visual_results
     })
 
-def sse_notify(data):
-    """Notify all SSE clients with new data"""
-    with sse_condition:
-        sse_queue.put(data)
-        sse_condition.notify_all()
-
-@app.route("/api/notification-events")
-def notification_events():
-    """SSE endpoint for real-time notifications"""
-    def event_stream():
-        while True:
-            with sse_condition:
-                sse_condition.wait(timeout=10)
-                try:
-                    while True:
-                        data = sse_queue.get_nowait()
-                        yield f"data: {json.dumps(data)}\n\n"
-                except queue.Empty:
-                    pass
-
-    return Response(
-        event_stream(),
-        mimetype="text/event-stream",
-        headers={'Cache-Control': 'no-cache'}
-    )
+# Removed SSE endpoints and logic.
 
 @app.route("/api/livestream", methods=["POST"])
 def get_livestream():
@@ -520,11 +531,15 @@ def get_livestream():
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/trigger-detection", methods=["POST"])
+@login_required()  # Ensure that a user is logged in.
 def trigger_detection():
     data = request.get_json()
     stream_url = data.get("stream_url")
     if not stream_url:
         return jsonify({"error": "Missing stream_url"}), 400
+
+    if "user_id" not in session:
+        return jsonify({"error": "Unauthorized"}), 401
 
     try:
         response = requests.get(stream_url, timeout=10)
@@ -533,7 +548,6 @@ def trigger_detection():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-    # Use the combined detection function for audio and video detection
     try:
         from detection import process_combined_detection, chat_detection_loop
     except ImportError as e:
@@ -549,14 +563,12 @@ def trigger_detection():
         daemon=True
     )
     unified_thread.start()
-    # Chat detection still runs separately every 60 seconds
     chat_thread = threading.Thread(
         target=chat_detection_loop,
         args=(stream_url, cancel_event, 60),
         daemon=True
     )
     chat_thread.start()
-
     detection_threads[stream_url] = (unified_thread, chat_thread, cancel_event)
 
     return jsonify({"message": "Detection started"}), 200
@@ -700,7 +712,6 @@ def advanced_detect():
             stream = Stream.query.filter_by(room_url=stream_url).first()
             platform = stream.type if stream else "unknown"
             streamer_name = stream.streamer_username if stream else "unknown"
-            # Safely determine the assigned agent username
             assigned_agent = "Unassigned"
             if stream and stream.assignments and len(stream.assignments) > 0 and stream.assignments[0].agent:
                 assigned_agent = stream.assignments[0].agent.username
@@ -719,8 +730,7 @@ def advanced_detect():
             )
             db.session.add(log_entry)
             db.session.commit()
-            event_data = {**log_entry.details, "event_type": log_entry.event_type}
-            send_notifications(event_data)
+            send_notifications(log_entry)
             return jsonify({
                 "message": "Object detection logged",
                 "detections": detections
@@ -753,11 +763,22 @@ def health():
 @app.route("/api/logs", methods=["GET"])
 @login_required(role="admin")
 def get_logs():
-    logs = Log.query.order_by(Log.timestamp.desc()).limit(100).all()
-    return jsonify([{
-        "id": log.id,
-        "event_type": log.event_type,
-        "timestamp": log.timestamp.isoformat(),
-        "details": log.details,
-        "read": log.read
-    } for log in logs])
+    try:
+        # Retrieve logs from both Log and DetectionLog tables.
+        logs1 = Log.query.order_by(Log.timestamp.desc()).limit(100).all()
+        logs2 = DetectionLog.query.order_by(DetectionLog.timestamp.desc()).limit(100).all()
+        all_logs = logs1 + logs2
+        # Sort combined logs by timestamp descending.
+        all_logs.sort(key=lambda x: x.timestamp, reverse=True)
+        # Limit to 100 most recent entries.
+        recent_logs = all_logs[:100]
+        return jsonify([{
+            "id": log.id,
+            "event_type": log.event_type,
+            "timestamp": log.timestamp.isoformat(),
+            "details": log.details,
+            "read": log.read
+        } for log in recent_logs])
+    except Exception as e:
+        app.logger.error("Error in /api/logs: %s", e)
+        return jsonify({"message": "Error fetching dashboard data", "error": str(e)}), 500

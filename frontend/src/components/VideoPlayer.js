@@ -325,50 +325,7 @@ const VideoPlayer = ({
     setIsModalOpen(!isModalOpen);
   };
 
-  // Use Page Visibility API to stop detection when the page is hidden.
-  useEffect(() => {
-    const triggerDetection = () => {
-      if (m3u8Url) {
-        axios.post('/api/trigger-detection', {
-          stream_url: m3u8Url,
-          timestamp: new Date().toISOString(),
-          platform: platform,
-          streamer_name: streamerName
-        })
-        .then(res => console.log("Detection started:", res.data))
-        .catch(err => console.error("Error triggering detection:", err));
-      }
-    };
-
-    const stopDetection = () => {
-      if (m3u8Url) {
-        axios.post('/api/stop-detection', { stream_url: m3u8Url })
-          .then(res => console.log("Detection stopped:", res.data))
-          .catch(err => console.error("Error stopping detection:", err));
-      }
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        stopDetection();
-      } else if (document.visibilityState === 'visible') {
-        triggerDetection();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    if (m3u8Url && document.visibilityState === 'visible') {
-      triggerDetection();
-    }
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      if (m3u8Url) {
-        stopDetection();
-      }
-    };
-  }, [m3u8Url, platform, streamerName]);
+  
 
   const renderPlayer = (isModal) => {
     return m3u8Url ? (

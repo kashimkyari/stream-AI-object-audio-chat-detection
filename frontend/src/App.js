@@ -17,6 +17,13 @@ function AppContent() {
   const [dashboardData, setDashboardData] = useState({ streams: [] });
   const [isMobile, setIsMobile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  
+  // States for stream URL, online status, poster image, etc.
+  const [m3u8Url, setM3u8Url] = useState(null);
+  const [isOnline, setIsOnline] = useState(true);
+  const [posterUrl, setPosterUrl] = useState(null);
+  const [loading, setLoading] = useState(true);
+
   const { showToast } = useToast();
 
   // Check if device is mobile
@@ -88,6 +95,116 @@ function AppContent() {
     showToast("Agent created successfully", "success");
   };
 
+  // -------------
+  // Fetch m3u8 URL using provided snippet.
+  // For an agent, assume the assigned stream URL is stored in user.assignedStreamUrl.
+  // For admin, you may select a stream from dashboardData; here we assume a staticThumbnail is irrelevant.
+  // Adjust the source of platform and streamerName as needed.
+  const platform = user?.role === 'agent' ? user.assignedStreamPlatform || '' : 'chaturbate';
+  const streamerName = user?.role === 'agent' ? user.assignedStreamStreamerName || '' : dashboardData.streams[0]?.streamer_username || '';
+
+  useEffect(() => {
+    // Only run if we have a valid platform and streamerName.
+    if (!platform || !streamerName) {
+      setLoading(false);
+      return;
+    }
+
+    if (platform.toLowerCase() === 'chaturbate') {
+      const fetchM3u8Url = async () => {
+        try {
+          const response = await fetch(`/api/streams?platform=chaturbate&streamer=${streamerName}`);
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          const data = await response.json();
+          if (data.length > 0 && data[0].chaturbate_m3u8_url) {
+            setM3u8Url(data[0].chaturbate_m3u8_url);
+          } else {
+            throw new Error("No m3u8 URL found for the stream");
+          }
+        } catch (error) {
+          console.error("Error fetching m3u8 URL for Chaturbate:", error);
+          setIsOnline(false);
+          const fallbackPosterUrl = `https://jpeg.live.mmcdn.com/stream?room=${streamerName}&f=${Math.random()}`;
+          setPosterUrl(fallbackPosterUrl);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchM3u8Url();
+    } else if (platform.toLowerCase() === 'stripchat') {
+      const fetchM3u8Url = async () => {
+        try {
+          const response = await fetch(`/api/streams?platform=stripchat&streamer=${streamerName}`);
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          const data = await response.json();
+          if (data.length > 0 && data[0].stripchat_m3u8_url) {
+            setM3u8Url(data[0].stripchat_m3u8_url);
+          } else {
+            throw new Error("No m3u8 URL found for the stream");
+          }
+        } catch (error) {
+          console.error("Error fetching m3u8 URL for Stripchat:", error);
+          setIsOnline(false);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchM3u8Url();
+    } else {
+      setLoading(false);
+    }
+  }, [platform, streamerName]);
+
+  // -------------
+  // Use Page Visibility API to trigger/stop detection
+  useEffect(() => {
+    const triggerDetection = () => {
+      if (m3u8Url) {
+        axios.post('/api/trigger-detection', {
+          stream_url: m3u8Url,
+          timestamp: new Date().toISOString(),
+          platform: platform,
+          streamer_name: streamerName
+        })
+        .then(res => console.log("Detection started:", res.data))
+        .catch(err => console.error("Error triggering detection:", err));
+      }
+    };
+
+    const stopDetection = () => {
+      if (m3u8Url) {
+        axios.post('/api/stop-detection', { stream_url: m3u8Url })
+          .then(res => console.log("Detection stopped:", res.data))
+          .catch(err => console.error("Error stopping detection:", err));
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        stopDetection();
+      } else if (document.visibilityState === 'visible') {
+        triggerDetection();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    if (m3u8Url && document.visibilityState === 'visible') {
+      triggerDetection();
+    }
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (m3u8Url) {
+        stopDetection();
+      }
+    };
+  }, [m3u8Url, platform, streamerName]);
+
   return (
     <div className="app-container">
       {user && (
@@ -103,13 +220,11 @@ function AppContent() {
             )}
             {user && (!isMobile || (isMobile && menuOpen)) && (
               <nav className={`admin-nav ${isMobile ? 'mobile-nav' : ''}`}>
-                {/* Navigation buttons */}
                 <button onClick={() => handleTabClick('dashboard')} className={activeTab === 'dashboard' ? 'active' : ''}>
                   Dashboard
                 </button>
                 {user.role === 'admin' && (
                   <>
-                    
                     <button onClick={() => handleTabClick('streams')} className={activeTab === 'streams' ? 'active' : ''}>
                       Management
                     </button>
@@ -149,7 +264,6 @@ function AppContent() {
             onAgentCreated={handleAgentCreated}
           />
         )}
-        
         {user && activeTab === 'streams' && user.role === 'admin' && (
           <AdminPanel activeTab={activeTab} isMobile={isMobile} />
         )}
@@ -157,13 +271,12 @@ function AppContent() {
           <AdminPanel activeTab={activeTab} isMobile={isMobile} />
         )}
         {user && activeTab === 'messaging' && (
-          // Messaging component entrypoint. The component receives the user object and admin flag.
           <MessageComponent user={user} isAdmin={user.role === 'admin'} />
         )}
         {user && activeTab === 'notifications' && (
-          <NotificationsPage 
+          <NotificationsPage user={currentUser} ongoingStreams={ongoingStreams}
             notifications={notifications} 
-            onNotificationClick={handleNotificationClick} 
+            onNotificationClick={() => setActiveTab('notifications')} 
           />
         )}
         {user && user.role === 'agent' && activeTab !== 'messaging' && activeTab !== 'notifications' && (
@@ -325,10 +438,14 @@ function AppContent() {
   );
 }
 
+function AppContentWrapper() {
+  return <AppContent />;
+}
+
 function App() {
   return (
     <ToastProvider>
-      <AppContent />
+      <AppContentWrapper />
     </ToastProvider>
   );
 }

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from extensions import db
 
 class User(db.Model):
@@ -65,7 +65,6 @@ class Stream(db.Model):
             "platform": self.type.capitalize() if self.type else None,
         }
         if include_relationships and hasattr(self, 'assignments'):
-            # Serialize assignments (agent info is eagerly loaded)
             data["assignments"] = [assignment.serialize(include_relationships=False) for assignment in self.assignments]
         return data
 
@@ -128,7 +127,7 @@ class Assignment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     agent_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     stream_id = db.Column(db.Integer, db.ForeignKey('streams.id'), nullable=False, index=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
 
     # Relationships: agent is loaded eagerly (joined) and stream using selectin.
     agent = db.relationship('User', back_populates='assignments', lazy='joined')
@@ -139,7 +138,6 @@ class Assignment(db.Model):
     )
 
     def __repr__(self):
-        # Provide safe fallback if agent is not loaded
         agent_username = self.agent.username if self.agent else "Unassigned"
         return f"<Assignment Agent:{agent_username} Stream:{self.stream_id}>"
 
@@ -162,7 +160,7 @@ class Log(db.Model):
     """
     __tablename__ = "logs"
     id = db.Column(db.Integer, primary_key=True)
-    timestamp = db.Column(db.DateTime(timezone=True), default=datetime.utcnow, index=True)
+    timestamp = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
     room_url = db.Column(db.String(300), index=True)
     event_type = db.Column(db.String(50), index=True)
     details = db.Column(db.JSON)  # Stores detection details, images, etc.
@@ -253,7 +251,7 @@ class DetectionLog(db.Model):
     event_type = db.Column(db.String(50), nullable=False)
     details = db.Column(db.JSON, nullable=True)
     detection_image = db.Column(db.LargeBinary, nullable=True)  # JPEG image bytes
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     read = db.Column(db.Boolean, default=False)
 
     def serialize(self):
@@ -276,7 +274,7 @@ class ChatMessage(db.Model):
     sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     receiver_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     message = db.Column(db.Text, nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    timestamp = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
     read = db.Column(db.Boolean, default=False, index=True)
 
     sender = db.relationship("User", foreign_keys=[sender_id])

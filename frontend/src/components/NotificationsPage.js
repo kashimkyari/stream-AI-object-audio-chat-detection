@@ -3,7 +3,7 @@ import axios from 'axios';
 
 axios.defaults.withCredentials = true;
 
-const NotificationsPage = ({ ongoingStreams = [] }) => {
+const NotificationsPage = ({ user, ongoingStreams = [] }) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -25,16 +25,18 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
     return { platform, streamer };
   }, []);
 
-  // Process and format fetched notifications.
+  // Process and format notifications.
   const processNotifications = useCallback((data) => {
     return data.map(notification => {
       const fromUrl = extractStreamInfo(notification.room_url);
       const details = {
         annotated_image: notification.details?.annotated_image || null,
         captured_image: notification.details?.captured_image || null,
-        streamer_name: notification.details?.streamer_name || (notification.event_type === 'object_detection' ? fromUrl.streamer : ''),
+        streamer_name: notification.details?.streamer_name ||
+          (notification.event_type === 'object_detection' ? fromUrl.streamer : ''),
         assigned_agent: notification.details?.assigned_agent || '',
-        platform: notification.details?.platform || (notification.event_type === 'object_detection' ? fromUrl.platform : ''),
+        platform: notification.details?.platform ||
+          (notification.event_type === 'object_detection' ? fromUrl.platform : ''),
         detections: (notification.details?.detections || []).map(det => ({
           ...det,
           confidence: det.score || det.confidence || 0,
@@ -42,31 +44,36 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
         keyword: notification.details?.keyword || '',
         message: notification.details?.message || '',
       };
-
-      // If no assigned agent and ongoing streams available, try to match.
-      if (!details.assigned_agent && details.streamer_name && ongoingStreams.length) {
-        const match = ongoingStreams.find(stream =>
-          stream.streamer_username &&
-          stream.streamer_username.toLowerCase() === details.streamer_name.toLowerCase() &&
-          stream.assignments &&
-          stream.assignments.length > 0
-        );
-        if (match) {
-          details.assigned_agent = match.assignments[0].agent.username;
-        }
-      }
       return { ...notification, details, event_type: notification.event_type };
     });
-  }, [ongoingStreams, extractStreamInfo]);
+  }, [extractStreamInfo]);
 
-  // Fetch notifications via Axios.
+  // Fetch notifications from the backend endpoint /api/logs.
   const fetchNotifications = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       const res = await axios.get('/api/logs', { timeout: 10000 });
       if (res.status === 200 && Array.isArray(res.data)) {
-        const processed = processNotifications(res.data);
+        let processed = processNotifications(res.data);
+        // If user is an agent, filter notifications to show only those where the assigned agent matches the agent's username.
+        if (user && user.role === 'agent') {
+          processed = processed.filter(n =>
+            n.details?.assigned_agent &&
+            n.details.assigned_agent.toLowerCase() === user.username.toLowerCase()
+          );
+        }
+        // Further filter by main and sub filters if needed.
+        if (mainFilter === 'Unread') {
+          processed = processed.filter(n => !n.read);
+        } else if (mainFilter === 'Detections') {
+          const typeMap = {
+            Visual: 'object_detection',
+            Audio: 'audio_detection',
+            Chat: 'chat_detection',
+          };
+          processed = processed.filter(n => n.event_type === typeMap[detectionSubFilter]);
+        }
         setNotifications(processed);
       } else {
         setError('Unexpected response from server.');
@@ -77,60 +84,16 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
     } finally {
       setLoading(false);
     }
-  }, [processNotifications]);
+  }, [processNotifications, user, mainFilter, detectionSubFilter]);
 
-  // Set up SSE for real-time notifications.
-  useEffect(() => {
-    let eventSource;
-    const connectSSE = () => {
-      eventSource = new EventSource('/api/notification-events', { withCredentials: true });
-      eventSource.onopen = () => {
-        console.log('SSE connection established.');
-      };
-      eventSource.onmessage = (e) => {
-        try {
-          if (!e.data) return;
-          const eventData = JSON.parse(e.data);
-          if (eventData.type === 'notification') {
-            setNotifications(prev => {
-              const exists = prev.some(n => n.id === eventData.id);
-              if (!exists) {
-                return [{
-                  id: eventData.id,
-                  event_type: eventData.event_type,
-                  timestamp: eventData.timestamp,
-                  details: eventData.details,
-                  read: false,
-                }, ...prev];
-              }
-              return prev;
-            });
-          }
-        } catch (err) {
-          console.error('Error parsing SSE data:', err);
-        }
-      };
-      eventSource.onerror = (err) => {
-        console.error('SSE error:', err);
-        eventSource.close();
-        setTimeout(connectSSE, 2000);
-      };
-    };
-
-    connectSSE();
-    return () => {
-      if (eventSource) eventSource.close();
-    };
-  }, []);
-
-  // Fallback polling every 30 seconds.
+  // Poll notifications every 60 seconds.
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000);
+    const interval = setInterval(fetchNotifications, 60000);
     return () => clearInterval(interval);
   }, [fetchNotifications]);
 
-  // Auto-scroll the notifications list when updated.
+  // Auto-scroll notifications list to top when notifications update.
   useEffect(() => {
     const listContainer = document.querySelector('.notifications-list');
     if (listContainer && !loading && !error) {
@@ -138,22 +101,7 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
     }
   }, [notifications.length, loading, error]);
 
-  // Filter notifications based on main and sub-filters.
-  const filteredNotifications = notifications.filter(notification => {
-    if (mainFilter === 'All') return true;
-    if (mainFilter === 'Unread') return !notification.read;
-    if (mainFilter === 'Detections') {
-      const typeMap = {
-        Visual: 'object_detection',
-        Audio: 'audio_detection',
-        Chat: 'chat_detection',
-      };
-      return notification.event_type === typeMap[detectionSubFilter];
-    }
-    return true;
-  });
-
-  // Handlers for marking as read, deleting, etc.
+  // Handlers for marking notifications as read.
   const markAsRead = useCallback(async (notificationId) => {
     try {
       await axios.put(`/api/logs/${notificationId}/read`);
@@ -172,6 +120,7 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
     }
   };
 
+  // Handler for deleting a single notification.
   const deleteNotification = useCallback(async (notificationId) => {
     try {
       await axios.delete(`/api/logs/${notificationId}`);
@@ -184,6 +133,7 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
     }
   }, [selectedNotification]);
 
+  // Handler for deleting all notifications.
   const deleteAllNotifications = async () => {
     try {
       await axios.delete('/api/logs/delete-all');
@@ -199,10 +149,14 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
     setSelectedNotification(notification);
   };
 
+  // Format confidence value.
   const formatConfidence = (confidence) => {
-    return (typeof confidence === 'number' && confidence > 0) ? `${(confidence * 100).toFixed(1)}%` : '';
+    return (typeof confidence === 'number' && confidence > 0)
+      ? `${(confidence * 100).toFixed(1)}%`
+      : '';
   };
 
+  // Determine a background color based on confidence.
   const getConfidenceColor = (confidence) => {
     const conf = typeof confidence === 'number' ? confidence : 0;
     if (conf >= 0.9) return '#ff4444';
@@ -273,22 +227,27 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
               <div className="image-gallery">
                 {selectedNotification.details?.annotated_image && (
                   <div className="image-card">
-                    <img src={selectedNotification.details.annotated_image} 
-                         alt="Annotated Detection" 
-                         className="detection-image" />
+                    <img
+                      src={selectedNotification.details.annotated_image}
+                      alt="Annotated Detection"
+                      className="detection-image"
+                    />
                     <div className="image-label">Annotated Image</div>
                   </div>
                 )}
                 {selectedNotification.details?.captured_image && (
                   <div className="image-card">
-                    <img src={selectedNotification.details.captured_image} 
-                         alt="Captured Image" 
-                         className="detection-image" />
+                    <img
+                      src={selectedNotification.details.captured_image}
+                      alt="Captured Image"
+                      className="detection-image"
+                    />
                     <div className="image-label">Captured Image</div>
                   </div>
                 )}
               </div>
               <div className="streamer-info-card">
+                <h4>Streamer Info</h4>
                 <div className="info-item">
                   <span className="info-label">Streamer:</span>
                   <span className="info-value">{selectedNotification.details?.streamer_name}</span>
@@ -307,7 +266,7 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
                 {selectedNotification.details?.detections?.map((detection, index) => (
                   <div key={index} className="detection-item">
                     <span className="detection-class">{detection.class}</span>
-                    <span className="confidence-badge" 
+                    <span className="confidence-badge"
                           style={{ backgroundColor: getConfidenceColor(detection.confidence) }}>
                       {formatConfidence(detection.confidence)}
                     </span>
@@ -376,21 +335,24 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
           </div>
         )}
         <div className="action-controls">
-          <button className="mark-all-read" 
+          <button className="mark-all-read"
                   onClick={markAllAsRead}
                   disabled={notifications.filter(n => !n.read).length === 0}>
             Mark All as Read
           </button>
-          <button className="delete-all" 
+          <button className="delete-all"
                   onClick={deleteAllNotifications}
                   disabled={notifications.length === 0}>
             Delete All
+          </button>
+          <button className="refresh-notifications" onClick={fetchNotifications}>
+            Refresh Notifications
           </button>
         </div>
       </div>
       <div className="notifications-container">
         <div className="notifications-list-container">
-          <h3>Notifications ({filteredNotifications.length})</h3>
+          <h3>Notifications ({notifications.length})</h3>
           {loading ? (
             <div className="loading-container">
               <div className="loading-spinner"></div>
@@ -398,14 +360,14 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
             </div>
           ) : error ? (
             <div className="error-message">{error}</div>
-          ) : filteredNotifications.length === 0 ? (
+          ) : notifications.length === 0 ? (
             <div className="empty-state">
               <div className="empty-icon">🔔</div>
               <p>No notifications to display</p>
             </div>
           ) : (
             <div className="notifications-list">
-              {filteredNotifications.map(notification => (
+              {notifications.map(notification => (
                 <div key={notification.id}
                      className={`notification-item ${notification.read ? 'read' : 'unread'} ${selectedNotification?.id === notification.id ? 'selected' : ''}`}
                      onClick={() => handleNotificationClick(notification)}>
@@ -463,12 +425,10 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
           flex-direction: column;
           animation: fadeIn 0.3s ease-out;
         }
-
         @keyframes fadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
         }
-
         .notifications-controls {
           padding: 16px 20px;
           display: flex;
@@ -477,22 +437,20 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
           background: #252525;
           border-bottom: 1px solid #333;
         }
-
         .main-filter-controls {
           display: flex;
           gap: 8px;
         }
-
         .sub-filter-controls {
           display: flex;
           gap: 8px;
           margin-top: 4px;
         }
-
         .filter-btn,
         .sub-filter-btn,
         .mark-all-read,
-        .delete-all {
+        .delete-all,
+        .refresh-notifications {
           padding: 8px 16px;
           border-radius: 6px;
           border: 1px solid #444;
@@ -501,59 +459,50 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
           cursor: pointer;
           transition: all 0.2s ease;
         }
-
         .filter-btn:hover,
         .sub-filter-btn:hover,
         .mark-all-read:hover,
-        .delete-all:hover {
+        .delete-all:hover,
+        .refresh-notifications:hover {
           background: #333;
         }
-
         .filter-btn.active,
         .sub-filter-btn.active {
           background: #3a3a3a;
           border-color: #666;
         }
-
         .mark-all-read:disabled,
         .delete-all:disabled {
           opacity: 0.5;
           cursor: not-allowed;
         }
-
         .delete-all {
           background: #3d1212;
           border-color: #541919;
         }
-
         .delete-all:hover {
           background: #4d1616;
         }
-
         .notifications-container {
           display: flex;
           flex: 1;
           overflow: hidden;
         }
-
         .notifications-list-container {
           width: 40%;
           border-right: 1px solid #333;
           display: flex;
           flex-direction: column;
         }
-
         .notifications-list-container h3 {
           padding: 16px 20px;
           margin: 0;
           border-bottom: 1px solid #333;
         }
-
         .notifications-list {
           overflow-y: auto;
           flex: 1;
         }
-
         .notification-item {
           display: flex;
           padding: 16px 20px;
@@ -561,38 +510,30 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
           cursor: pointer;
           transition: background-color 0.2s ease;
         }
-
         .notification-item:hover {
           background-color: #282828;
         }
-
         .notification-item.selected {
           background-color: #2d3748;
         }
-
         .notification-item.unread {
           background-color: #1e293b;
         }
-
         .notification-item.unread:hover {
           background-color: #233246;
         }
-
         .notification-item.unread.selected {
           background-color: #2c3e50;
         }
-
         .notification-indicator {
           width: 6px;
           min-width: 6px;
           border-radius: 3px;
           margin-right: 12px;
         }
-
         .notification-content {
           flex: 1;
         }
-
         .notification-message {
           font-size: 14px;
           margin-bottom: 4px;
@@ -600,53 +541,44 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
           overflow: hidden;
           text-overflow: ellipsis;
         }
-
         .notification-meta {
           display: flex;
           justify-content: space-between;
           font-size: 12px;
           color: #a0a0a0;
         }
-
         .notification-time {
           color: #888;
         }
-
         .notification-confidence {
           font-weight: 500;
           color: #f0f0f0;
         }
-
         .notification-detail-container {
           width: 60%;
           display: flex;
           flex-direction: column;
           overflow: hidden;
         }
-
         .notification-detail {
           padding: 20px;
           display: flex;
           flex-direction: column;
           height: 100%;
         }
-
         .detail-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
           margin-bottom: 16px;
         }
-
         .detail-header h3 {
           margin: 0;
         }
-
         .detail-actions {
           display: flex;
           gap: 8px;
         }
-
         .mark-read-btn,
         .delete-btn {
           padding: 6px 12px;
@@ -655,31 +587,25 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
           cursor: pointer;
           transition: all 0.2s ease;
         }
-
         .mark-read-btn {
           background: #2d2d2d;
           color: #e0e0e0;
         }
-
         .mark-read-btn:hover {
           background: #333;
         }
-
         .delete-btn {
           background: #3d1212;
           color: #e0e0e0;
         }
-
         .delete-btn:hover {
           background: #4d1616;
         }
-
         .detail-timestamp {
           font-size: 14px;
           color: #888;
           margin-bottom: 20px;
         }
-
         .detection-content {
           display: flex;
           flex-direction: column;
@@ -687,13 +613,11 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
           flex: 1;
           overflow-y: auto;
         }
-
         .image-gallery {
           display: flex;
           gap: 20px;
           margin-bottom: 20px;
         }
-
         .image-card {
           background: #252525;
           border-radius: 8px;
@@ -703,13 +627,11 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
           flex-direction: column;
           align-items: center;
         }
-
         .detection-image {
           max-width: 100%;
           max-height: 300px;
           object-fit: contain;
         }
-
         .image-label {
           padding: 10px;
           background: #333;
@@ -718,68 +640,57 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
           font-size: 14px;
           color: #e0e0e0;
         }
-
         .streamer-info-card {
           background: #252525;
           border-radius: 8px;
           padding: 16px;
           margin-bottom: 20px;
         }
-
         .streamer-info-card h4 {
           margin: 0 0 16px 0;
           font-size: 18px;
           color: #e0e0e0;
         }
-
         .info-item {
           display: flex;
           align-items: center;
           margin-bottom: 12px;
         }
-
         .info-label {
           width: 120px;
           font-weight: 500;
           color: #a0a0a0;
         }
-
         .info-value {
           flex: 1;
           color: #e0e0e0;
         }
-
         .detected-objects {
           background: #252525;
           border-radius: 8px;
           padding: 16px;
         }
-
         .detected-objects h4 {
           margin: 0 0 16px 0;
           font-size: 18px;
           color: #e0e0e0;
         }
-
         .detection-item {
           display: flex;
           justify-content: space-between;
           align-items: center;
           margin-bottom: 12px;
         }
-
         .detection-class {
           font-weight: 500;
           color: #e0e0e0;
         }
-
         .confidence-badge {
           padding: 4px 8px;
           border-radius: 12px;
           font-weight: 500;
           color: white;
         }
-
         .empty-detail,
         .empty-state,
         .loading-container,
@@ -793,13 +704,11 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
           text-align: center;
           padding: 20px;
         }
-
         .empty-icon {
           font-size: 48px;
           margin-bottom: 16px;
           opacity: 0.5;
         }
-
         .loading-spinner {
           width: 40px;
           height: 40px;
@@ -809,16 +718,13 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
           animation: spin 1s linear infinite;
           margin-bottom: 16px;
         }
-
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
-
         .error-message {
           color: #ff6b6b;
         }
-
         @media (max-width: 992px) {
           .notifications-container {
             flex-direction: column;
@@ -833,7 +739,6 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
             border-bottom: 1px solid #333;
           }
         }
-
         @media (max-width: 768px) {
           .notifications-controls {
             flex-direction: column;
@@ -855,8 +760,3 @@ const NotificationsPage = ({ ongoingStreams = [] }) => {
 };
 
 export default NotificationsPage;
-
-
-
-
-      
