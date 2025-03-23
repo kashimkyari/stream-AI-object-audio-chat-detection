@@ -30,6 +30,7 @@ _yolo_lock = threading.Lock()
 # Global dictionaries to store stream info and last alerted objects to avoid duplicate alerts.
 stream_info = {}
 last_video_alerted_objects = {}  # Key: stream_url, Value: set of detected object classes
+audio_keywords = []
 
 def extract_stream_info_from_db(stream_url):
     with app.app_context():
@@ -57,6 +58,7 @@ def load_yolov8_model():
         if _yolo_model is None:
             try:
                 _yolo_model = YOLO("yolo11n.pt")
+                _yolo_model.verbose = False
                 logging.info("YOLO11 model loaded successfully.")
             except Exception as e:
                 logging.error("Error loading YOLO model: %s", e)
@@ -69,8 +71,13 @@ def update_flagged_objects():
         return {obj.object_name.lower(): float(obj.confidence_threshold) for obj in objects}
 
 def refresh_keywords():
-    # Placeholder for keyword refresh logic if needed.
-    pass
+    """
+    Retrieve and return a list of lowercase chat keywords from the database for audio detection.
+    """
+    with app.app_context():
+        keywords = [kw.keyword.lower() for kw in ChatKeyword.query.all()]
+    logging.info("Audio keywords retrieved: %s", keywords)
+    return keywords
 
 def add_stream_to_db(stream_url, platform_type, streamer_username):
     with app.app_context():
