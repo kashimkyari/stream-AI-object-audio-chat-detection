@@ -5,7 +5,6 @@ import axios from 'axios';
 import Login from './components/Login';
 import AdminPanel from './components/AdminPanel';
 import AgentDashboard from './components/AgentDashboard';
-import NotificationsPage from './components/NotificationsPage';
 import MessageComponent from './components/MessageComponent'; // Import the messaging component
 import { ToastProvider, useToast } from './ToastContext';
 
@@ -13,7 +12,6 @@ function AppContent() {
   const [user, setUser] = useState(null); // Store full user object
   const [activeTab, setActiveTab] = useState('dashboard');
   const [unreadCount, setUnreadCount] = useState(0);
-  const [notifications, setNotifications] = useState([]);
   const [dashboardData, setDashboardData] = useState({ streams: [] });
   const [isMobile, setIsMobile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -75,11 +73,7 @@ function AppContent() {
     }
   };
 
-  const handleNotificationClick = () => {
-    setActiveTab('notifications');
-    setUnreadCount(0);
-    if (isMobile) setMenuOpen(false);
-  };
+ 
 
   const handleTabClick = (tab) => {
     setActiveTab(tab);
@@ -236,9 +230,7 @@ function AppContent() {
                 <button onClick={() => handleTabClick('messaging')} className={activeTab === 'messaging' ? 'active' : ''}>
                   Messaging
                 </button>
-                <button onClick={() => handleTabClick('notifications')} className={activeTab === 'notifications' ? 'active' : ''}>
-                  Notifications {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
-                </button>
+               
                 {isMobile && (
                   <button className="mobile-logout-button" onClick={handleLogout}>
                     Logout

@@ -362,10 +362,10 @@ def refresh_chaturbate_stream(room_slug):
     """
     Refresh the m3u8 URL for a Chaturbate stream based on the given room slug.
     This function sends a POST request to the Chaturbate AJAX endpoint to fetch the latest HLS m3u8 URL,
-    and if a corresponding ChaturbateStream exists in the database, it updates its URL.
+    and if a corresponding ChaturbateStream exists in the database, it updates the URL.
     
     Args:
-        room_slug (str): The room slug (streamer username).
+        room_slug (str): The room slug or streamer username.
     
     Returns:
         str or None: The new m3u8 URL if successful, or None if an error occurred.
@@ -392,22 +392,19 @@ def refresh_chaturbate_stream(room_slug):
     session_req.cookies.update(cookies)
     
     try:
-        response = session_req.post(ajax_url, data=data, headers=headers, timeout=10)
-        logging.info("POST response status: %s", response.status_code)
+        response = session_req.post(ajax_url, data=data, headers=headers)
     except Exception as e:
-        logging.error("Error during the POST request: %s", e)
+        logging.error("Error during the request: %s", e)
         return None
     
     if response.status_code != 200:
         logging.error("HTTP error: %s", response.status_code)
-        logging.error("Response text: %s", response.text)
         return None
     
     try:
         result = response.json()
-        logging.info("Response JSON: %s", result)
     except ValueError:
-        logging.error("Failed to decode JSON response: %s", response.text)
+        logging.error("Failed to decode JSON response")
         return None
     
     if result.get("success"):
@@ -422,25 +419,19 @@ def refresh_chaturbate_stream(room_slug):
     # Update the corresponding ChaturbateStream in the database.
     stream = ChaturbateStream.query.filter_by(streamer_username=room_slug).first()
     if stream:
-        stream.chaturbate_m3u8_url = new_url  # Replace the old URL with the new one.
-        try:
-            db.session.commit()
-            logging.info("Updated stream '%s' with new m3u8 URL: %s", room_slug, new_url)
-        except Exception as db_e:
-            db.session.rollback()
-            logging.error("Database commit failed: %s", db_e)
-            return None
+        stream.chaturbate_m3u8_url = new_url
+        db.session.commit()
+        logging.info("Updated stream %s with new m3u8 URL: %s", room_slug, new_url)
         return new_url
     else:
         logging.error("No Chaturbate stream found for room slug: %s", room_slug)
         return None
 
-
-# # You can add a main block for testing if desired.
-if __name__ == "__main__":
-    # Example: Refresh the stream for the room slug 'bliss_emily'
-    new_url = refresh_chaturbate_stream("bliss_emily")
-    if new_url:
-        print("m3u8 URL fetched:", new_url)
-    else:
-        print("Failed to fetch m3u8 URL.")
+# You can add a main block for testing if desired.
+# if __name__ == "__main__":
+#     # Example: Refresh the stream for the room slug 'bliss_emily'
+#     new_url = refresh_chaturbate_stream("bliss_emily")
+#     if new_url:
+#         print("m3u8 URL fetched:", new_url)
+#     else:
+#         print("Failed to fetch m3u8 URL.")

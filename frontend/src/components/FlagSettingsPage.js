@@ -305,8 +305,7 @@ const FlagSettingsPage = () => {
 
   return (
     <div style={styles.container}>
-      <h3 style={styles.title}>Flag Settings</h3>
-
+      
       {/* Keywords Section */}
       <div style={styles.section}>
         <div style={styles.sectionHeader}>Chat Keywords</div>

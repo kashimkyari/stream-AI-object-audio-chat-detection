@@ -28,7 +28,7 @@ from utils import allowed_file, login_required
 from notifications import send_notifications
 from scraping import (
     scrape_stripchat_data, scrape_chaturbate_data, run_scrape_job, scrape_jobs,
-    stream_creation_jobs, run_stream_creation_job
+    stream_creation_jobs, run_stream_creation_job, refresh_chaturbate_stream
 )
 from detection import chat_detection_loop, refresh_keywords
 import speech_recognition as sr
@@ -36,7 +36,6 @@ from werkzeug.utils import secure_filename
 from threading import Condition
 import queue
 import uuid
-
 
 # Global dictionary to store detection threads and their cancellation events keyed by stream_url.
 detection_threads = {}
@@ -226,7 +225,6 @@ def create_stream():
 
     return jsonify({"message": "Stream created", "stream": stream.serialize()}), 201
 
-
 @app.route("/api/streams/<int:stream_id>", methods=["DELETE"])
 @login_required(role="admin")
 def delete_stream(stream_id):
@@ -247,6 +245,27 @@ def delete_stream(stream_id):
     db.session.delete(stream)
     db.session.commit()
     return jsonify({"message": "Stream deleted"}), 200
+
+# --------------------------------------------------------------------
+# Updated Stream Refresh Route for Chaturbate
+# --------------------------------------------------------------------
+@app.route("/api/streams/refresh/chaturbate", methods=["POST"])
+@login_required(role="admin")
+def refresh_chaturbate_route():
+    data = request.get_json()
+    room_slug = data.get("room_slug", "").strip()
+    if not room_slug:
+        return jsonify({"message": "Room slug is required"}), 400
+
+    new_url = refresh_chaturbate_stream(room_slug)
+    if new_url:
+        return jsonify({
+            "message": "Stream refreshed successfully",
+            "m3u8_url": new_url
+        }), 200
+    else:
+        return jsonify({"message": "Failed to refresh stream"}), 500
+
 
 # --------------------------------------------------------------------
 # Interactive Stream Creation Endpoints
@@ -475,7 +494,6 @@ def get_dashboard():
     except Exception as e:
         app.logger.error("Error in /api/dashboard: %s", e)
         return jsonify({"message": "Error fetching dashboard data", "error": str(e)}), 500
-
 
 @app.route("/api/agent/dashboard", methods=["GET"])
 @login_required(role="agent")

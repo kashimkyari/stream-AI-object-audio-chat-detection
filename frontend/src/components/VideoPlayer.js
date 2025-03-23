@@ -10,6 +10,7 @@ const HlsPlayer = ({ m3u8Url, isModalOpen, posterUrl, platform, streamerName }) 
   const [errorMessage, setErrorMessage] = useState("");
   const [isMuted, setIsMuted] = useState(true);
   const [volume, setVolume] = useState(0);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Sync volume/mute state with video element.
   useEffect(() => {
@@ -63,7 +64,7 @@ const HlsPlayer = ({ m3u8Url, isModalOpen, posterUrl, platform, streamerName }) 
 
     initializePlayer();
     return () => hls?.destroy();
-  }, [m3u8Url]);
+  }, [m3u8Url, refreshKey]);
 
   // Trigger detection when the stream is online.
   useEffect(() => {
@@ -83,6 +84,37 @@ const HlsPlayer = ({ m3u8Url, isModalOpen, posterUrl, platform, streamerName }) 
     }
   }, [isStreamLoaded, m3u8Url, platform, streamerName]);
 
+  // Refresh handler for Chaturbate streams only.
+  const handleRefresh = async () => {
+    setHasError(false);
+    setIsLoading(true);
+    setErrorMessage("");
+    if (platform.toLowerCase() === 'chaturbate') {
+      try {
+        const response = await axios.post('/api/streams/refresh/chaturbate', {
+          room_slug: streamerName
+        });
+        if (response.data && response.data.m3u8_url) {
+          // Update m3u8Url with the new URL from the refresh endpoint.
+          // Also trigger a refresh of the player.
+          setRefreshKey(prev => prev + 1);
+          // It's important to update the URL if necessary:
+          // Optionally, you can call a prop callback to update the m3u8Url state higher up.
+          // For now, we'll assume the player uses the new refreshKey to reinitialize.
+          console.log("Refreshed m3u8 URL:", response.data.m3u8_url);
+        } else {
+          console.error("Refresh response missing m3u8_url");
+        }
+      } catch (error) {
+        console.error("Error refreshing stream:", error);
+        setErrorMessage("Error refreshing stream");
+      }
+    } else {
+      // For other platforms, simply reinitialize the player.
+      setRefreshKey(prev => prev + 1);
+    }
+  };
+
   return (
     <div className="hls-player-container">
       {isStreamLoaded && (
@@ -101,6 +133,11 @@ const HlsPlayer = ({ m3u8Url, isModalOpen, posterUrl, platform, streamerName }) 
         <div className="error-overlay">
           <div className="error-icon">⚠️</div>
           <div className="error-text">{errorMessage}</div>
+          {errorMessage.includes("manifestLoadError") && (
+            <button className="refresh-button" onClick={handleRefresh}>
+              Refresh Stream
+            </button>
+          )}
         </div>
       )}
       <video
@@ -243,6 +280,18 @@ const HlsPlayer = ({ m3u8Url, isModalOpen, posterUrl, platform, streamerName }) 
         .error-text {
           text-align: center;
           max-width: 80%;
+          margin-bottom: 10px;
+        }
+        .refresh-button {
+          background: #ff4444;
+          border: none;
+          padding: 8px 16px;
+          color: white;
+          border-radius: 4px;
+          cursor: pointer;
+        }
+        .refresh-button:hover {
+          background: #ff2222;
         }
       `}</style>
     </div>
@@ -324,8 +373,6 @@ const VideoPlayer = ({
   const handleModalToggle = () => {
     setIsModalOpen(!isModalOpen);
   };
-
-  
 
   const renderPlayer = (isModal) => {
     return m3u8Url ? (
