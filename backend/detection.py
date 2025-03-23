@@ -312,7 +312,7 @@ def process_combined_detection(stream_url, cancel_event):
                         audio_float = audio_int16.astype(np.float32) / 32768.0
                         try:
                             audio_input = whisper.pad_or_trim(audio_float)
-                            mel = whisper.log_mel_spectrogram(audio_input).to(whisper_model.device)
+                            mel = whisper.log_mel_spectrogram(audio_input, n_mels=128).to(whisper_model.device)
                             options = whisper.DecodingOptions(fp16=False)
                             result = whisper.decode(whisper_model, mel, options)
                             text = result.text.strip().lower()
