@@ -1,26 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
 // Directly import components (no lazy loading for speed)
 import Login from './components/Login';
 import AdminPanel from './components/AdminPanel';
 import AgentDashboard from './components/AgentDashboard';
-import MessageComponent from './components/MessageComponent'; // Import the messaging component
+import MessageComponent from './components/MessageComponent';
+import NotificationsPage from './components/NotificationsPage';
 import { ToastProvider, useToast } from './ToastContext';
 
 function AppContent() {
   const [user, setUser] = useState(null); // Store full user object
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [unreadCount, setUnreadCount] = useState(0);
   const [dashboardData, setDashboardData] = useState({ streams: [] });
   const [isMobile, setIsMobile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  
+
   // States for stream URL, online status, poster image, etc.
   const [m3u8Url, setM3u8Url] = useState(null);
   const [isOnline, setIsOnline] = useState(true);
   const [posterUrl, setPosterUrl] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // States for notifications badge and floating stack
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationStack, setNotificationStack] = useState([]);
 
   const { showToast } = useToast();
 
@@ -73,8 +77,6 @@ function AppContent() {
     }
   };
 
- 
-
   const handleTabClick = (tab) => {
     setActiveTab(tab);
     if (isMobile) setMenuOpen(false);
@@ -92,10 +94,11 @@ function AppContent() {
   // -------------
   // Fetch m3u8 URL using provided snippet.
   // For an agent, assume the assigned stream URL is stored in user.assignedStreamUrl.
-  // For admin, you may select a stream from dashboardData; here we assume a staticThumbnail is irrelevant.
-  // Adjust the source of platform and streamerName as needed.
+  // For admin, you may select a stream from dashboardData.
   const platform = user?.role === 'agent' ? user.assignedStreamPlatform || '' : 'chaturbate';
-  const streamerName = user?.role === 'agent' ? user.assignedStreamStreamerName || '' : dashboardData.streams[0]?.streamer_username || '';
+  const streamerName = user?.role === 'agent'
+    ? user.assignedStreamStreamerName || ''
+    : dashboardData.streams[0]?.streamer_username || '';
 
   useEffect(() => {
     // Only run if we have a valid platform and streamerName.
@@ -199,6 +202,32 @@ function AppContent() {
     };
   }, [m3u8Url, platform, streamerName]);
 
+  // -------------
+  // Fetch notifications count and list for badge and floating stack
+  useEffect(() => {
+    const fetchNotificationsData = async () => {
+      try {
+        const res = await axios.get('/api/notifications', { timeout: 10000 });
+        let notifications = res.data;
+        if (user && user.role === 'agent') {
+          notifications = notifications.filter(n =>
+            n.details?.assigned_agent &&
+            n.details.assigned_agent.toLowerCase() === user.username.toLowerCase()
+          );
+        }
+        const unread = notifications.filter(n => !n.read);
+        setUnreadCount(unread.length);
+        setNotificationStack(unread);
+      } catch (err) {
+        console.error('Error fetching notifications count:', err);
+      }
+    };
+
+    fetchNotificationsData();
+    const interval = setInterval(fetchNotificationsData, 60000);
+    return () => clearInterval(interval);
+  }, [user]);
+
   return (
     <div className="app-container">
       {user && (
@@ -207,9 +236,6 @@ function AppContent() {
             {isMobile && user.role === 'admin' && (
               <button className="menu-toggle" onClick={toggleMenu}>
                 {menuOpen ? '✕' : '☰'}
-                {unreadCount > 0 && !menuOpen && (
-                  <span className="mobile-notification-badge">{unreadCount}</span>
-                )}
               </button>
             )}
             {user && (!isMobile || (isMobile && menuOpen)) && (
@@ -230,12 +256,9 @@ function AppContent() {
                 <button onClick={() => handleTabClick('messaging')} className={activeTab === 'messaging' ? 'active' : ''}>
                   Messaging
                 </button>
-               
-                {isMobile && (
-                  <button className="mobile-logout-button" onClick={handleLogout}>
-                    Logout
-                  </button>
-                )}
+                <button onClick={() => handleTabClick('notifications')} className={activeTab === 'notifications' ? 'active' : ''}>
+                  Notifications {unreadCount > 0 && <span className="badge">{unreadCount}</span>}
+                </button>
               </nav>
             )}
             {(!isMobile || user.role !== 'admin') && (
@@ -266,15 +289,33 @@ function AppContent() {
           <MessageComponent user={user} isAdmin={user.role === 'admin'} />
         )}
         {user && activeTab === 'notifications' && (
-          <NotificationsPage user={currentUser} ongoingStreams={ongoingStreams}
-            notifications={notifications} 
-            onNotificationClick={() => setActiveTab('notifications')} 
-          />
+          <NotificationsPage user={user} ongoingStreams={dashboardData.streams} />
         )}
         {user && user.role === 'agent' && activeTab !== 'messaging' && activeTab !== 'notifications' && (
           <AgentDashboard isMobile={isMobile} />
         )}
       </div>
+
+      {/* Floating Notification Stack at bottom-right */}
+      {unreadCount > 0 && (
+        <div className="notification-stack">
+          {notificationStack.slice(0, 5).map((notif) => (
+            <div 
+              key={notif.id} 
+              className="notification-card"
+              onClick={() => setActiveTab('notifications')}
+            >
+              <strong>{notif.event_type === 'object_detection' ? 'Visual' : notif.event_type}</strong>
+              <p>{new Date(notif.timestamp).toLocaleTimeString()}</p>
+            </div>
+          ))}
+          {notificationStack.length > 5 && (
+            <div className="notification-card more">
+              +{notificationStack.length - 5} more
+            </div>
+          )}
+        </div>
+      )}
 
       <style jsx global>{`
         * { box-sizing: border-box; }
@@ -286,6 +327,39 @@ function AppContent() {
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
           overflow-x: hidden;
+        }
+        .badge {
+          background: #dc3545;
+          color: white;
+          border-radius: 50%;
+          padding: 2px 8px;
+          margin-left: 6px;
+          font-size: 0.8rem;
+        }
+        .notification-stack {
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          z-index: 1000;
+        }
+        .notification-card {
+          background: #1a1a1a;
+          padding: 10px 15px;
+          border-radius: 6px;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+          cursor: pointer;
+          transition: transform 0.2s ease;
+        }
+        .notification-card:hover {
+          transform: translateY(-3px);
+        }
+        .notification-card.more {
+          text-align: center;
+          background: #333;
+          font-weight: bold;
         }
       `}</style>
 
@@ -305,6 +379,7 @@ function AppContent() {
           padding: ${isMobile ? '12px 16px' : '20px 40px'};
           background: #1a1a1a;
           border-bottom: 1px solid #2d2d2d;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
         }
         .nav-container {
           display: flex;
@@ -315,35 +390,24 @@ function AppContent() {
           position: relative;
         }
         .menu-toggle {
-          padding: 8px;
+          padding: 10px;
           background: #2d2d2d;
           border: none;
           border-radius: 6px;
           color: #e0e0e0;
-          font-size: 1.2rem;
+          font-size: 1.4rem;
           cursor: pointer;
-          position: relative;
-          z-index: 1010;
+          transition: background 0.3s ease;
         }
-        .mobile-notification-badge {
-          position: absolute;
-          top: -5px;
-          right: -5px;
-          background: #ff4444;
-          color: white;
-          width: 18px;
-          height: 18px;
-          border-radius: 50%;
-          font-size: 0.7em;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+        .menu-toggle:hover {
+          background: #3a3a3a;
         }
         .admin-nav {
           display: flex;
-          gap: ${isMobile ? '8px' : '12px'};
+          gap: ${isMobile ? '10px' : '16px'};
           flex-wrap: ${isMobile ? 'nowrap' : 'wrap'};
           position: relative;
+          transition: all 0.3s ease;
         }
         .mobile-nav {
           position: fixed;
@@ -353,7 +417,7 @@ function AppContent() {
           bottom: 0;
           background: #1a1a1a;
           z-index: 1000;
-          padding: 60px 16px 16px;
+          padding: 70px 16px 16px;
           display: flex;
           flex-direction: column;
           overflow-y: auto;
@@ -369,34 +433,23 @@ function AppContent() {
           background: #2d2d2d;
           border-radius: 8px;
           cursor: pointer;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: transform 0.3s ease, background 0.3s ease;
           color: #a0a0a0;
           font-weight: 500;
           position: relative;
           overflow: hidden;
           width: ${isMobile ? '100%' : 'auto'};
           margin-bottom: ${isMobile ? '8px' : '0'};
-          text-align: ${isMobile ? 'left' : 'center'};
         }
-        .admin-nav button::before {
-          content: '';
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          width: 100%;
-          height: 3px;
-          background: #007bff;
-          transform: scaleX(0);
-          transition: transform 0.3s ease;
-        }
-        .admin-nav button.active, 
         .admin-nav button:hover {
           background: #333;
+          transform: translateY(-3px);
           color: #fff;
-          transform: ${isMobile ? 'none' : 'translateY(-2px)'};
         }
-        .admin-nav button.active::before {
-          transform: scaleX(1);
+        .admin-nav button.active {
+          background: #007bff;
+          color: #fff;
+          transform: translateY(-3px);
         }
         .logout-button {
           padding: 12px 24px;
@@ -405,25 +458,17 @@ function AppContent() {
           border: none;
           border-radius: 8px;
           cursor: pointer;
-          transition: all 0.3s ease;
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
           font-weight: 500;
         }
         .logout-button:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 5px 15px rgba(0,123,255,0.3);
+          transform: translateY(-3px);
+          box-shadow: 0 5px 15px rgba(0,123,255,0.4);
         }
         .main-content {
           max-width: 1200px;
           margin: ${isMobile ? '20px auto' : '40px auto'};
           padding: 0 ${isMobile ? '12px' : '20px'};
-        }
-        .notification-badge {
-          background: #ff4444;
-          color: white;
-          border-radius: 50%;
-          padding: 2px 6px;
-          font-size: 0.8rem;
-          margin-left: 4px;
         }
       `}</style>
     </div>

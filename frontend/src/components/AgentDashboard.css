@@ -1,0 +1,314 @@
+// CSS styles (inspired by your AdminPanel/StreamsPage styling)
+
+  .agent-dashboard {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #121212, #1a1a1a);
+    color: #e0e0e0;
+    font-family: 'Inter', sans-serif;
+    animation: slideUp 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .dashboard-content {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 30px;
+    background: #1a1a1a;
+    border-radius: 15px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+  }
+  h1 {
+    margin-bottom: 2rem;
+    font-size: 2rem;
+    color: #fff;
+    border-bottom: 1px solid #333;
+    padding-bottom: 1rem;
+  }
+  h2, h3 {
+    margin-bottom: 1rem;
+  }
+  .streams-section {
+    margin-bottom: 2rem;
+  }
+  .assignment-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+  }
+  .assignment-card {
+    background: #2d2d2d;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #3d3d3d;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
+  }
+  .assignment-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    border-color: #007bff;
+  }
+  .assignment-details {
+    padding: 15px;
+    background: #252525;
+  }
+  .detection-alert-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #ff4444;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    animation: pulse 1s infinite;
+    z-index: 2;
+  }
+  .detection-preview {
+    position: absolute;
+    display: none;
+    right: 0;
+    top: 100%;
+    background: #333;
+    border-radius: 8px;
+    padding: 10px;
+    width: 180px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    z-index: 3;
+  }
+  .detection-alert-badge:hover .detection-preview {
+    display: block;
+  }
+  .preview-image {
+    width: 100%;
+    border-radius: 4px;
+    margin-bottom: 8px;
+  }
+  .detection-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+  }
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(5px);
+  }
+  .modal-content {
+    background: #2d2d2d;
+    padding: 1.5rem;
+    border-radius: 12px;
+    max-width: 800px;
+    width: 90%;
+    position: relative;
+    animation: zoomIn 0.3s ease;
+    border: 1px solid #3d3d3d;
+    box-shadow: 0 15px 30px rgba(0,0,0,0.4);
+  }
+  .close-button {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: #ff4444;
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+  }
+  .close-button:hover {
+    transform: rotate(90deg) scale(1.1);
+  }
+  .video-container {
+    position: relative;
+    width: 100%;
+    height: 0;
+    padding-top: 56.25%;
+    overflow: hidden;
+    background: #000;
+    border-radius: 8px;
+  }
+  .live-indicator {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 4px 8px;
+    border-radius: 4px;
+    z-index: 10;
+    color: white;
+  }
+  .red-dot {
+    width: 8px;
+    height: 8px;
+    background: #ff0000;
+    border-radius: 50%;
+    animation: pulse 1.5s infinite;
+  }
+  .loading-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+  }
+  .loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 5;
+  }
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top: 4px solid white;
+    animation: spin 1s linear infinite;
+  }
+  .loading-text {
+    color: white;
+    margin-top: 10px;
+    font-size: 14px;
+  }
+  .error-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 5;
+    color: white;
+  }
+  .error-icon {
+    font-size: 32px;
+    margin-bottom: 10px;
+  }
+  .error-text {
+    text-align: center;
+    max-width: 80%;
+  }
+  .volume-controls {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 8px;
+    border-radius: 20px;
+    z-index: 10;
+  }
+  .mute-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: white;
+    font-size: 20px;
+    padding: 0;
+  }
+  .volume-slider {
+    width: 80px;
+    height: 4px;
+    accent-color: white;
+  }
+  .offline-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+  .no-streams-message {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 2rem;
+    background: #252525;
+    border-radius: 8px;
+  }
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes zoomIn {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  @media (max-width: 768px) {
+    .dashboard-content {
+      margin: 20px auto;
+      padding: 20px;
+    }
+    .assignment-grid {
+      grid-template-columns: 1fr;
+    }
+    .modal-content {
+      padding: 1rem;
+      width: 95%;
+    }
+  }
+
+            .error-container {
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+              align-items: center;
+              height: 200px;
+              color: #e0e0e0;
+              background: #2a2a2a;
+              border-radius: 8px;
+              padding: 20px;
+            }
+            button {
+              background: #007bff;
+              color: white;
+              border: none;
+              padding: 8px 16px;
+              border-radius: 4px;
+              margin-top: 10px;
+              cursor: pointer;
+            }
+         

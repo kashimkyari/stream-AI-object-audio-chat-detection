@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Hls from 'hls.js';
 import axios from 'axios';
+import './VideoPlayer.css'
 
 const HlsPlayer = ({ m3u8Url, isModalOpen, posterUrl, platform, streamerName }) => {
   const videoRef = React.useRef(null);
@@ -171,129 +172,7 @@ const HlsPlayer = ({ m3u8Url, isModalOpen, posterUrl, platform, streamerName }) 
           />
         </div>
       )}
-      <style jsx>{`
-        .hls-player-container {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-        }
-        .live-indicator {
-          position: absolute;
-          top: 10px;
-          left: 10px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          background: rgba(0, 0, 0, 0.7);
-          padding: 4px 8px;
-          border-radius: 4px;
-          z-index: 10;
-          color: white;
-        }
-        .red-dot {
-          width: 8px;
-          height: 8px;
-          background: #ff0000;
-          border-radius: 50%;
-          animation: pulse 1.5s infinite;
-        }
-        @keyframes pulse {
-          0% { opacity: 1; }
-          50% { opacity: 0.5; }
-          100% { opacity: 1; }
-        }
-        .volume-controls {
-          position: absolute;
-          bottom: 10px;
-          right: 10px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          background: rgba(0, 0, 0, 0.7);
-          padding: 8px;
-          border-radius: 20px;
-          z-index: 10;
-        }
-        .mute-button {
-          background: none;
-          border: none;
-          cursor: pointer;
-          color: white;
-          font-size: 20px;
-          padding: 0;
-        }
-        .volume-slider {
-          width: 80px;
-          height: 4px;
-          accent-color: white;
-        }
-        .loading-overlay {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          background: rgba(0, 0, 0, 0.7);
-          z-index: 5;
-        }
-        .loading-spinner {
-          width: 40px;
-          height: 40px;
-          border: 4px solid rgba(255, 255, 255, 0.3);
-          border-radius: 50%;
-          border-top: 4px solid white;
-          animation: spin 1s linear infinite;
-        }
-        .loading-text {
-          color: white;
-          margin-top: 10px;
-          font-size: 14px;
-        }
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        .error-overlay {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          background: rgba(0, 0, 0, 0.8);
-          z-index: 5;
-          color: white;
-        }
-        .error-icon {
-          font-size: 32px;
-          margin-bottom: 10px;
-        }
-        .error-text {
-          text-align: center;
-          max-width: 80%;
-          margin-bottom: 10px;
-        }
-        .refresh-button {
-          background: #ff4444;
-          border: none;
-          padding: 8px 16px;
-          color: white;
-          border-radius: 4px;
-          cursor: pointer;
-        }
-        .refresh-button:hover {
-          background: #ff2222;
-        }
-      `}</style>
+      
     </div>
   );
 };
@@ -370,7 +249,9 @@ const VideoPlayer = ({
     setThumbnail(null);
   };
 
+  // Only allow modal toggle when the stream is online.
   const handleModalToggle = () => {
+    if (!isOnline) return;
     setIsModalOpen(!isModalOpen);
   };
 
@@ -429,106 +310,6 @@ const VideoPlayer = ({
           </div>
         </div>
       )}
-
-      <style jsx>{`
-        .video-container {
-          position: relative;
-          width: 100%;
-          height: 0;
-          padding-top: 56.25%;
-          overflow: hidden;
-          background: #000;
-          border-radius: 8px;
-          object-fit: cover;
-        }
-        .loading-message {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          background: #000;
-        }
-        .thumbnail-wrapper {
-          position: relative;
-          width: 100%;
-          height: 100%;
-        }
-        .thumbnail-image {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          cursor: pointer;
-        }
-        .thumbnail-live-indicator {
-          position: absolute;
-          top: 10px;
-          left: 10px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          background: rgba(0, 0, 0, 0.7);
-          padding: 4px 8px;
-          border-radius: 4px;
-          color: white;
-          z-index: 2;
-        }
-        .error-message {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          background: rgba(0, 0, 0, 0.7);
-          font-size: 1em;
-          text-align: center;
-          padding: 20px;
-        }
-        .modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(0, 0, 0, 0.8);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-        }
-        .modal-content {
-          position: relative;
-          width: 90%;
-          max-width: 1200px;
-          background: #1a1a1a;
-          border-radius: 8px;
-          padding: 20px;
-        }
-        .close-modal {
-          position: absolute;
-          top: 10px;
-          right: 10px;
-          background: transparent;
-          border: none;
-          color: white;
-          font-size: 24px;
-          cursor: pointer;
-        }
-        .close-modal:hover {
-          color: #ff4444;
-        }
-      `}</style>
     </div>
   );
 };

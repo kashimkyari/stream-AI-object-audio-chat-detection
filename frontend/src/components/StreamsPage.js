@@ -1,10 +1,7 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import VideoPlayer from './VideoPlayer';
-
-// Lazy load additional pages
-const StreamsPageComponent = lazy(() => import('./StreamsPage'));
-const FlagSettingsPage = lazy(() => import('./FlagSettingsPage'));
+import './StreamsPage.css';
 
 // Error Boundary to catch errors without crashing the entire page.
 class ErrorBoundary extends React.Component {
@@ -29,50 +26,12 @@ class ErrorBoundary extends React.Component {
           <h3>Something went wrong.</h3>
           <p>Please try refreshing the page.</p>
           <button onClick={() => window.location.reload()}>Refresh</button>
-          <style jsx>{`
-            .error-container {
-              display: flex;
-              flex-direction: column;
-              justify-content: center;
-              align-items: center;
-              height: 200px;
-              color: #e0e0e0;
-              background: #2a2a2a;
-              border-radius: 8px;
-              padding: 20px;
-            }
-            button {
-              background: #007bff;
-              color: white;
-              border: none;
-              padding: 8px 16px;
-              border-radius: 4px;
-              margin-top: 10px;
-              cursor: pointer;
-            }
-          `}</style>
         </div>
       );
     }
     return this.props.children;
   }
 }
-
-// Loading fallback component
-const LoadingFallback = () => (
-  <div className="loading-container">
-    <p>Loading...</p>
-    <style jsx>{`
-      .loading-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 200px;
-        color: #e0e0e0;
-      }
-    `}</style>
-  </div>
-);
 
 // Confirmation Dialog Component
 const ConfirmDialog = ({ message, onConfirm, onCancel }) => (
@@ -84,66 +43,6 @@ const ConfirmDialog = ({ message, onConfirm, onCancel }) => (
         <button className="cancel-button" onClick={onCancel}>No</button>
       </div>
     </div>
-    <style jsx>{`
-      .confirm-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.6);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 2000;
-      }
-      .confirm-dialog {
-        background: #1a1a1a;
-        padding: 24px;
-        border-radius: 8px;
-        text-align: center;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-        animation: fadeIn 0.3s ease;
-        max-width: 90%;
-      }
-      .confirm-message {
-        font-size: 1.1rem;
-        margin-bottom: 16px;
-        color: #e0e0e0;
-      }
-      .confirm-actions {
-        display: flex;
-        justify-content: center;
-        gap: 16px;
-      }
-      .confirm-button,
-      .cancel-button {
-        padding: 8px 16px;
-        border: none;
-        border-radius: 4px;
-        font-size: 1rem;
-        cursor: pointer;
-        transition: background 0.2s ease;
-      }
-      .confirm-button {
-        background: #28a745;
-        color: white;
-      }
-      .confirm-button:hover {
-        background: #218838;
-      }
-      .cancel-button {
-        background: #ff4444;
-        color: white;
-      }
-      .cancel-button:hover {
-        background: #e63946;
-      }
-      @keyframes fadeIn {
-        from { opacity: 0; transform: scale(0.9); }
-        to { opacity: 1; transform: scale(1); }
-      }
-    `}</style>
   </div>
 );
 
@@ -201,97 +100,130 @@ const EditAgentModal = ({ agent, onClose, onSave }) => {
           <button className="submit-button" onClick={handleSave}>Save Changes</button>
         </div>
       </div>
-      <style jsx>{`
-        .modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(0, 0, 0, 0.8);
-          backdrop-filter: blur(5px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-        }
-        .modal-content {
-          background: #1a1a1a;
-          padding: 2rem;
-          border-radius: 8px;
-          max-width: 600px;
-          width: 90%;
-          position: relative;
-          animation: zoomIn 0.3s ease;
-          border: 1px solid #2d2d2d;
-        }
-        .modal-title {
-          font-size: 1.5rem;
-          margin-bottom: 1.5rem;
-          color: #e0e0e0;
-        }
-        .close-button {
-          position: absolute;
-          top: 1rem;
-          right: 1rem;
-          background: none;
-          border: none;
-          color: #e0e0e0;
-          font-size: 1.5rem;
-          cursor: pointer;
-          transition: color 0.3s ease;
-        }
-        .close-button:hover {
-          color: #ff4444;
-        }
-        .agent-form {
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-        }
-        .form-group {
-          width: 100%;
-        }
-        .form-input {
-          width: 100%;
-          padding: 0.75rem;
-          background: #252525;
-          border: 1px solid #333;
-          border-radius: 4px;
-          color: #e0e0e0;
-          transition: all 0.3s ease;
-        }
-        .form-input:focus {
-          border-color: #007bff;
-          outline: none;
-          box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
-        }
-        .submit-button {
-          padding: 0.75rem 1.25rem;
-          background: linear-gradient(135deg, #007bff, #0056b3);
-          color: white;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          font-weight: 500;
-          margin-top: 1rem;
-        }
-        .submit-button:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
-        }
-        @keyframes zoomIn {
-          from { transform: scale(0.8); opacity: 0; }
-          to { transform: scale(1); opacity: 1; }
-        }
-      `}</style>
+    </div>
+  );
+};
+
+// Modal for adding a new agent (opens as an overlay)
+const AddAgentModal = ({ onClose, onAgentCreated }) => {
+  const [form, setForm] = useState({ username: '', password: '' });
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+
+  const handleCreate = async () => {
+    setError('');
+    setMessage('');
+    if (!form.username.trim() || !form.password.trim()) {
+      setError('Both username and password are required.');
+      return;
+    }
+    const payload = {
+      username: form.username.trim(),
+      password: form.password.trim(),
+      firstname: form.username.trim(),
+      lastname: 'User',
+      email: `${form.username.trim()}@example.com`,
+      phonenumber: 'N/A'
+    };
+    try {
+      const res = await axios.post('/api/agents', payload);
+      setMessage(res.data.message || 'Agent created successfully');
+      onAgentCreated(); // Refresh agents list
+      setTimeout(() => {
+        onClose();
+      }, 1500);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Error creating agent.');
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <h3 className="modal-title">Add Agent</h3>
+        <button className="close-button" onClick={onClose}>×</button>
+        <div className="agent-form">
+          <div className="form-group">
+            <input
+              type="text"
+              placeholder="Username"
+              value={form.username}
+              onChange={(e) => setForm({ ...form, username: e.target.value })}
+              className="form-input"
+            />
+          </div>
+          <div className="form-group">
+            <input
+              type="password"
+              placeholder="Password"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              className="form-input"
+            />
+          </div>
+          {error && <div className="error-message">{error}</div>}
+          {message && <div className="success-message">{message}</div>}
+          <button className="submit-button" onClick={handleCreate}>Create Agent</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Modal to manage assignments for a given stream
+const ManageAssignmentsModal = ({ stream, agents, onClose, onSave }) => {
+  // Preselect agents based on the stream's assignments
+  const [selectedAgentIds, setSelectedAgentIds] = useState(
+    stream.assignments ? stream.assignments.map(a => a.agent_id) : []
+  );
+
+  const toggleAgentSelection = (agentId) => {
+    if (selectedAgentIds.includes(agentId)) {
+      setSelectedAgentIds(selectedAgentIds.filter(id => id !== agentId));
+    } else {
+      setSelectedAgentIds([...selectedAgentIds, agentId]);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      // Update assignments via a PUT request to a traditional endpoint
+      await axios.put(`/api/streams/${stream.id}/assignments`, { assignments: selectedAgentIds });
+      onSave(stream.id, selectedAgentIds);
+      onClose();
+    } catch (err) {
+      console.error("Failed to update assignments:", err);
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <h3 className="modal-title">Manage Assignments for Stream {stream.id}</h3>
+        <button className="close-button" onClick={onClose}>×</button>
+        <div className="assignments-form">
+          <p>Select agents to assign to this stream:</p>
+          <div className="agent-checkboxes">
+            {agents.map(agent => (
+              <label key={agent.id}>
+                <input 
+                  type="checkbox" 
+                  checked={selectedAgentIds.includes(agent.id)} 
+                  onChange={() => toggleAgentSelection(agent.id)} 
+                />
+                {agent.username}
+              </label>
+            ))}
+          </div>
+        </div>
+        <button className="submit-button" onClick={handleSave}>Save Assignments</button>
+      </div>
     </div>
   );
 };
 
 // Component to render Streams Table (with card view for mobile)
-const StreamTable = ({ streams, platform, onDelete, newStreamId }) => {
+const StreamTable = ({ streams, platform, onDelete, newStreamId, agents, onManageAssignments }) => {
   const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'asc' });
   const [searchTerm, setSearchTerm] = useState('');
   const [showCardView, setShowCardView] = useState(window.innerWidth < 768);
@@ -324,6 +256,27 @@ const StreamTable = ({ streams, platform, onDelete, newStreamId }) => {
       String(value).toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
+
+  // Render agent info based on the assignments field.
+  // Update renderAgentInfo in StreamTable component
+const renderAgentInfo = (stream) => {
+  if (stream.assignments && stream.assignments.length > 0) {
+    return (
+      <div className="assigned-agents">
+        {stream.assignments.map((assignment, index) => {
+          const agent = agents.find(a => a.id === assignment.agent_id);
+          return agent ? (
+            <div key={index} className="agent-tag">
+              <span className="agent-icon">👤</span>
+              {agent.username}
+            </div>
+          ) : null;
+        })}
+      </div>
+    );
+  }
+  return <span className="unassigned-badge">⚠️ UNASSIGNED</span>;
+};
 
   if (streams.length === 0) return <p className="empty-state">No {platform} streams available.</p>;
 
@@ -377,9 +330,9 @@ const StreamTable = ({ streams, platform, onDelete, newStreamId }) => {
                 <p><strong>Username:</strong> {stream.streamer_username}</p>
                 <p>
                   <strong>Stream:</strong>{' '}
-                  {stream[`${platform}_m3u8_url`] ? (
+                  {stream[`${platform.toLowerCase()}_m3u8_url`] ? (
                     <a
-                      href={stream[`${platform}_m3u8_url`]}
+                      href={stream[`${platform.toLowerCase()}_m3u8_url`]}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="stream-link"
@@ -392,14 +345,16 @@ const StreamTable = ({ streams, platform, onDelete, newStreamId }) => {
                 </p>
                 <div className="agent-assignment">
                   <span className="assignment-label">AGENT:</span>
-                  {stream.agent ? (
-                    <div className="assigned-agent">
-                      <span className="agent-icon">👤</span>
-                      {stream.agent.username}
-                    </div>
-                  ) : (
-                    <span className="unassigned-badge">⚠️ UNASSIGNED</span>
-                  )}
+                  {renderAgentInfo(stream)}
+                </div>
+                <div className="action-buttons">
+                  <button
+                    className="manage-button"
+                    onClick={() => onManageAssignments(stream)}
+                    title="Manage Assignments"
+                  >
+                    Manage
+                  </button>
                 </div>
               </div>
             </div>
@@ -410,22 +365,11 @@ const StreamTable = ({ streams, platform, onDelete, newStreamId }) => {
           <table className="streams-table">
             <thead>
               <tr>
-                {['ID', 'Username', 'M3U8 URL', 'Actions'].map((header) => (
-                  <th key={header}>
-                    <button
-                      className="sort-header"
-                      onClick={() => handleSort(header.toLowerCase().replace(' ', '_'))}
-                      aria-label={`Sort by ${header}`}
-                    >
-                      {header}
-                      {sortConfig.key === header.toLowerCase().replace(' ', '_') && (
-                        <span className="sort-arrow">
-                          {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                        </span>
-                      )}
-                    </button>
-                  </th>
-                ))}
+                <th>ID</th>
+                <th>Username</th>
+                <th>Agent</th>
+                <th>M3U8 URL</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -436,10 +380,11 @@ const StreamTable = ({ streams, platform, onDelete, newStreamId }) => {
                 >
                   <td data-label="ID">{stream.id}</td>
                   <td data-label="Username">{stream.streamer_username}</td>
+                  <td data-label="Agent">{renderAgentInfo(stream)}</td>
                   <td data-label="M3U8 URL">
-                    {stream[`${platform}_m3u8_url`] ? (
+                    {stream[`${platform.toLowerCase()}_m3u8_url`] ? (
                       <a
-                        href={stream[`${platform}_m3u8_url`]}
+                        href={stream[`${platform.toLowerCase()}_m3u8_url`]}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="stream-link"
@@ -450,8 +395,7 @@ const StreamTable = ({ streams, platform, onDelete, newStreamId }) => {
                       'N/A'
                     )}
                   </td>
-                  
-                  <td>
+                  <td data-label="Actions">
                     <button
                       onClick={() => onDelete(stream.id)}
                       className="delete-button"
@@ -459,6 +403,14 @@ const StreamTable = ({ streams, platform, onDelete, newStreamId }) => {
                       aria-label="Delete stream"
                     >
                       🗑️
+                    </button>
+                    <button
+                      onClick={() => onManageAssignments(stream)}
+                      className="manage-button"
+                      title="Manage Assignments"
+                      aria-label="Manage Assignments"
+                    >
+                      Manage
                     </button>
                   </td>
                 </tr>
@@ -475,9 +427,12 @@ const StreamTable = ({ streams, platform, onDelete, newStreamId }) => {
   );
 };
 
-// Fancier Agent Table using card view on mobile and table view on larger screens.
-const AgentTable = ({ agents, onEdit, onDelete }) => {
+// Agent Table with search and pagination (also supports card view for mobile)
+const AgentTable = ({ agents, onEdit, onDelete, onAddAgent }) => {
   const [showCardView, setShowCardView] = useState(window.innerWidth < 768);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   useEffect(() => {
     const handleResize = () => setShowCardView(window.innerWidth < 768);
@@ -485,14 +440,40 @@ const AgentTable = ({ agents, onEdit, onDelete }) => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const filteredAgents = agents.filter(agent =>
+    agent.username.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const totalPages = Math.ceil(filteredAgents.length / itemsPerPage);
+  const indexOfLast = currentPage * itemsPerPage;
+  const indexOfFirst = indexOfLast - itemsPerPage;
+  const currentAgents = filteredAgents.slice(indexOfFirst, indexOfLast);
+
+  const paginate = (pageNumber) => {
+    if (pageNumber < 1 || pageNumber > totalPages) return;
+    setCurrentPage(pageNumber);
+  };
+
   if (agents.length === 0) return <p className="empty-state">No agents available.</p>;
 
   return (
     <div className="agent-table-container">
       <h2 className="section-title">Agents Management</h2>
+      <div className="search-container">
+        <input
+          type="text"
+          placeholder="Search agents..."
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setCurrentPage(1);
+          }}
+          className="search-input"
+        />
+      </div>
       {showCardView ? (
         <div className="agent-cards">
-          {agents.map(agent => (
+          {currentAgents.map(agent => (
             <div key={agent.id} className="agent-card">
               <div className="agent-card-header">
                 <h3>ID: {agent.id}</h3>
@@ -512,7 +493,7 @@ const AgentTable = ({ agents, onEdit, onDelete }) => {
           ))}
         </div>
       ) : (
-        <table className="agents-table">
+        <table className="streams-table">
           <thead>
             <tr>
               <th>ID</th>
@@ -521,7 +502,7 @@ const AgentTable = ({ agents, onEdit, onDelete }) => {
             </tr>
           </thead>
           <tbody>
-            {agents.map(agent => (
+            {currentAgents.map(agent => (
               <tr key={agent.id}>
                 <td>{agent.id}</td>
                 <td>{agent.username}</td>
@@ -538,95 +519,14 @@ const AgentTable = ({ agents, onEdit, onDelete }) => {
           </tbody>
         </table>
       )}
-      <style jsx>{`
-        .agent-table-container {
-          margin-top: 2rem;
-          background: #1a1a1a;
-          padding: 1rem;
-          border-radius: 8px;
-          border: 1px solid #2d2d2d;
-        }
-        .section-title {
-          font-size: 1.25rem;
-          font-weight: 600;
-          margin-bottom: 1rem;
-          color: #e0e0e0;
-        }
-        .agents-table {
-          width: 100%;
-          border-collapse: collapse;
-        }
-        .agents-table th, .agents-table td {
-          padding: 0.75rem 1rem;
-          border-bottom: 1px solid #444;
-          color: #e0e0e0;
-          text-align: left;
-        }
-        .agents-table th {
-          background: #252525;
-        }
-        .agent-cards {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-          gap: 16px;
-        }
-        .agent-card {
-          background: #252525;
-          border-radius: 8px;
-          padding: 16px;
-          border: 1px solid #444;
-          transition: transform 0.3s ease, box-shadow 0.3s ease;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-        }
-        .agent-card:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-        }
-        .agent-card-header h3 {
-          margin: 0;
-          font-size: 1.1rem;
-          color: #fff;
-        }
-        .agent-card-content p {
-          margin: 0.5rem 0;
-          font-size: 0.95rem;
-          color: #ccc;
-        }
-        .agent-card-actions {
-          display: flex;
-          gap: 8px;
-          margin-top: 0.75rem;
-        }
-        .edit-button {
-          padding: 0.4rem 0.75rem;
-          background: #007bff;
-          color: white;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-          transition: background 0.3s ease;
-        }
-        .edit-button:hover {
-          background: #0056b3;
-        }
-        .delete-button {
-          padding: 0.4rem 0.75rem;
-          background: #ff4444;
-          color: white;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-          transition: background 0.3s ease;
-        }
-        .delete-button:hover {
-          background: #cc3333;
-        }
-      `}</style>
+      <div className="table-footer">
+        Showing {currentAgents.length} of {filteredAgents.length} agents
+      </div>
     </div>
   );
 };
 
-const AddStreamForm = ({ onAddStream, refreshStreams, onStreamAdded }) => {
+const AddStreamForm = ({ onAddStream, refreshStreams, onStreamAdded, refreshAgents }) => {
   const [platform, setPlatform] = useState('chaturbate');
   const [roomUrl, setRoomUrl] = useState('');
   const [selectedAgentId, setSelectedAgentId] = useState('');
@@ -638,13 +538,8 @@ const AddStreamForm = ({ onAddStream, refreshStreams, onStreamAdded }) => {
   const [progress, setProgress] = useState(0);
   const [progressMessage, setProgressMessage] = useState('');
   const [estimatedTime, setEstimatedTime] = useState(0);
-  // Keep form expanded on mobile
   const [isFormExpanded] = useState(true);
-  // Quick add agent inline form fields
-  const [quickAgent, setQuickAgent] = useState({ username: '', password: '' });
-  const [showQuickAgent, setShowQuickAgent] = useState(false);
-  const [quickAgentMsg, setQuickAgentMsg] = useState('');
-  const [quickAgentError, setQuickAgentError] = useState('');
+  const [showAddAgentModal, setShowAddAgentModal] = useState(false);
 
   useEffect(() => {
     const fetchAgents = async () => {
@@ -696,7 +591,7 @@ const AddStreamForm = ({ onAddStream, refreshStreams, onStreamAdded }) => {
       const response = await axios.post('/api/streams/interactive', {
         room_url: roomUrl,
         platform: platform,
-        agent_id: selectedAgentId // Ensure the selected agent is assigned
+        agent_id: selectedAgentId
       });
       const { job_id } = response.data;
       setJobId(job_id);
@@ -777,67 +672,12 @@ const AddStreamForm = ({ onAddStream, refreshStreams, onStreamAdded }) => {
             <button 
               type="button"
               className="quick-add-button"
-              onClick={() => setShowQuickAgent(!showQuickAgent)}
+              onClick={() => setShowAddAgentModal(true)}
               aria-label="Quick add agent"
             >
               + Add Agent
             </button>
           </div>
-          {showQuickAgent && (
-            <div className="quick-agent-form">
-              <input
-                type="text"
-                placeholder="Username"
-                value={quickAgent.username}
-                onChange={(e) => setQuickAgent({ ...quickAgent, username: e.target.value })}
-                className="form-input quick-input"
-              />
-              <input
-                type="password"
-                placeholder="Password"
-                value={quickAgent.password}
-                onChange={(e) => setQuickAgent({ ...quickAgent, password: e.target.value })}
-                className="form-input quick-input"
-              />
-              <button 
-                type="button"
-                onClick={async () => {
-                  setQuickAgentError('');
-                  setQuickAgentMsg('');
-                  if (!quickAgent.username.trim() || !quickAgent.password.trim()) {
-                    setQuickAgentError('Both username and password are required.');
-                    return;
-                  }
-                  try {
-                    const payload = {
-                      username: quickAgent.username.trim(),
-                      password: quickAgent.password.trim(),
-                      firstname: quickAgent.username.trim(),
-                      lastname: 'User',
-                      email: `${quickAgent.username.trim()}@example.com`,
-                      phonenumber: 'N/A'
-                    };
-                    const res = await axios.post('/api/agents', payload);
-                    setQuickAgentMsg(res.data.message);
-                    setQuickAgent({ username: '', password: '' });
-                    const agentsRes = await axios.get('/api/agents');
-                    setAgents(agentsRes.data);
-                    if (agentsRes.data.length > 0) {
-                      setSelectedAgentId(agentsRes.data[agentsRes.data.length - 1].id.toString());
-                    }
-                    setShowQuickAgent(false);
-                  } catch (error) {
-                    setQuickAgentError(error.response?.data.message || 'Error creating agent.');
-                  }
-                }}
-                className="quick-submit-button"
-              >
-                Create
-              </button>
-              {quickAgentError && <div className="error-message">{quickAgentError}</div>}
-              {quickAgentMsg && <div className="success-message">{quickAgentMsg}</div>}
-            </div>
-          )}
         </div>
         <button
           type="submit"
@@ -857,57 +697,22 @@ const AddStreamForm = ({ onAddStream, refreshStreams, onStreamAdded }) => {
           )}
         </button>
       </form>
-      <style jsx>{`
-        .assign-group {
-          display: flex;
-          flex-direction: column;
-        }
-        .assign-wrapper {
-          display: flex;
-          gap: 8px;
-          align-items: center;
-        }
-        .quick-add-button {
-          padding: 0.5rem 0.75rem;
-          background: #007bff;
-          border: none;
-          border-radius: 4px;
-          color: white;
-          cursor: pointer;
-          transition: background 0.3s ease;
-          font-size: 0.9rem;
-        }
-        .quick-add-button:hover {
-          background: #0056b3;
-        }
-        .quick-agent-form {
-          margin-top: 0.75rem;
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-          background: #2d2d2d;
-          padding: 0.75rem;
-          border-radius: 4px;
-        }
-        .quick-input {
-          font-size: 0.9rem;
-          padding: 0.5rem;
-        }
-        .quick-submit-button {
-          padding: 0.5rem;
-          background: #28a745;
-          border: none;
-          border-radius: 4px;
-          color: white;
-          cursor: pointer;
-          transition: background 0.3s ease;
-          font-size: 0.9rem;
-          margin-top: 0.5rem;
-        }
-        .quick-submit-button:hover {
-          background: #218838;
-        }
-      `}</style>
+      {showAddAgentModal && (
+        <AddAgentModal 
+          onClose={() => setShowAddAgentModal(false)}
+          onAgentCreated={() => {
+            axios.get('/api/agents')
+              .then(res => {
+                setAgents(res.data);
+                if (res.data.length > 0) {
+                  setSelectedAgentId(res.data[res.data.length - 1].id.toString());
+                }
+                if (refreshAgents) refreshAgents();
+              })
+              .catch(err => console.error('Error refreshing agents:', err));
+          }}
+        />
+      )}
     </div>
   );
 };
@@ -918,13 +723,13 @@ function StreamsPage() {
     stripchat: []
   });
   const [agents, setAgents] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('chaturbate');
   const [newStreamId, setNewStreamId] = useState(null);
   const [toast, setToast] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState({ show: false, streamId: null });
   const [editAgent, setEditAgent] = useState(null);
+  const [manageAssignmentStream, setManageAssignmentStream] = useState(null);
 
   const showToast = (message, type = 'success', duration = 3000) => {
     setToast({ message, type });
@@ -944,8 +749,6 @@ function StreamsPage() {
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch streams');
       console.error('Stream fetch error:', err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -1019,7 +822,6 @@ function StreamsPage() {
     showToast("Stream created successfully", "success");
   };
 
-  // Agent edit & delete functions
   const handleEditAgent = async (agentId, payload) => {
     try {
       await axios.put(`/api/agents/${agentId}`, payload);
@@ -1042,7 +844,6 @@ function StreamsPage() {
     }
   };
 
-  // Open edit modal for agent
   const openEditAgentModal = (agent) => {
     setEditAgent(agent);
   };
@@ -1051,12 +852,16 @@ function StreamsPage() {
     setEditAgent(null);
   };
 
-  if (loading) return (
-    <div className="loading-overlay">
-      <div className="loading-spinner"></div>
-      <p>Loading streams...</p>
-    </div>
-  );
+  // Open manage assignments modal for a given stream.
+  const openManageAssignments = (stream) => {
+    setManageAssignmentStream(stream);
+  };
+
+  // Callback after assignments are updated.
+  const handleAssignmentsUpdated = (streamId, updatedAssignments) => {
+    // For simplicity, refresh the streams list.
+    refreshStreams();
+  };
 
   if (error) return (
     <div className="error-overlay">
@@ -1070,13 +875,13 @@ function StreamsPage() {
   return (
     <ErrorBoundary>
       <div className="streams-container">
-        
         <AddStreamForm 
           onAddStream={(newStream) => {
             handleAddStream(newStream);
             handleStreamAdded();
           }} 
           refreshStreams={refreshStreams} 
+          refreshAgents={fetchAgents}
         />
 
         <div className="tabs-container">
@@ -1102,6 +907,8 @@ function StreamsPage() {
             platform={activeTab}
             onDelete={(id) => setConfirmDelete({ show: true, streamId: id })}
             newStreamId={newStreamId}
+            agents={agents}
+            onManageAssignments={openManageAssignments}
           />
         </div>
 
@@ -1110,6 +917,7 @@ function StreamsPage() {
             agents={agents}
             onEdit={openEditAgentModal}
             onDelete={(id) => setConfirmDelete({ show: true, streamId: `agent-${id}` })}
+            onAddAgent={() => {}}
           />
         </div>
 
@@ -1142,6 +950,15 @@ function StreamsPage() {
           />
         )}
 
+        {manageAssignmentStream && (
+          <ManageAssignmentsModal 
+            stream={manageAssignmentStream}
+            agents={agents}
+            onClose={() => setManageAssignmentStream(null)}
+            onSave={handleAssignmentsUpdated}
+          />
+        )}
+
         <div className="fab-container">
           <button 
             className="fab refresh-button" 
@@ -1152,590 +969,6 @@ function StreamsPage() {
             ↻
           </button>
         </div>
-
-        <style jsx>{`
-          /* Base styles */
-          .streams-container {
-            padding: 16px;
-            max-width: 1200px;
-            margin: 0 auto;
-            animation: slideUp 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-            color: #e0e0e0;
-            font-family: 'Inter', sans-serif;
-          }
-          .page-title {
-            font-size: 1.8rem;
-            font-weight: bold;
-            margin-bottom: 1.5rem;
-            text-align: center;
-          }
-          /* Form styles */
-          .form-container {
-            margin: 1.5rem 0;
-            padding: 1rem;
-            background: #1a1a1a;
-            border-radius: 8px;
-            border: 1px solid #2d2d2d;
-          }
-          .form-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: default;
-          }
-          .toggle-form-button {
-            background: none;
-            border: none;
-            color: #aaa;
-            font-size: 1.2rem;
-            cursor: default;
-          }
-          .form-title {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 1rem;
-            color: #e0e0e0;
-          }
-          .error-message {
-            margin: 1rem 0;
-            padding: 0.5rem;
-            background: rgba(255, 68, 68, 0.1);
-            color: #ff4444;
-            border-radius: 4px;
-            border-left: 3px solid #ff4444;
-          }
-          .success-message {
-            margin: 1rem 0;
-            padding: 0.5rem;
-            background: rgba(40, 167, 69, 0.1);
-            color: #28a745;
-            border-radius: 4px;
-            border-left: 3px solid #28a745;
-          }
-          .form-group {
-            margin-bottom: 1rem;
-          }
-          .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: #ccc;
-          }
-          .form-select,
-          .form-input {
-            width: 100%;
-            padding: 0.75rem;
-            background: #252525;
-            border: 1px solid #444;
-            border-radius: 4px;
-            color: #e0e0e0;
-            transition: all 0.3s ease;
-            font-size: 16px;
-          }
-          .form-select:focus,
-          .form-input:focus {
-            border-color: #007bff;
-            outline: none;
-            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.3);
-          }
-          /* Button styles */
-          .add-button {
-            padding: 0.75rem 1.25rem;
-            background: linear-gradient(135deg, #007bff, #0056b3);
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: 500;
-          }
-          .add-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
-          }
-          .add-button:disabled {
-            background: #333;
-            cursor: not-allowed;
-          }
-          .add-button.submitting {
-            position: relative;
-            padding: 0;
-            height: 50px;
-            overflow: hidden;
-          }
-          .add-button.success {
-            background: #28a745 !important;
-          }
-          .button-progress {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            z-index: 1;
-          }
-          .progress-fill {
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            background: #007bff;
-            transition: width 0.3s ease;
-            z-index: 0;
-          }
-          .progress-text {
-            position: relative;
-            z-index: 1;
-            text-align: center;
-            padding: 0 10px;
-            font-size: 14px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-          }
-          /* Tabs styles */
-          .tabs-container {
-            margin-bottom: 1rem;
-            border-bottom: 1px solid #2d2d2d;
-          }
-          .tabs-nav {
-            display: flex;
-            gap: 0.5rem;
-            justify-content: center;
-          }
-          .tab-button {
-            padding: 0.75rem 1.25rem;
-            background: none;
-            border: none;
-            color: #aaa;
-            cursor: pointer;
-            position: relative;
-            transition: all 0.3s ease;
-            flex: 1;
-            max-width: 200px;
-          }
-          .tab-button::before {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background: #007bff;
-            transform: scaleX(0);
-            transition: transform 0.3s ease;
-          }
-          .tab-button.active,
-          .tab-button:hover {
-            color: #fff;
-          }
-          .tab-button.active::before {
-            transform: scaleX(1);
-          }
-          .platform-name {
-            margin-right: 8px;
-          }
-          .stream-count {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.9rem;
-          }
-          /* Table container */
-          .tables-container {
-            margin-top: 1.5rem;
-          }
-          .table-container {
-            position: relative;
-            background: #1a1a1a;
-            border-radius: 8px;
-            padding: 1rem;
-            margin-top: 1rem;
-          }
-          .empty-state {
-            text-align: center;
-            padding: 2rem;
-            color: #888;
-          }
-          /* Search and view toggle */
-          .search-container {
-            margin-bottom: 1rem;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-          }
-          .search-input {
-            flex-grow: 1;
-            padding: 0.75rem;
-            background: #252525;
-            border: 1px solid #444;
-            border-radius: 4px;
-            color: #e0e0e0;
-            font-size: 16px;
-          }
-          .view-toggle {
-            display: flex;
-            gap: 5px;
-          }
-          .view-button {
-            background: #252525;
-            border: 1px solid #444;
-            border-radius: 4px;
-            color: #ccc;
-            padding: 0 10px;
-            cursor: pointer;
-            transition: background 0.3s ease;
-          }
-          .view-button.active {
-            background: #333;
-            color: #fff;
-            border-color: #666;
-          }
-          /* Table styles */
-          .table-scroll {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-          }
-          .streams-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: #1a1a1a;
-            border-radius: 8px;
-            overflow: hidden;
-          }
-          .streams-table th {
-            padding: 0.75rem 1rem;
-            text-align: left;
-            background: #252525;
-            color: #e0e0e0;
-            font-weight: 500;
-            border-bottom: 1px solid #444;
-            white-space: nowrap;
-          }
-          .streams-table td {
-            padding: 0.75rem 1rem;
-            border-bottom: 1px solid #2d2d2d;
-            color: #e0e0e0;
-          }
-          .sort-header {
-            background: none;
-            border: none;
-            color: inherit;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: inherit;
-            font-weight: inherit;
-            padding: 0;
-          }
-          .sort-arrow {
-            color: #007bff;
-          }
-          .stream-row:hover {
-            background: #252525;
-          }
-          .new-stream-blink {
-            animation: blink 1s ease-in-out 3;
-          }
-          @keyframes blink {
-            0%, 100% { background-color: transparent; }
-            50% { background-color: #444; }
-          }
-          .stream-link {
-            color: #007bff;
-            text-decoration: none;
-          }
-          .stream-link:hover {
-            text-decoration: underline;
-          }
-          .table-footer {
-            padding: 1rem;
-            text-align: right;
-            color: #aaa;
-            font-size: 0.9rem;
-          }
-          .delete-button {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 1.1rem;
-            padding: 6px;
-            border-radius: 4px;
-            transition: all 0.2s ease;
-          }
-          .delete-button:hover {
-            color: #ff4444;
-            background: rgba(255, 68, 68, 0.1);
-          }
-          .delete-button.mobile {
-            padding: 8px;
-            font-size: 1.3rem;
-          }
-          /* Card view styles for mobile (Streams) */
-          .stream-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-            gap: 16px;
-          }
-          .stream-card {
-            background: #252525;
-            border-radius: 8px;
-            padding: 16px;
-            border: 1px solid #444;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-          }
-          .stream-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-          }
-          .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-            border-bottom: 1px solid #444;
-            padding-bottom: 8px;
-          }
-          .card-title {
-            margin: 0;
-            font-size: 1.2rem;
-            font-weight: 500;
-            color: #fff;
-          }
-          .card-content p {
-            margin: 0.75rem 0;
-            font-size: 0.9rem;
-            color: #e0e0e0;
-          }
-          .card-content strong {
-            color: #fff;
-            font-weight: 500;
-          }
-          .agent-assignment {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin: 12px 0;
-          }
-          .assignment-label {
-            color: #888;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-          }
-          .assigned-agent {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            color: #28a745;
-          }
-          .unassigned-badge {
-            background: rgba(255, 68, 68, 0.1);
-            color: #ff4444;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.85rem;
-          }
-          .agent-icon {
-            font-size: 0.9rem;
-          }
-          /* Toast Notification Styles */
-          .toast {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #28a745;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            z-index: 3000;
-            animation: slideDown 0.3s ease-out;
-          }
-          .toast-icon {
-            font-size: 1.2rem;
-          }
-          @keyframes slideDown {
-            from { transform: translate(-50%, -100%); opacity: 0; }
-            to { transform: translate(-50%, 0); opacity: 1; }
-          }
-          /* FAB (Refresh) Styles */
-          .fab-container {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 3000;
-          }
-          .fab {
-            background: linear-gradient(135deg, #007bff, #0056b3);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 56px;
-            height: 56px;
-            font-size: 1.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-          }
-          .fab:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
-          }
-          /* Modal Styles for Editing Agent */
-          .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(5px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-          }
-          .modal-content {
-            background: #1a1a1a;
-            padding: 2rem;
-            border-radius: 8px;
-            max-width: 600px;
-            width: 90%;
-            position: relative;
-            animation: zoomIn 0.3s ease;
-            border: 1px solid #2d2d2d;
-          }
-          .modal-title {
-            font-size: 1.5rem;
-            margin-bottom: 1.5rem;
-            color: #e0e0e0;
-          }
-          .close-button {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            background: none;
-            border: none;
-            color: #e0e0e0;
-            font-size: 1.5rem;
-            cursor: pointer;
-            transition: color 0.3s ease;
-          }
-          .close-button:hover {
-            color: #ff4444;
-          }
-          .agent-form {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-          }
-          @keyframes zoomIn {
-            from { transform: scale(0.8); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-          }
-          @keyframes slideUp {
-            0% { transform: translateY(20px); opacity: 0; }
-            100% { transform: translateY(0); opacity: 1; }
-          }
-          @media (max-width: 768px) {
-            .streams-container {
-              padding: 10px;
-            }
-            .tab-button {
-              flex: 1;
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              padding: 12px 8px;
-              font-size: 0.8rem;
-            }
-            .streams-table,
-            .streams-table th,
-            .streams-table td {
-              font-size: 0.9rem;
-              padding: 0.5rem;
-            }
-            .form-input,
-            .form-select {
-              font-size: 16px;
-            }
-          }
-          /* Fancier Agent Table Styles */
-          .agent-table-container {
-            margin-top: 2rem;
-            background: #1a1a1a;
-            padding: 1rem;
-            border-radius: 8px;
-            border: 1px solid #2d2d2d;
-          }
-          .agent-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-            gap: 16px;
-          }
-          .agent-card {
-            background: #252525;
-            border-radius: 8px;
-            padding: 16px;
-            border: 1px solid #444;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-          }
-          .agent-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-          }
-          .agent-card-header h3 {
-            margin: 0;
-            font-size: 1.1rem;
-            color: #fff;
-          }
-          .agent-card-content p {
-            margin: 0.5rem 0;
-            font-size: 0.95rem;
-            color: #ccc;
-          }
-          .agent-card-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 0.75rem;
-          }
-          .edit-button {
-            padding: 0.4rem 0.75rem;
-            background: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background 0.3s ease;
-          }
-          .edit-button:hover {
-            background: #0056b3;
-          }
-          .delete-button {
-            padding: 0.4rem 0.75rem;
-            background: #ff4444;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background 0.3s ease;
-          }
-          .delete-button:hover {
-            background: #cc3333;
-          }
-        `}</style>
       </div>
     </ErrorBoundary>
   );

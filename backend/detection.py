@@ -9,7 +9,7 @@ import subprocess
 from datetime import datetime, timedelta
 import av  # PyAV for handling HLS streams
 from ultralytics import YOLO
-from flask import Flask, request, jsonify
+from flask import current_app
 import requests
 import whisper
 from PIL import Image
@@ -30,18 +30,15 @@ _yolo_lock = threading.Lock()
 # Global dictionaries to store stream info and last alerted objects to avoid duplicate alerts.
 stream_info = {}
 last_video_alerted_objects = {}  # Key: stream_url, Value: set of detected object classes
-audio_keywords = []
 
 def extract_stream_info_from_db(stream_url):
     with app.app_context():
         chaturbate_stream = ChaturbateStream.query.filter_by(chaturbate_m3u8_url=stream_url).first()
         if chaturbate_stream:
             return chaturbate_stream.type, chaturbate_stream.streamer_username
-        
         stripchat_stream = StripchatStream.query.filter_by(stripchat_m3u8_url=stream_url).first()
         if stripchat_stream:
             return stripchat_stream.type, stripchat_stream.streamer_username
-        
         stream_record = Stream.query.filter_by(room_url=stream_url).first()
         if stream_record:
             return stream_record.type, stream_record.streamer_username
@@ -172,7 +169,7 @@ def async_send_notifications(log_id, platform_name, streamer_name):
             return
         except Exception as e:
             if "Timed out" in str(e):
-                logging.error("Timeout sending Telegram image, trying fallback text message.");
+                logging.error("Timeout sending Telegram image, trying fallback text message.")
                 try:
                     fallback_msg = f"🚨 Object Detection Alert\nPlatform: {platform_name}\nStreamer: {streamer_name}\nImage failed to send due to timeout."
                     with app.app_context():
@@ -223,8 +220,6 @@ def log_detection(detections, stream_url, annotated_image, platform_name, stream
         db.session.add(log_entry)
         db.session.commit()
         
-        
-        
         threading.Thread(target=async_send_notifications, args=(log_entry.id, platform_name, streamer_name)).start()
 
 def update_latest_visual_log_with_audio(stream_url, transcript, detected_keywords):
@@ -262,7 +257,6 @@ def process_combined_detection(stream_url, cancel_event):
         logging.error("Failed to open stream %s: %s", stream_url, e)
         return
 
-    # Retrieve the first video stream; audio stream may be None if not available.
     video_stream = next((s for s in container.streams if s.type == 'video'), None)
     audio_stream = next((s for s in container.streams if s.type == 'audio'), None)
 
@@ -272,11 +266,9 @@ def process_combined_detection(stream_url, cancel_event):
         return
 
     logging.info("Combined detection started for %s", stream_url)
-    # Set audio buffering window to 5 seconds
     required_audio_bytes = 16000 * 2 * 5  # 5 seconds of audio (mono, 16-bit, 16kHz)
     audio_buffer = b""
 
-    # Load the Whisper model once.
     try:
         whisper_model = whisper.load_model("base")
         logging.info("Whisper model loaded for combined detection.")
@@ -284,7 +276,6 @@ def process_combined_detection(stream_url, cancel_event):
         logging.error("Error loading Whisper model: %s", e)
         whisper_model = None
 
-    # Process packets with error handling to skip corrupt packets.
     for packet in container.demux(video_stream, audio_stream):
         try:
             for frame in packet.decode():
@@ -299,7 +290,6 @@ def process_combined_detection(stream_url, cancel_event):
                         annotated = annotate_frame(img, detections)
                         log_detection(detections, stream_url, annotated, platform_name, streamer_name)
                 elif frame.__class__.__name__ == "AudioFrame" and whisper_model is not None:
-                    # Process audio frame; accumulate until we have enough bytes.
                     try:
                         audio_data = frame.to_ndarray().tobytes()
                         audio_buffer += audio_data
@@ -312,7 +302,7 @@ def process_combined_detection(stream_url, cancel_event):
                         audio_float = audio_int16.astype(np.float32) / 32768.0
                         try:
                             audio_input = whisper.pad_or_trim(audio_float)
-                            mel = whisper.log_mel_spectrogram(audio_input, n_mels=128).to(whisper_model.device)
+                            mel = whisper.log_mel_spectrogram(audio_input).to(whisper_model.device)
                             options = whisper.DecodingOptions(fp16=False)
                             result = whisper.decode(whisper_model, mel, options)
                             text = result.text.strip().lower()
@@ -341,7 +331,6 @@ def process_combined_detection(stream_url, cancel_event):
                                             threading.Thread(target=async_send_notifications, args=(log_entry.id, platform_name, streamer_name)).start()
                         except Exception as e:
                             logging.error("Combined Whisper transcription error: %s", e)
-                        # Clear buffer after processing
                         audio_buffer = b""
         except Exception as e:
             logging.error("Error decoding packet: %s", e)
@@ -358,9 +347,6 @@ def check_stream_online(m3u8_url, timeout=10):
         logging.error("Stream check failed for %s: %s", m3u8_url, e)
         return False
 
-# ----------------------------
-# Chat Detection Functions (unchanged)
-# ----------------------------
 def parse_chat_messages(html_content, platform):
     messages = []
     soup = BeautifulSoup(html_content, "html.parser")
@@ -487,9 +473,6 @@ def chat_detection_loop(stream_url, cancel_event, interval=60):
         detect_chat_stream(stream_url, cancel_event)
         time.sleep(interval)
 
-# ----------------------------
-# Main Entry Point
-# ----------------------------
 if __name__ == "__main__":
     import sys
     if len(sys.argv) < 2:
@@ -500,5 +483,4 @@ if __name__ == "__main__":
     cancel_event = threading.Event()
     logging.basicConfig(level=logging.INFO)
     
-    # Use the combined detection function to process both audio and video.
     process_combined_detection(stream_url, cancel_event)

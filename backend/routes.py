@@ -595,46 +595,41 @@ def trigger_detection():
 def advanced_detect():
     try:
         if 'audio' in request.files:
+            # Whisper audio processing
             audio_file = request.files['audio']
             stream_url = request.form.get('stream_url')
             timestamp = request.form.get('timestamp')
-            audio_bytes = audio_file.read()
-            try:
-                wf = wave.open(BytesIO(audio_bytes), "rb")
-            except Exception as e:
-                return jsonify({"message": "Error processing audio file", "error": str(e)}), 500
-            if wf.getnchannels() != 1 or wf.getsampwidth() != 2 or wf.getframerate() != 16000:
-                return jsonify({"message": "Audio file must be mono, 16-bit, 16kHz WAV"}), 400
-            model = load_vosk_model()
-            if model is None:
-                return jsonify({"message": "Vosk model not loaded"}), 500
-            recognizer = KaldiRecognizer(model, 16000)
-            recognizer.SetWords(True)
-            while True:
-                data = wf.readframes(4000)
-                if len(data) == 0:
-                    break
-                recognizer.AcceptWaveform(data)
-            final_result = json.loads(recognizer.FinalResult())
-            text = final_result.get("text", "").lower()
+
+            # Load Whisper model
+            model = whisper.load_model("base")
+            audio = whisper.load_audio(BytesIO(audio_file.read()))
+            audio = whisper.pad_or_trim(audio)
+            
+            # Process audio
+            mel = whisper.log_mel_spectrogram(audio).to(model.device)
+            result = whisper.decode(model, mel, whisper.DecodingOptions(fp16=False))
+            text = result.text.strip().lower()
+
+            # Keyword detection
             keywords = [kw.keyword.lower() for kw in ChatKeyword.query.all()]
             detected_keywords = [kw for kw in keywords if kw in text]
+
             if detected_keywords:
-                audio_file_data = base64.b64encode(audio_bytes).decode('utf-8')
-                log_entry = Log(
+                log_entry = DetectionLog(
                     room_url=stream_url,
                     event_type='audio_detection',
                     details={
                         'keywords': detected_keywords,
                         'transcript': text,
-                        'audio_file_data': audio_file_data,
                         'timestamp': timestamp
                     }
                 )
                 db.session.add(log_entry)
                 db.session.commit()
-                send_notifications(log_entry, {"keywords": detected_keywords})
-                return jsonify({"message": "Audio keywords detected", "keywords": detected_keywords}), 200
+                return jsonify({
+                    "message": "Audio keywords detected",
+                    "keywords": detected_keywords
+                }), 200
             return jsonify({"message": "No audio keywords detected"}), 200
         if 'chat_image' in request.files:
             file = request.files["chat_image"]
@@ -800,3 +795,57 @@ def get_logs():
     except Exception as e:
         app.logger.error("Error in /api/logs: %s", e)
         return jsonify({"message": "Error fetching dashboard data", "error": str(e)}), 500
+
+
+# Add these endpoints for notifications
+@app.route("/api/notifications", methods=["GET"])
+@login_required()
+def get_notifications():
+    try:
+        notifications = DetectionLog.query.order_by(DetectionLog.timestamp.desc()).all()
+        return jsonify([{
+            "id": n.id,
+            "event_type": n.event_type,
+            "timestamp": n.timestamp.isoformat(),
+            "details": n.details,
+            "read": n.read,
+            "room_url": n.room_url
+        } for n in notifications]), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/notifications/<int:notification_id>/read", methods=["PUT"])
+@login_required()
+def mark_notification_read(notification_id):
+    try:
+        notification = DetectionLog.query.get(notification_id)
+        if not notification:
+            return jsonify({"message": "Notification not found"}), 404
+        notification.read = True
+        db.session.commit()
+        return jsonify({"message": "Notification marked as read"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/notifications/<int:notification_id>", methods=["DELETE"])
+@login_required()
+def delete_notification(notification_id):
+    try:
+        notification = DetectionLog.query.get(notification_id)
+        if not notification:
+            return jsonify({"message": "Notification not found"}), 404
+        db.session.delete(notification)
+        db.session.commit()
+        return jsonify({"message": "Notification deleted"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/notifications/read-all", methods=["PUT"])
+@login_required()
+def mark_all_notifications_read():
+    try:
+        DetectionLog.query.update({"read": True})
+        db.session.commit()
+        return jsonify({"message": "All notifications marked as read"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

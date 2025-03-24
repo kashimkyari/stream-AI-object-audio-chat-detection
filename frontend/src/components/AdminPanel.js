@@ -1,10 +1,8 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import VideoPlayer from './VideoPlayer';
-
-// Lazy load components
-const StreamsPage = lazy(() => import('./StreamsPage'));
-const FlagSettingsPage = lazy(() => import('./FlagSettingsPage'));
+import StreamsPage from './StreamsPage';
+import FlagSettingsPage from './FlagSettingsPage';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -58,21 +56,7 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-// Loading fallback component
-const LoadingFallback = () => (
-  <div className="loading-container">
-    <p>Loading...</p>
-    <style jsx>{`
-      .loading-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 200px;
-        color: #e0e0e0;
-      }
-    `}</style>
-  </div>
-);
+
 
 const AdminPanel = ({ activeTab }) => {
   console.log("Rendering AdminPanel with tab:", activeTab);
@@ -120,10 +104,6 @@ const AdminPanel = ({ activeTab }) => {
       setHasError(true);
     }
   };
-
-
-
-
 
   // Dashboard data fetching with cleanup
   useEffect(() => {
@@ -234,21 +214,15 @@ const AdminPanel = ({ activeTab }) => {
         case 'streams':
           return (
             <ErrorBoundary>
-              <Suspense fallback={<LoadingFallback />}>
-                <StreamsPage />
-              </Suspense>
+              <StreamsPage />
             </ErrorBoundary>
           );
         case 'flag':
           return (
             <ErrorBoundary>
-              <Suspense fallback={<LoadingFallback />}>
-                <FlagSettingsPage />
-              </Suspense>
+              <FlagSettingsPage />
             </ErrorBoundary>
           );
-        
-        
         default:
           return <div className="tab-content">Please select a tab</div>;
       }
