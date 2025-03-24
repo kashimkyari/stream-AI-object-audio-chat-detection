@@ -7,6 +7,7 @@ import re
 import logging
 import uuid
 import time
+
 # --- Monkey Patch for blinker._saferef ---
 if 'blinker._saferef' not in sys.modules:
     saferef = types.ModuleType('blinker._saferef')
@@ -25,6 +26,7 @@ if 'blinker._saferef' not in sys.modules:
     saferef.SafeRef = SafeRef
     sys.modules['blinker._saferef'] = saferef
 # --- End of Monkey Patch ---
+
 from concurrent.futures import ThreadPoolExecutor
 from seleniumwire import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -128,8 +130,10 @@ def scrape_chaturbate_data(url, progress_callback=None):
     """
     Scrape Chaturbate data using the new AJAX endpoint and update progress.
     
-    This function extracts the room slug from the full URL provided by the user,
-    then sends a POST request to the Chaturbate AJAX endpoint to fetch the HLS m3u8 URL.
+    This function now logs in with provided credentials before scraping.
+    It extracts the room slug from the full URL provided by the user,
+    logs in using a POST request, then sends another POST request to the AJAX endpoint
+    to fetch the HLS m3u8 URL.
     
     Args:
         url (str): The full Chaturbate room URL (e.g., "https://chaturbate.com/bunnydollstella/").
@@ -142,6 +146,38 @@ def scrape_chaturbate_data(url, progress_callback=None):
     """
     try:
         if progress_callback:
+            progress_callback(5, "Logging in to Chaturbate")
+        
+        import requests
+        session = requests.Session()
+        # Setup initial cookies with the csrftoken
+        session.cookies.update({"csrftoken": "vfO2sk8hUsSXVILMJwtcyGqhPy6WqwhH"})
+        
+        # Perform login
+        login_url = "https://chaturbate.com/auth/login/"
+        login_headers = {
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Referer": "https://chaturbate.com/",
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Origin": "https://chaturbate.com",
+        }
+        login_data = {
+            "username": "journalistafraid",
+            "password": '4adPwNBq,g"}+x3',
+            "next": "/",
+            "csrfmiddlewaretoken": "vfO2sk8hUsSXVILMJwtcyGqhPy6WqwhH"
+        }
+        login_response = session.post(login_url, data=login_data, headers=login_headers)
+        if login_response.status_code != 200:
+            error_msg = f"Login failed with status: {login_response.status_code}"
+            logging.error(error_msg)
+            if progress_callback:
+                progress_callback(100, f"Error: {error_msg}")
+            return None
+        
+        if progress_callback:
             progress_callback(10, "Extracting room slug")
         # Extract room slug from the URL
         room_slug = url.rstrip("/").split("/")[-1]
@@ -149,7 +185,7 @@ def scrape_chaturbate_data(url, progress_callback=None):
         if progress_callback:
             progress_callback(20, "Fetching m3u8 URL via AJAX endpoint")
         
-        # Set up the endpoint and headers as per the traditional approach
+        # Set up the AJAX endpoint and headers as per the traditional approach
         ajax_url = "https://chaturbate.com/get_edge_hls_url_ajax/"
         headers = {
             "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0",
@@ -164,12 +200,6 @@ def scrape_chaturbate_data(url, progress_callback=None):
             "jpeg": "1",
             "csrfmiddlewaretoken": "vfO2sk8hUsSXVILMJwtcyGqhPy6WqwhH"
         }
-        cookies = {
-            "csrftoken": "vfO2sk8hUsSXVILMJwtcyGqhPy6WqwhH"
-        }
-        import requests
-        session = requests.Session()
-        session.cookies.update(cookies)
         response = session.post(ajax_url, data=data, headers=headers)
         if response.status_code != 200:
             error_msg = f"HTTP error: {response.status_code}"
@@ -434,13 +464,3 @@ def refresh_chaturbate_stream(room_slug):
     else:
         logging.error("No Chaturbate stream found for room slug: %s", room_slug)
         return None
-
-
-# # You can add a main block for testing if desired.
-if __name__ == "__main__":
-    # Example: Refresh the stream for the room slug 'bliss_emily'
-    new_url = refresh_chaturbate_stream("bliss_emily")
-    if new_url:
-        print("m3u8 URL fetched:", new_url)
-    else:
-        print("Failed to fetch m3u8 URL.")
