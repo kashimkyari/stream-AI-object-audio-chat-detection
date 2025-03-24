@@ -22,9 +22,11 @@ function AppContent() {
   const [posterUrl, setPosterUrl] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // States for notifications badge and floating stack
+  // Notification-related states
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationStack, setNotificationStack] = useState([]);
+  const [prevUnreadCount, setPrevUnreadCount] = useState(0);
+  const [showNotificationStack, setShowNotificationStack] = useState(false);
 
   const { showToast } = useToast();
 
@@ -93,15 +95,12 @@ function AppContent() {
 
   // -------------
   // Fetch m3u8 URL using provided snippet.
-  // For an agent, assume the assigned stream URL is stored in user.assignedStreamUrl.
-  // For admin, you may select a stream from dashboardData.
   const platform = user?.role === 'agent' ? user.assignedStreamPlatform || '' : 'chaturbate';
   const streamerName = user?.role === 'agent'
     ? user.assignedStreamStreamerName || ''
     : dashboardData.streams[0]?.streamer_username || '';
 
   useEffect(() => {
-    // Only run if we have a valid platform and streamerName.
     if (!platform || !streamerName) {
       setLoading(false);
       return;
@@ -203,7 +202,8 @@ function AppContent() {
   }, [m3u8Url, platform, streamerName]);
 
   // -------------
-  // Fetch notifications count and list for badge and floating stack
+  // Fetch notifications count and list for badge and floating stack.
+  // The floating stack will only show if there are new unread notifications.
   useEffect(() => {
     const fetchNotificationsData = async () => {
       try {
@@ -215,9 +215,18 @@ function AppContent() {
             n.details.assigned_agent.toLowerCase() === user.username.toLowerCase()
           );
         }
+        // Only consider unread notifications
         const unread = notifications.filter(n => !n.read);
-        setUnreadCount(unread.length);
-        setNotificationStack(unread);
+        // Sort unread notifications so that the most recent appears at the top.
+        const sortedUnread = unread.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        setUnreadCount(sortedUnread.length);
+        setNotificationStack(sortedUnread);
+        // If new unread notifications have come in, show the stack briefly.
+        if (sortedUnread.length > prevUnreadCount) {
+          setShowNotificationStack(true);
+          setTimeout(() => setShowNotificationStack(false), 5000);
+        }
+        setPrevUnreadCount(sortedUnread.length);
       } catch (err) {
         console.error('Error fetching notifications count:', err);
       }
@@ -226,7 +235,23 @@ function AppContent() {
     fetchNotificationsData();
     const interval = setInterval(fetchNotificationsData, 60000);
     return () => clearInterval(interval);
-  }, [user]);
+  }, [user, prevUnreadCount]);
+
+  // Helper function to get a proper thumbnail image from a notification.
+  // For object detections, we use the annotated image.
+  // If the image is in base64 but not prefixed, we add the proper "data:image/png;base64," prefix.
+  const getThumbnail = (notif) => {
+    if (notif.event_type === 'object_detection') {
+      let image = notif.details?.annotated_image;
+      if (image) {
+        if (!image.startsWith("data:")) {
+          image = "data:image/png;base64," + image;
+        }
+        return image;
+      }
+    }
+    return null;
+  };
 
   return (
     <div className="app-container">
@@ -296,8 +321,8 @@ function AppContent() {
         )}
       </div>
 
-      {/* Floating Notification Stack at bottom-right */}
-      {unreadCount > 0 && (
+      {/* Floating Notification Stack at bottom-right; only shows if new notifications arrived */}
+      {showNotificationStack && notificationStack.length > 0 && (
         <div className="notification-stack">
           {notificationStack.slice(0, 5).map((notif) => (
             <div 
@@ -305,8 +330,27 @@ function AppContent() {
               className="notification-card"
               onClick={() => setActiveTab('notifications')}
             >
-              <strong>{notif.event_type === 'object_detection' ? 'Visual' : notif.event_type}</strong>
-              <p>{new Date(notif.timestamp).toLocaleTimeString()}</p>
+              <div className="card-thumbnail">
+                {getThumbnail(notif) ? (
+                  <img src={getThumbnail(notif)} alt="Detection Thumbnail" />
+                ) : (
+                  <span className="default-thumb">🔔</span>
+                )}
+              </div>
+              <div className="card-details">
+                <strong>{notif.details?.streamer_name || 'Unknown'}</strong>
+                <p>Agent: {notif.details?.assigned_agent || 'N/A'}</p>
+                <p>{new Date(notif.timestamp).toLocaleTimeString()}</p>
+              </div>
+              {notif.event_type === 'object_detection' && (
+                <div 
+                  className="card-confidence" 
+                  style={{ backgroundColor: notif.details?.detections?.[0] ? 
+                    (notif.details.detections[0].confidence >= 0.9 ? '#ff4444' : notif.details.detections[0].confidence >= 0.75 ? '#ff8c00' : notif.details.detections[0].confidence >= 0.5 ? '#ffcc00' : '#28a745') : '#28a745'
+                  }}>
+                  {notif.details?.detections?.[0] ? `${(notif.details.detections[0].confidence * 100).toFixed(1)}%` : ''}
+                </div>
+              )}
             </div>
           ))}
           {notificationStack.length > 5 && (
@@ -351,6 +395,8 @@ function AppContent() {
           border-radius: 6px;
           box-shadow: 0 2px 6px rgba(0,0,0,0.3);
           cursor: pointer;
+          display: flex;
+          align-items: center;
           transition: transform 0.2s ease;
         }
         .notification-card:hover {
@@ -360,6 +406,27 @@ function AppContent() {
           text-align: center;
           background: #333;
           font-weight: bold;
+        }
+        .card-thumbnail img {
+          width: 40px;
+          height: 40px;
+          object-fit: cover;
+          border-radius: 4px;
+          margin-right: 8px;
+        }
+        .default-thumb {
+          font-size: 1.5rem;
+          margin-right: 8px;
+        }
+        .card-details {
+          flex-grow: 1;
+        }
+        .card-confidence {
+          padding: 4px 8px;
+          border-radius: 4px;
+          color: #fff;
+          font-weight: bold;
+          font-size: 0.8rem;
         }
       `}</style>
 

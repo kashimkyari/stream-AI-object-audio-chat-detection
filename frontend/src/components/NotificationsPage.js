@@ -4,7 +4,7 @@ import './NotificationsPage.css';
 
 axios.defaults.withCredentials = true;
 
-const NotificationsPage = ({ user, ongoingStreams = [] }) => {
+const NotificationsPage = ({ user, ongoingStreams = [], agents = [] }) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -26,7 +26,16 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
     return { platform, streamer };
   }, []);
 
+  // Format the image if it's in base64 but missing the data URI prefix.
+  const formatImage = useCallback((image) => {
+    if (image && !image.startsWith("data:")) {
+      return "data:image/png;base64," + image;
+    }
+    return image;
+  }, []);
+
   // Process and format notifications.
+  // We also support a new event type "stream_created"
   const processNotifications = useCallback((data) => {
     return data.map(notification => {
       const fromUrl = extractStreamInfo(notification.room_url);
@@ -38,6 +47,8 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
         assigned_agent: notification.details?.assigned_agent || '',
         platform: notification.details?.platform ||
           (notification.event_type === 'object_detection' ? fromUrl.platform : ''),
+        stream_id: notification.details?.stream_id || null,
+        // For stream_created events, additional details can be passed in details.
         detections: (notification.details?.detections || []).map(det => ({
           ...det,
           confidence: det.score || det.confidence || 0,
@@ -48,6 +59,30 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
       return { ...notification, details, event_type: notification.event_type };
     });
   }, [extractStreamInfo]);
+
+  // Helper to render the assigned agent info by matching stream id.
+  const renderAssignedAgent = useCallback(() => {
+    const streamId = selectedNotification?.details?.stream_id;
+    if (streamId && ongoingStreams.length > 0) {
+      const stream = ongoingStreams.find(s => s.id === streamId);
+      if (stream && stream.assignments && stream.assignments.length > 0) {
+        return (
+          <div className="assigned-agents">
+            {stream.assignments.map((assignment, index) => {
+              const agent = agents.find(a => a.id === assignment.agent_id);
+              return agent ? (
+                <div key={index} className="agent-tag">
+                  <span className="agent-icon">👤</span>
+                  {agent.username}
+                </div>
+              ) : null;
+            })}
+          </div>
+        );
+      }
+    }
+    return <span className="unassigned-badge">⚠️ UNASSIGNED</span>;
+  }, [selectedNotification, ongoingStreams, agents]);
 
   // Fetch notifications from the backend notifications endpoint.
   const fetchNotifications = useCallback(async () => {
@@ -169,6 +204,7 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
     return '#28a745';
   };
 
+  // Render notification details, including support for "stream_created" events.
   const renderNotificationDetails = () => {
     if (!selectedNotification) {
       return (
@@ -190,6 +226,8 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
             ? 'Chat Detection Details'
             : selectedNotification.event_type === 'video_notification'
             ? 'Video Notification Details'
+            : selectedNotification.event_type === 'stream_created'
+            ? 'New Stream Created'
             : 'Notification Details'}
         </h3>
         <div className="detail-actions">
@@ -233,7 +271,7 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
                 {selectedNotification.details?.annotated_image && (
                   <div className="image-card">
                     <img
-                      src={selectedNotification.details.annotated_image}
+                      src={formatImage(selectedNotification.details.annotated_image)}
                       alt="Annotated Detection"
                       className="detection-image"
                     />
@@ -259,7 +297,7 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
                 </div>
                 <div className="info-item">
                   <span className="info-label">Assigned Agent:</span>
-                  <span className="info-value">{selectedNotification.details?.assigned_agent}</span>
+                  <span className="info-value">{renderAssignedAgent()}</span>
                 </div>
                 <div className="info-item">
                   <span className="info-label">Platform:</span>
@@ -299,6 +337,23 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
             {commonTimestamp}
             <div className="video-notification-content">
               <p>{selectedNotification.details?.message || 'Video event occurred'}</p>
+            </div>
+          </div>
+        );
+      case 'stream_created':
+        return (
+          <div className="notification-detail">
+            {commonHeader}
+            {commonTimestamp}
+            <div className="stream-created-content">
+              <p>A new stream has been created by <strong>{selectedNotification.details?.streamer_name || 'Unknown'}</strong>.</p>
+              {selectedNotification.details?.stream_url && (
+                <p>
+                  Stream URL: <a href={selectedNotification.details.stream_url} target="_blank" rel="noopener noreferrer">
+                    {selectedNotification.details.stream_url}
+                  </a>
+                </p>
+              )}
             </div>
           </div>
         );
@@ -386,6 +441,8 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
                            ? '#8a2be2'
                            : notification.event_type === 'video_notification'
                            ? '#dc3545'
+                           : notification.event_type === 'stream_created'
+                           ? '#28a745'
                            : '#28a745'
                        }}></div>
                   <div className="notification-content">
@@ -398,6 +455,8 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
                         ? `Chat event: ${notification.details?.keyword}`
                         : notification.event_type === 'video_notification'
                         ? notification.details?.message || 'Video event occurred'
+                        : notification.event_type === 'stream_created'
+                        ? `New stream created by ${notification.details?.streamer_name || 'Unknown'}`
                         : notification.message}
                     </div>
                     <div className="notification-meta">
