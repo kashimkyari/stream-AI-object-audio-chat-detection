@@ -244,6 +244,7 @@ class TelegramRecipient(db.Model):
 class DetectionLog(db.Model):
     """
     DetectionLog model stores detection events, including the annotated image.
+    Now with a relationship to Assignment so that we can easily get the assigned agent.
     """
     __tablename__ = "detection_logs"
     id = db.Column(db.Integer, primary_key=True)
@@ -251,15 +252,25 @@ class DetectionLog(db.Model):
     event_type = db.Column(db.String(50), nullable=False)
     details = db.Column(db.JSON, nullable=True)
     detection_image = db.Column(db.LargeBinary, nullable=True)  # JPEG image bytes
+    assigned_agent = db.Column(db.String(100), nullable=True)  # New field for assigned agent username (for redundancy)
+    assignment_id = db.Column(db.Integer, db.ForeignKey('assignments.id'), nullable=True)
     timestamp = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     read = db.Column(db.Boolean, default=False)
 
+    # Relationship to Assignment (if this detection is associated with a stream assignment)
+    assignment = db.relationship("Assignment", backref=db.backref("detection_logs", lazy="dynamic"))
+
     def serialize(self):
+        assigned = self.assigned_agent
+        # If the assignment relationship exists, override with agent's username
+        if self.assignment and self.assignment.agent:
+            assigned = self.assignment.agent.username
         return {
             "id": self.id,
             "room_url": self.room_url,
             "event_type": self.event_type,
             "details": self.details,
+            "assigned_agent": assigned,
             "timestamp": self.timestamp.isoformat(),
             "read": self.read,
         }

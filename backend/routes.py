@@ -193,16 +193,21 @@ def create_stream():
     db.session.add(stream)
     db.session.commit()
 
-    log_entry = Log(
+    # Log a new stream creation event in the notifications table.
+    # Here, we log using the DetectionLog model with event_type "stream_created".
+    from models import DetectionLog  # Ensure DetectionLog is imported from your models.
+    detection_log = DetectionLog(
         room_url=room_url,
-        event_type="stream_added",
+        event_type="stream_created",
         details={
-            "message": "Stream added",
+            "message": "Stream created",
             "streamer_username": streamer_username,
-            "platform": platform.lower()
-        }
+            "platform": platform.lower(),
+            "stream_url": room_url
+        },
+        read=False  # Default to unread.
     )
-    db.session.add(log_entry)
+    db.session.add(detection_log)
     db.session.commit()
 
     # Send Telegram alert to all recipients about the new stream.

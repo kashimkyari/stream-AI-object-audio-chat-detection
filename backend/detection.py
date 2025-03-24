@@ -200,12 +200,27 @@ def log_detection(detections, stream_url, annotated_image, platform_name, stream
     timestamp = datetime.utcnow()
     ret, buffer = cv2.imencode('.jpg', annotated_image)
     image_data = buffer.tobytes() if ret else None
+
+    assigned_agent = "Unassigned"
+    assignment_id = None
+
+    # Retrieve the stream from the database to extract its assignment and agent.
+    with app.app_context():
+        stream = Stream.query.filter_by(room_url=stream_url).first()
+        if stream and stream.assignments and len(stream.assignments) > 0:
+            # Here you could decide which assignment to use.
+            assignment = stream.assignments[0]
+            if assignment.agent:
+                assigned_agent = assignment.agent.username
+                assignment_id = assignment.id
+
     details = {
         "detections": detections,
         "timestamp": timestamp.isoformat(),
         "streamer_name": streamer_name,
         "platform": platform_name,
-        "annotated_image": base64.b64encode(image_data).decode('utf-8') if image_data else None
+        "annotated_image": base64.b64encode(image_data).decode('utf-8') if image_data else None,
+        "assigned_agent": assigned_agent
     }
 
     with app.app_context():
@@ -215,12 +230,15 @@ def log_detection(detections, stream_url, annotated_image, platform_name, stream
             details=details,
             detection_image=image_data,
             timestamp=timestamp,
-            read=False
+            read=False,
+            assigned_agent=assigned_agent,
+            assignment_id=assignment_id
         )
         db.session.add(log_entry)
         db.session.commit()
         
         threading.Thread(target=async_send_notifications, args=(log_entry.id, platform_name, streamer_name)).start()
+
 
 def update_latest_visual_log_with_audio(stream_url, transcript, detected_keywords):
     """Check if there's a recent visual detection log (object_detection) for this stream and update it with audio info."""

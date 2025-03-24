@@ -11,7 +11,9 @@ import { ToastProvider, useToast } from './ToastContext';
 
 function AppContent() {
   const [user, setUser] = useState(null); // Store full user object
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [appLoading, setAppLoading] = useState(true); // Overall app loading flag
+  const [initialRedirectDone, setInitialRedirectDone] = useState(false); // Delay before redirect on first login
+  const [activeTab, setActiveTab] = useState(null);
   const [dashboardData, setDashboardData] = useState({ streams: [] });
   const [isMobile, setIsMobile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -48,12 +50,18 @@ function AppContent() {
         if (res.data.logged_in) {
           setUser(res.data.user);
           if (res.data.user.role === 'admin') {
+            setActiveTab('dashboard');
             const dashboardRes = await axios.get('/api/dashboard');
             setDashboardData(dashboardRes.data);
+          } else if (res.data.user.role === 'agent') {
+            setActiveTab('agentdashboard');
           }
+          setTimeout(() => setInitialRedirectDone(true), 1000);
         }
       } catch (error) {
         console.log("No active session.");
+      } finally {
+        setAppLoading(false);
       }
     };
     checkSession();
@@ -62,9 +70,13 @@ function AppContent() {
   const handleLogin = (loggedInUser) => {
     setUser(loggedInUser);
     if (loggedInUser.role === 'admin') {
+      setActiveTab('dashboard');
       axios.get('/api/dashboard').then(res => setDashboardData(res.data));
+    } else if (loggedInUser.role === 'agent') {
+      setActiveTab('agentdashboard');
     }
     showToast("Login successful", "success");
+    setInitialRedirectDone(true);
   };
 
   const handleLogout = async () => {
@@ -73,6 +85,7 @@ function AppContent() {
       setUser(null);
       setMenuOpen(false);
       showToast("Logged out successfully", "info");
+      setActiveTab(null);
     } catch (err) {
       console.error("Logout error", err);
       showToast("Logout failed", "error");
@@ -105,7 +118,6 @@ function AppContent() {
       setLoading(false);
       return;
     }
-
     if (platform.toLowerCase() === 'chaturbate') {
       const fetchM3u8Url = async () => {
         try {
@@ -203,25 +215,21 @@ function AppContent() {
 
   // -------------
   // Fetch notifications count and list for badge and floating stack.
-  // The floating stack will only show if there are new unread notifications.
   useEffect(() => {
     const fetchNotificationsData = async () => {
       try {
         const res = await axios.get('/api/notifications', { timeout: 10000 });
         let notifications = res.data;
         if (user && user.role === 'agent') {
+          // For agents, filter notifications by assigned_agent
           notifications = notifications.filter(n =>
-            n.details?.assigned_agent &&
-            n.details.assigned_agent.toLowerCase() === user.username.toLowerCase()
+            (n.assigned_agent || "").toLowerCase() === user.username.toLowerCase()
           );
         }
-        // Only consider unread notifications
         const unread = notifications.filter(n => !n.read);
-        // Sort unread notifications so that the most recent appears at the top.
         const sortedUnread = unread.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
         setUnreadCount(sortedUnread.length);
         setNotificationStack(sortedUnread);
-        // If new unread notifications have come in, show the stack briefly.
         if (sortedUnread.length > prevUnreadCount) {
           setShowNotificationStack(true);
           setTimeout(() => setShowNotificationStack(false), 5000);
@@ -238,8 +246,6 @@ function AppContent() {
   }, [user, prevUnreadCount]);
 
   // Helper function to get a proper thumbnail image from a notification.
-  // For object detections, we use the annotated image.
-  // If the image is in base64 but not prefixed, we add the proper "data:image/png;base64," prefix.
   const getThumbnail = (notif) => {
     if (notif.event_type === 'object_detection') {
       let image = notif.details?.annotated_image;
@@ -253,6 +259,15 @@ function AppContent() {
     return null;
   };
 
+  // While app is still loading or initial redirect is not complete, show a full-page loader.
+  if (appLoading || !initialRedirectDone) {
+    return (
+      <div className="app-loading">
+        <div className="spinner"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="app-container">
       {user && (
@@ -265,11 +280,11 @@ function AppContent() {
             )}
             {user && (!isMobile || (isMobile && menuOpen)) && (
               <nav className={`admin-nav ${isMobile ? 'mobile-nav' : ''}`}>
-                <button onClick={() => handleTabClick('dashboard')} className={activeTab === 'dashboard' ? 'active' : ''}>
-                  Dashboard
-                </button>
-                {user.role === 'admin' && (
+                {user.role === 'admin' ? (
                   <>
+                    <button onClick={() => handleTabClick('dashboard')} className={activeTab === 'dashboard' ? 'active' : ''}>
+                      Dashboard
+                    </button>
                     <button onClick={() => handleTabClick('streams')} className={activeTab === 'streams' ? 'active' : ''}>
                       Management
                     </button>
@@ -277,6 +292,10 @@ function AppContent() {
                       Settings
                     </button>
                   </>
+                ) : (
+                  <button onClick={() => handleTabClick('agentdashboard')} className={activeTab === 'agentdashboard' ? 'active' : ''}>
+                    Dashboard
+                  </button>
                 )}
                 <button onClick={() => handleTabClick('messaging')} className={activeTab === 'messaging' ? 'active' : ''}>
                   Messaging
@@ -297,17 +316,14 @@ function AppContent() {
 
       <div className="main-content">
         {!user && <Login onLogin={handleLogin} />}
-        {user && activeTab === 'dashboard' && user.role === 'admin' && (
+        {user && user.role === 'admin' && activeTab === 'dashboard' && (
           <AdminPanel 
             activeTab={activeTab} 
             isMobile={isMobile}
             onAgentCreated={handleAgentCreated}
           />
         )}
-        {user && activeTab === 'streams' && user.role === 'admin' && (
-          <AdminPanel activeTab={activeTab} isMobile={isMobile} />
-        )}
-        {user && activeTab === 'flag' && user.role === 'admin' && (
+        {user && user.role === 'admin' && (activeTab === 'streams' || activeTab === 'flag') && (
           <AdminPanel activeTab={activeTab} isMobile={isMobile} />
         )}
         {user && activeTab === 'messaging' && (
@@ -316,12 +332,11 @@ function AppContent() {
         {user && activeTab === 'notifications' && (
           <NotificationsPage user={user} ongoingStreams={dashboardData.streams} />
         )}
-        {user && user.role === 'agent' && activeTab !== 'messaging' && activeTab !== 'notifications' && (
+        {user && user.role === 'agent' && activeTab === 'agentdashboard' && (
           <AgentDashboard isMobile={isMobile} />
         )}
       </div>
 
-      {/* Floating Notification Stack at bottom-right; only shows if new notifications arrived */}
       {showNotificationStack && notificationStack.length > 0 && (
         <div className="notification-stack">
           {notificationStack.slice(0, 5).map((notif) => (
@@ -339,7 +354,7 @@ function AppContent() {
               </div>
               <div className="card-details">
                 <strong>{notif.details?.streamer_name || 'Unknown'}</strong>
-                <p>Agent: {notif.details?.assigned_agent || 'N/A'}</p>
+                <p>Agent: {notif.assigned_agent || notif.details?.assigned_agent || 'N/A'}</p>
                 <p>{new Date(notif.timestamp).toLocaleTimeString()}</p>
               </div>
               {notif.event_type === 'object_detection' && (
@@ -427,6 +442,30 @@ function AppContent() {
           color: #fff;
           font-weight: bold;
           font-size: 0.8rem;
+        }
+        .app-loading {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 100vh;
+          width: 100vw;
+          background: #121212;
+          position: fixed;
+          top: 0;
+          left: 0;
+          z-index: 2000;
+        }
+        .spinner {
+          border: 8px solid #f3f3f3;
+          border-top: 8px solid #007bff;
+          border-radius: 50%;
+          width: 60px;
+          height: 60px;
+          animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
         }
       `}</style>
 

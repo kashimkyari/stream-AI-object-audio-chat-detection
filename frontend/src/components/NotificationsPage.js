@@ -4,7 +4,7 @@ import './NotificationsPage.css';
 
 axios.defaults.withCredentials = true;
 
-const NotificationsPage = ({ user, ongoingStreams = [], agents = [] }) => {
+const NotificationsPage = ({ user, ongoingStreams = [] }) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -26,7 +26,7 @@ const NotificationsPage = ({ user, ongoingStreams = [], agents = [] }) => {
     return { platform, streamer };
   }, []);
 
-  // Format the image if it's in base64 but missing the data URI prefix.
+  // Format base64 images with proper data URI prefix.
   const formatImage = useCallback((image) => {
     if (image && !image.startsWith("data:")) {
       return "data:image/png;base64," + image;
@@ -34,8 +34,7 @@ const NotificationsPage = ({ user, ongoingStreams = [], agents = [] }) => {
     return image;
   }, []);
 
-  // Process and format notifications.
-  // We also support a new event type "stream_created"
+  // Process and format notifications from the API.
   const processNotifications = useCallback((data) => {
     return data.map(notification => {
       const fromUrl = extractStreamInfo(notification.room_url);
@@ -44,11 +43,11 @@ const NotificationsPage = ({ user, ongoingStreams = [], agents = [] }) => {
         captured_image: notification.details?.captured_image || null,
         streamer_name: notification.details?.streamer_name ||
           (notification.event_type === 'object_detection' ? fromUrl.streamer : ''),
-        assigned_agent: notification.details?.assigned_agent || '',
+        // Prefer the new assigned_agent field from the log; fallback to details.
+        assigned_agent: notification.assigned_agent || notification.details?.assigned_agent || '',
         platform: notification.details?.platform ||
           (notification.event_type === 'object_detection' ? fromUrl.platform : ''),
         stream_id: notification.details?.stream_id || null,
-        // For stream_created events, additional details can be passed in details.
         detections: (notification.details?.detections || []).map(det => ({
           ...det,
           confidence: det.score || det.confidence || 0,
@@ -60,47 +59,20 @@ const NotificationsPage = ({ user, ongoingStreams = [], agents = [] }) => {
     });
   }, [extractStreamInfo]);
 
-  // Helper to render the assigned agent info by matching stream id.
-  const renderAssignedAgent = useCallback(() => {
-    const streamId = selectedNotification?.details?.stream_id;
-    if (streamId && ongoingStreams.length > 0) {
-      const stream = ongoingStreams.find(s => s.id === streamId);
-      if (stream && stream.assignments && stream.assignments.length > 0) {
-        return (
-          <div className="assigned-agents">
-            {stream.assignments.map((assignment, index) => {
-              const agent = agents.find(a => a.id === assignment.agent_id);
-              return agent ? (
-                <div key={index} className="agent-tag">
-                  <span className="agent-icon">👤</span>
-                  {agent.username}
-                </div>
-              ) : null;
-            })}
-          </div>
-        );
-      }
-    }
-    return <span className="unassigned-badge">⚠️ UNASSIGNED</span>;
-  }, [selectedNotification, ongoingStreams, agents]);
-
-  // Fetch notifications from the backend notifications endpoint.
+  // Fetch notifications from the backend.
   const fetchNotifications = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      // Updated endpoint to /api/notifications
       const res = await axios.get('/api/notifications', { timeout: 10000 });
       if (res.status === 200 && Array.isArray(res.data)) {
         let processed = processNotifications(res.data);
-        // If user is an agent, filter notifications to show only those where the assigned agent matches the agent's username.
+        // If the user is an agent, filter notifications by assigned_agent matching their username.
         if (user && user.role === 'agent') {
           processed = processed.filter(n =>
-            n.details?.assigned_agent &&
-            n.details.assigned_agent.toLowerCase() === user.username.toLowerCase()
+            (n.assigned_agent || "").toLowerCase() === user.username.toLowerCase()
           );
         }
-        // Further filter by main and sub filters if needed.
         if (mainFilter === 'Unread') {
           processed = processed.filter(n => !n.read);
         } else if (mainFilter === 'Detections') {
@@ -123,14 +95,13 @@ const NotificationsPage = ({ user, ongoingStreams = [], agents = [] }) => {
     }
   }, [processNotifications, user, mainFilter, detectionSubFilter]);
 
-  // Poll notifications every 60 seconds.
   useEffect(() => {
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 60000);
     return () => clearInterval(interval);
   }, [fetchNotifications]);
 
-  // Auto-scroll notifications list to top when notifications update.
+  // Auto-scroll the list container when notifications update.
   useEffect(() => {
     const listContainer = document.querySelector('.notifications-list');
     if (listContainer && !loading && !error) {
@@ -138,10 +109,9 @@ const NotificationsPage = ({ user, ongoingStreams = [], agents = [] }) => {
     }
   }, [notifications.length, loading, error]);
 
-  // Handlers for marking notifications as read.
+  // Handler to mark a single notification as read.
   const markAsRead = useCallback(async (notificationId) => {
     try {
-      // Updated endpoint to /api/notifications/{id}/read
       await axios.put(`/api/notifications/${notificationId}/read`);
       setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, read: true } : n));
     } catch (err) {
@@ -149,6 +119,7 @@ const NotificationsPage = ({ user, ongoingStreams = [], agents = [] }) => {
     }
   }, []);
 
+  // Handler to mark all notifications as read.
   const markAllAsRead = async () => {
     try {
       await axios.put('/api/notifications/read-all');
@@ -158,10 +129,9 @@ const NotificationsPage = ({ user, ongoingStreams = [], agents = [] }) => {
     }
   };
 
-  // Handler for deleting a single notification.
+  // Handler to delete a notification.
   const deleteNotification = useCallback(async (notificationId) => {
     try {
-      // Updated endpoint to /api/notifications/{id}
       await axios.delete(`/api/notifications/${notificationId}`);
       setNotifications(prev => prev.filter(n => n.id !== notificationId));
       if (selectedNotification?.id === notificationId) {
@@ -172,7 +142,7 @@ const NotificationsPage = ({ user, ongoingStreams = [], agents = [] }) => {
     }
   }, [selectedNotification]);
 
-  // Handler for deleting all notifications.
+  // Handler to delete all notifications.
   const deleteAllNotifications = async () => {
     try {
       await axios.delete('/api/notifications/delete-all');
@@ -188,14 +158,12 @@ const NotificationsPage = ({ user, ongoingStreams = [], agents = [] }) => {
     setSelectedNotification(notification);
   };
 
-  // Format confidence value.
   const formatConfidence = (confidence) => {
     return (typeof confidence === 'number' && confidence > 0)
       ? `${(confidence * 100).toFixed(1)}%`
       : '';
   };
 
-  // Determine a background color based on confidence.
   const getConfidenceColor = (confidence) => {
     const conf = typeof confidence === 'number' ? confidence : 0;
     if (conf >= 0.9) return '#ff4444';
@@ -204,7 +172,6 @@ const NotificationsPage = ({ user, ongoingStreams = [], agents = [] }) => {
     return '#28a745';
   };
 
-  // Render notification details, including support for "stream_created" events.
   const renderNotificationDetails = () => {
     if (!selectedNotification) {
       return (
@@ -214,7 +181,6 @@ const NotificationsPage = ({ user, ongoingStreams = [], agents = [] }) => {
         </div>
       );
     }
-
     const commonHeader = (
       <div className="detail-header">
         <h3>
@@ -297,7 +263,11 @@ const NotificationsPage = ({ user, ongoingStreams = [], agents = [] }) => {
                 </div>
                 <div className="info-item">
                   <span className="info-label">Assigned Agent:</span>
-                  <span className="info-value">{renderAssignedAgent()}</span>
+                  <span className="info-value">
+                    {selectedNotification.details?.assigned_agent ||
+                      selectedNotification.assigned_agent ||
+                      <span className="unassigned-badge">⚠️ UNASSIGNED</span>}
+                  </span>
                 </div>
                 <div className="info-item">
                   <span className="info-label">Platform:</span>
@@ -479,7 +449,6 @@ const NotificationsPage = ({ user, ongoingStreams = [], agents = [] }) => {
           {renderNotificationDetails()}
         </div>
       </div>
-      
     </div>
   );
 };
