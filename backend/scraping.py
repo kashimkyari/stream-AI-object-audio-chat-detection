@@ -125,15 +125,14 @@ def extract_m3u8_urls(html_content):
 
 # --- End of New Scraper Helper Functions ---
 
-# --- Updated Chaturbate Scraping Function ---
+# --- Updated Chaturbate Scraping Function with Login ---
 def scrape_chaturbate_data(url, progress_callback=None):
     """
     Scrape Chaturbate data using the new AJAX endpoint and update progress.
     
     This function now logs in with provided credentials before scraping.
-    It extracts the room slug from the full URL provided by the user,
-    logs in using a POST request, then sends another POST request to the AJAX endpoint
-    to fetch the HLS m3u8 URL.
+    It performs an initial GET request to obtain a fresh CSRF token, then logs in,
+    and finally sends a POST request to the AJAX endpoint to fetch the HLS m3u8 URL.
     
     Args:
         url (str): The full Chaturbate room URL (e.g., "https://chaturbate.com/bunnydollstella/").
@@ -145,49 +144,66 @@ def scrape_chaturbate_data(url, progress_callback=None):
             keys if successful, or None if an error occurred.
     """
     try:
-        if progress_callback:
-            progress_callback(5, "Logging in to Chaturbate")
-        
         import requests
         session = requests.Session()
-        # Setup initial cookies with the csrftoken
-        session.cookies.update({"csrftoken": "vfO2sk8hUsSXVILMJwtcyGqhPy6WqwhH"})
         
-        # Perform login
+        # Step 1: GET login page to fetch CSRF token
         login_url = "https://chaturbate.com/auth/login/"
-        login_headers = {
+        get_headers = {
             "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.5",
-            "Referer": "https://chaturbate.com/",
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Origin": "https://chaturbate.com",
         }
-        login_data = {
-            "username": "journalistafraid",
-            "password": '4adPwNBq,g"}+x3',
-            "next": "/",
-            "csrfmiddlewaretoken": "vfO2sk8hUsSXVILMJwtcyGqhPy6WqwhH"
-        }
-        login_response = session.post(login_url, data=login_data, headers=login_headers)
-        if login_response.status_code != 200:
-            error_msg = f"Login failed with status: {login_response.status_code}"
+        if progress_callback:
+            progress_callback(3, "Fetching login page")
+        login_get_response = session.get(login_url, headers=get_headers)
+        if login_get_response.status_code != 200:
+            error_msg = f"Failed to load login page: {login_get_response.status_code}"
             logging.error(error_msg)
             if progress_callback:
                 progress_callback(100, f"Error: {error_msg}")
             return None
         
+        csrf_token = session.cookies.get("csrftoken")
+        if not csrf_token:
+            error_msg = "No CSRF token found in login page"
+            logging.error(error_msg)
+            if progress_callback:
+                progress_callback(100, f"Error: {error_msg}")
+            return None
+        
+        # Step 2: Login POST request using the retrieved CSRF token
+        if progress_callback:
+            progress_callback(5, "Logging in to Chaturbate")
+        login_data = {
+            "username": "journalistafraid",
+            "password": '4adPwNBq,g"}+x3',
+            "next": "/",
+            "csrfmiddlewaretoken": csrf_token
+        }
+        login_headers = {
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0",
+            "Referer": login_url,
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Origin": "https://chaturbate.com",
+        }
+        login_post_response = session.post(login_url, data=login_data, headers=login_headers)
+        if login_post_response.status_code != 200:
+            error_msg = f"Login failed with status: {login_post_response.status_code}"
+            logging.error(error_msg)
+            if progress_callback:
+                progress_callback(100, f"Error: {error_msg}")
+            return None
+        
+        # Step 3: Extract room slug from the URL
         if progress_callback:
             progress_callback(10, "Extracting room slug")
-        # Extract room slug from the URL
         room_slug = url.rstrip("/").split("/")[-1]
         
+        # Step 4: Request m3u8 URL via AJAX endpoint using the same session
         if progress_callback:
             progress_callback(20, "Fetching m3u8 URL via AJAX endpoint")
-        
-        # Set up the AJAX endpoint and headers as per the traditional approach
         ajax_url = "https://chaturbate.com/get_edge_hls_url_ajax/"
-        headers = {
+        ajax_headers = {
             "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0",
             "Accept": "*/*",
             "Accept-Language": "en-US,en;q=0.5",
@@ -195,21 +211,21 @@ def scrape_chaturbate_data(url, progress_callback=None):
             "X-Requested-With": "XMLHttpRequest",
             "Origin": "https://chaturbate.com",
         }
-        data = {
+        ajax_data = {
             "room_slug": room_slug,
             "jpeg": "1",
-            "csrfmiddlewaretoken": "vfO2sk8hUsSXVILMJwtcyGqhPy6WqwhH"
+            "csrfmiddlewaretoken": csrf_token
         }
-        response = session.post(ajax_url, data=data, headers=headers)
-        if response.status_code != 200:
-            error_msg = f"HTTP error: {response.status_code}"
+        ajax_response = session.post(ajax_url, data=ajax_data, headers=ajax_headers)
+        if ajax_response.status_code != 200:
+            error_msg = f"HTTP error: {ajax_response.status_code}"
             logging.error(error_msg)
             if progress_callback:
                 progress_callback(100, f"Error: {error_msg}")
             return None
         
         try:
-            result = response.json()
+            result = ajax_response.json()
         except ValueError:
             error_msg = "Failed to decode JSON response"
             logging.error(error_msg)
