@@ -5,6 +5,9 @@ from routes import *
 from cleanup import start_chat_cleanup_thread, start_detection_cleanup_thread
 from monitoring import start_notification_monitor
 import logging
+from flask_cors import CORS
+CORS(app, supports_credentials=True)
+
 
 with app.app_context():
     # Create all database tables if they do not exist.
