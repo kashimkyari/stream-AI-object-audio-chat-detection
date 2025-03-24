@@ -131,8 +131,8 @@ def scrape_chaturbate_data(url, progress_callback=None):
     Scrape Chaturbate data using the new AJAX endpoint and update progress.
     
     This function now logs in with provided credentials before scraping.
-    It performs an initial GET request to obtain a fresh CSRF token, then logs in,
-    and finally sends a POST request to the AJAX endpoint to fetch the HLS m3u8 URL.
+    It performs an initial GET request with full browser headers to obtain a fresh CSRF token,
+    then logs in, and finally sends a POST request to the AJAX endpoint to fetch the HLS m3u8 URL.
     
     Args:
         url (str): The full Chaturbate room URL (e.g., "https://chaturbate.com/bunnydollstella/").
@@ -147,11 +147,17 @@ def scrape_chaturbate_data(url, progress_callback=None):
         import requests
         session = requests.Session()
         
-        # Step 1: GET login page to fetch CSRF token
+        # Step 1: GET login page with comprehensive headers
         login_url = "https://chaturbate.com/auth/login/"
         get_headers = {
-            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:102.0) Gecko/20100101 Firefox/102.0",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Referer": "https://chaturbate.com/",
+            "DNT": "1",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1",
         }
         if progress_callback:
             progress_callback(3, "Fetching login page")
@@ -181,7 +187,7 @@ def scrape_chaturbate_data(url, progress_callback=None):
             "csrfmiddlewaretoken": csrf_token
         }
         login_headers = {
-            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:102.0) Gecko/20100101 Firefox/102.0",
             "Referer": login_url,
             "Content-Type": "application/x-www-form-urlencoded",
             "Origin": "https://chaturbate.com",
@@ -204,7 +210,7 @@ def scrape_chaturbate_data(url, progress_callback=None):
             progress_callback(20, "Fetching m3u8 URL via AJAX endpoint")
         ajax_url = "https://chaturbate.com/get_edge_hls_url_ajax/"
         ajax_headers = {
-            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:102.0) Gecko/20100101 Firefox/102.0",
             "Accept": "*/*",
             "Accept-Language": "en-US,en;q=0.5",
             "Referer": f"https://chaturbate.com/{room_slug}/",
@@ -419,7 +425,7 @@ def refresh_chaturbate_stream(room_slug):
     import requests
     ajax_url = "https://chaturbate.com/get_edge_hls_url_ajax/"
     headers = {
-        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:102.0) Gecko/20100101 Firefox/102.0",
         "Accept": "*/*",
         "Accept-Language": "en-US,en;q=0.5",
         "Referer": f"https://chaturbate.com/{room_slug}/",
