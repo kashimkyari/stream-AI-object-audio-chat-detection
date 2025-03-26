@@ -146,6 +146,7 @@ def get_streams():
             joinedload(StripchatStream.assignments).joinedload(Assignment.agent)
         ).filter(StripchatStream.streamer_username.ilike(f"%{streamer}%")).all()
     else:
+        # Updated with eager loading
         streams = Stream.query.options(
             joinedload(Stream.assignments).joinedload(Assignment.agent)
         ).all()
@@ -599,39 +600,39 @@ def trigger_detection():
 @app.route("/api/detect-advanced", methods=["POST"])
 def advanced_detect():
     try:
-        if 'audio' in request.files:
-            # Whisper audio processing
-            audio_file = request.files['audio']
-            stream_url = request.form.get('stream_url')
-            timestamp = request.form.get('timestamp')
-
-            # Load Whisper model
-            model = whisper.load_model("base")
-            audio = whisper.load_audio(BytesIO(audio_file.read()))
-            audio = whisper.pad_or_trim(audio)
+        if "detections" in data:
+            # Updated stream query with eager loading
+            stream = Stream.query.options(
+                joinedload(Stream.assignments).joinedload(Assignment.agent)
+            ).filter_by(room_url=stream_url).first()
             
-            # Process audio
-            mel = whisper.log_mel_spectrogram(audio).to(model.device)
-            result = whisper.decode(model, mel, whisper.DecodingOptions(fp16=False))
-            text = result.text.strip().lower()
+            platform = stream.type if stream else "unknown"
+            streamer_name = stream.streamer_username if stream else "unknown"
+            
+            # Get first valid assigned agent
+            assigned_agent = "Unassigned"
+            if stream and stream.assignments:
+                for assignment in stream.assignments:
+                    if assignment.agent:
+                        assigned_agent = assignment.agent.username
+                        break  # Use first valid assignment
 
-            # Keyword detection
-            keywords = [kw.keyword.lower() for kw in ChatKeyword.query.all()]
-            detected_keywords = [kw for kw in keywords if kw in text]
-
-            if detected_keywords:
-                log_entry = DetectionLog(
-                    room_url=stream_url,
-                    event_type='audio_detection',
-                    details={
-                        'keywords': detected_keywords,
-                        'transcript': text,
-                        'timestamp': timestamp
-                    }
-                )
-                db.session.add(log_entry)
-                db.session.commit()
-                return jsonify({
+            log_entry = Log(
+                room_url=stream_url,
+                event_type="object_detection",
+                details={
+                    "detections": detections,
+                    "annotated_image": annotated_image,
+                    "captured_image": captured_image,
+                    "timestamp": timestamp,
+                    "streamer_name": streamer_name,
+                    "platform": platform,
+                    "assigned_agent": assigned_agent  # Now includes valid agent
+                }
+            )
+            db.session.add(log_entry)
+            db.session.commit()
+            return jsonify({
                     "message": "Audio keywords detected",
                     "keywords": detected_keywords
                 }), 200
@@ -782,24 +783,54 @@ def health():
 @login_required(role="admin")
 def get_logs():
     try:
-        # Retrieve logs from both Log and DetectionLog tables.
-        logs1 = Log.query.order_by(Log.timestamp.desc()).limit(100).all()
-        logs2 = DetectionLog.query.order_by(DetectionLog.timestamp.desc()).limit(100).all()
+        # Retrieve logs from both tables with eager loading
+        logs1 = Log.query.options(
+            joinedload(Log.stream).joinedload(Stream.assignments).joinedload(Assignment.agent)
+        ).order_by(Log.timestamp.desc()).limit(100).all()
+        
+        logs2 = DetectionLog.query.options(
+            joinedload(DetectionLog.stream).joinedload(Stream.assignments).joinedload(Assignment.agent)
+        ).order_by(DetectionLog.timestamp.desc()).limit(100).all()
+
+        # Combine and sort all logs
         all_logs = logs1 + logs2
-        # Sort combined logs by timestamp descending.
         all_logs.sort(key=lambda x: x.timestamp, reverse=True)
-        # Limit to 100 most recent entries.
         recent_logs = all_logs[:100]
+
+        # Serialize with agent information
         return jsonify([{
             "id": log.id,
             "event_type": log.event_type,
             "timestamp": log.timestamp.isoformat(),
-            "details": log.details,
-            "read": log.read
-        } for log in recent_logs])
+            "details": {
+                **log.details,
+                # Add agent info for DetectionLog
+                "assigned_agent": (
+                    log.details.get("assigned_agent") 
+                    if isinstance(log, DetectionLog)
+                    else log.details.get("assigned_agent", "Unassigned")
+                ),
+                # Add stream info
+                "stream": log.stream.serialize() if log.stream else None
+            },
+            "read": log.read,
+            "platform": (
+                log.stream.type 
+                if log.stream and isinstance(log.stream, Stream)
+                else None
+            ),
+            "streamer_name": (
+                log.stream.streamer_username 
+                if log.stream else None
+            )
+        } for log in recent_logs]), 200
+
     except Exception as e:
         app.logger.error("Error in /api/logs: %s", e)
-        return jsonify({"message": "Error fetching dashboard data", "error": str(e)}), 500
+        return jsonify({
+            "message": "Error fetching logs",
+            "error": str(e)
+        }), 500
 
 
 # Add these endpoints for notifications
@@ -854,3 +885,73 @@ def mark_all_notifications_read():
         return jsonify({"message": "All notifications marked as read"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+# Add to notification endpoints section
+@app.route("/api/notifications/forwarded", methods=["GET"])
+@login_required(role="admin")
+def get_forwarded_notifications():
+    try:
+        forwarded = DetectionLog.query.filter(
+            DetectionLog.details['assigned_agent'].isnot(None)
+        ).order_by(DetectionLog.timestamp.desc()).limit(100).all()
+        
+        return jsonify([{
+            'id': n.id,
+            'timestamp': n.timestamp.isoformat(),
+            'assigned_agent': n.details.get('assigned_agent'),
+            'platform': n.details.get('platform'),
+            'streamer': n.details.get('streamer_name'),
+            'status': 'acknowledged' if n.read else 'pending'
+        } for n in forwarded]), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/messages/<int:agent_id>", methods=["GET"])
+@login_required()
+def get_agent_messages(agent_id):
+    if not (session['user_role'] == 'admin' or session['user_id'] == agent_id):
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    messages = ChatMessage.query.filter(
+        (ChatMessage.receiver_id == agent_id) |
+        (ChatMessage.sender_id == agent_id)
+    ).order_by(ChatMessage.timestamp.asc()).all()
+    
+    return jsonify([{
+        'id': m.id,
+        'content': m.message,
+        'sender': m.sender_id == session['user_id'],
+        'timestamp': m.timestamp.isoformat(),
+        'system': m.is_system,
+        'details': m.details
+    } for m in messages]), 200
+
+# Update existing forward endpoint
+@app.route("/api/notifications/<int:notification_id>/forward", methods=["POST"])
+@login_required(role="admin")
+def forward_notification(notification_id):
+    data = request.get_json()
+    agent_id = data.get("agent_id")
+    agent = User.query.get(agent_id)
+    
+    if not agent or agent.role != "agent":
+        return jsonify({"message": "Invalid agent"}), 400
+
+    notification = DetectionLog.query.get(notification_id)
+    if not notification:
+        return jsonify({"message": "Notification not found"}), 404
+
+    # Update notification with agent details
+    notification_details = notification.details
+    notification_details["assigned_agent"] = agent.username  # Store username instead of ID
+    notification.details = notification_details
+    db.session.commit()
+
+    # Emit through Socket.IO
+    socketio.emit('forward_notification', {
+        'notification_id': notification_id,
+        'agent_id': agent_id
+    })
+    
+    return jsonify({"message": "Notification forwarded"}), 200

@@ -7,7 +7,6 @@ import AdminPanel from './components/AdminPanel';
 import AgentDashboard from './components/AgentDashboard';
 import MessageComponent from './components/MessageComponent';
 import NotificationsPage from './components/NotificationsPage';
-import { ToastProvider, useToast } from './ToastContext';
 
 function AppContent() {
   const [user, setUser] = useState(null); // Store full user object
@@ -29,8 +28,6 @@ function AppContent() {
   const [notificationStack, setNotificationStack] = useState([]);
   const [prevUnreadCount, setPrevUnreadCount] = useState(0);
   const [showNotificationStack, setShowNotificationStack] = useState(false);
-
-  const { showToast } = useToast();
 
   // Check if device is mobile
   useEffect(() => {
@@ -56,10 +53,15 @@ function AppContent() {
           } else if (res.data.user.role === 'agent') {
             setActiveTab('agentdashboard');
           }
+          // For logged-in users, wait briefly before marking initial redirect as done.
           setTimeout(() => setInitialRedirectDone(true), 1000);
+        } else {
+          // If not logged in, mark initial redirect as done to allow login screen to show.
+          setInitialRedirectDone(true);
         }
       } catch (error) {
         console.log("No active session.");
+        setInitialRedirectDone(true);
       } finally {
         setAppLoading(false);
       }
@@ -75,7 +77,7 @@ function AppContent() {
     } else if (loggedInUser.role === 'agent') {
       setActiveTab('agentdashboard');
     }
-    showToast("Login successful", "success");
+    console.log("Login successful");
     setInitialRedirectDone(true);
   };
 
@@ -84,11 +86,11 @@ function AppContent() {
       await axios.post('/api/logout');
       setUser(null);
       setMenuOpen(false);
-      showToast("Logged out successfully", "info");
+      console.log("Logged out successfully");
       setActiveTab(null);
     } catch (err) {
       console.error("Logout error", err);
-      showToast("Logout failed", "error");
+      console.log("Logout failed");
     }
   };
 
@@ -103,7 +105,7 @@ function AppContent() {
 
   // Example function to handle successful agent creation
   const handleAgentCreated = (newAgent) => {
-    showToast("Agent created successfully", "success");
+    console.log("Agent created successfully");
   };
 
   // -------------
@@ -587,9 +589,7 @@ function AppContentWrapper() {
 
 function App() {
   return (
-    <ToastProvider>
-      <AppContentWrapper />
-    </ToastProvider>
+    <AppContentWrapper />
   );
 }
 

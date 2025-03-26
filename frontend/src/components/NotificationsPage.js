@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
+import io from 'socket.io-client';
 import './NotificationsPage.css';
 
 axios.defaults.withCredentials = true;
+const SOCKET_SERVER_URL = 'http://localhost:5000';
 
 const NotificationsPage = ({ user, ongoingStreams = [] }) => {
   const [notifications, setNotifications] = useState([]);
@@ -11,8 +13,10 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
   const [mainFilter, setMainFilter] = useState('All');
   const [detectionSubFilter, setDetectionSubFilter] = useState('Visual');
   const [selectedNotification, setSelectedNotification] = useState(null);
+  const [agents, setAgents] = useState([]);
+  const [showAgentDropdown, setShowAgentDropdown] = useState(false);
+  const socketRef = useRef();
 
-  // Extract platform and streamer info from a stream URL.
   const extractStreamInfo = useCallback((streamUrl) => {
     let platform = 'Chaturbate';
     let streamer = '';
@@ -26,7 +30,6 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
     return { platform, streamer };
   }, []);
 
-  // Format base64 images with proper data URI prefix.
   const formatImage = useCallback((image) => {
     if (image && !image.startsWith("data:")) {
       return "data:image/png;base64," + image;
@@ -34,17 +37,17 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
     return image;
   }, []);
 
-  // Process and format notifications from the API.
-  const processNotifications = useCallback((data) => {
-    return data.map(notification => {
-      const fromUrl = extractStreamInfo(notification.room_url);
-      const details = {
+const processNotifications = useCallback((data) => {
+  return data.map(notification => {
+    const fromUrl = extractStreamInfo(notification.room_url);
+    
+    return {
+      ...notification,
+      details: {
         annotated_image: notification.details?.annotated_image || null,
         captured_image: notification.details?.captured_image || null,
         streamer_name: notification.details?.streamer_name ||
           (notification.event_type === 'object_detection' ? fromUrl.streamer : ''),
-        // Prefer the new assigned_agent field from the log; fallback to details.
-        assigned_agent: notification.assigned_agent || notification.details?.assigned_agent || '',
         platform: notification.details?.platform ||
           (notification.event_type === 'object_detection' ? fromUrl.platform : ''),
         stream_id: notification.details?.stream_id || null,
@@ -54,12 +57,13 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
         })),
         keyword: notification.details?.keyword || '',
         message: notification.details?.message || '',
-      };
-      return { ...notification, details, event_type: notification.event_type };
-    });
-  }, [extractStreamInfo]);
+      },
+      // Preserve the top-level assigned_agent from API response
+      assigned_agent: notification.assigned_agent 
+    };
+  });
+}, [extractStreamInfo]);
 
-  // Fetch notifications from the backend.
   const fetchNotifications = useCallback(async () => {
     try {
       setLoading(true);
@@ -67,10 +71,9 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
       const res = await axios.get('/api/notifications', { timeout: 10000 });
       if (res.status === 200 && Array.isArray(res.data)) {
         let processed = processNotifications(res.data);
-        // If the user is an agent, filter notifications by assigned_agent matching their username.
         if (user && user.role === 'agent') {
           processed = processed.filter(n =>
-            (n.assigned_agent || "").toLowerCase() === user.username.toLowerCase()
+            (n.details?.assigned_agent || "").toLowerCase() === user.username.toLowerCase()
           );
         }
         if (mainFilter === 'Unread') {
@@ -96,12 +99,29 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
   }, [processNotifications, user, mainFilter, detectionSubFilter]);
 
   useEffect(() => {
+    const fetchAgents = async () => {
+      if (user?.role === 'admin') {
+        try {
+          const res = await axios.get('/api/agents');
+          setAgents(res.data);
+        } catch (err) {
+          console.error('Error fetching agents:', err);
+        }
+      }
+    };
+
+    socketRef.current = io(SOCKET_SERVER_URL, { withCredentials: true });
+    socketRef.current.on('notification_forwarded', fetchNotifications);
+
+    fetchAgents();
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 60000);
-    return () => clearInterval(interval);
-  }, [fetchNotifications]);
+    return () => {
+      clearInterval(interval);
+      socketRef.current.disconnect();
+    };
+  }, [fetchNotifications, user]);
 
-  // Auto-scroll the list container when notifications update.
   useEffect(() => {
     const listContainer = document.querySelector('.notifications-list');
     if (listContainer && !loading && !error) {
@@ -109,7 +129,6 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
     }
   }, [notifications.length, loading, error]);
 
-  // Handler to mark a single notification as read.
   const markAsRead = useCallback(async (notificationId) => {
     try {
       await axios.put(`/api/notifications/${notificationId}/read`);
@@ -119,7 +138,6 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
     }
   }, []);
 
-  // Handler to mark all notifications as read.
   const markAllAsRead = async () => {
     try {
       await axios.put('/api/notifications/read-all');
@@ -129,7 +147,6 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
     }
   };
 
-  // Handler to delete a notification.
   const deleteNotification = useCallback(async (notificationId) => {
     try {
       await axios.delete(`/api/notifications/${notificationId}`);
@@ -142,7 +159,6 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
     }
   }, [selectedNotification]);
 
-  // Handler to delete all notifications.
   const deleteAllNotifications = async () => {
     try {
       await axios.delete('/api/notifications/delete-all');
@@ -152,6 +168,17 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
       console.error('Error deleting all notifications:', err);
     }
   };
+
+  const forwardNotification = useCallback(async (agentId) => {
+    if (!selectedNotification) return;
+    try {
+      await axios.post(`/api/notifications/${selectedNotification.id}/forward`, { agent_id: agentId });
+      setShowAgentDropdown(false);
+      fetchNotifications();
+    } catch (err) {
+      console.error('Forward error:', err);
+    }
+  }, [selectedNotification, fetchNotifications]);
 
   const handleNotificationClick = (notification) => {
     if (!notification.read) markAsRead(notification.id);
@@ -172,6 +199,51 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
     return '#28a745';
   };
 
+// Update renderForwardSection in NotificationsPage.js
+const renderForwardSection = () => (
+  <div className="forward-section">
+    <button 
+      className="forward-btn"
+      onClick={() => setShowAgentDropdown(true)}
+    >
+      Forward to Agent
+    </button>
+    
+    {showAgentDropdown && (
+      <div className="forward-modal-overlay" onClick={() => setShowAgentDropdown(false)}>
+        <div className="forward-modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header">
+            <h3>Select Agent</h3>
+            <button 
+              className="modal-close-btn"
+              onClick={() => setShowAgentDropdown(false)}
+            >
+              &times;
+            </button>
+          </div>
+          <div className="agent-list">
+            {agents.map(agent => (
+              <div 
+                key={agent.id} 
+                className="agent-option"
+                onClick={() => {
+                  forwardNotification(agent.id);
+                  setShowAgentDropdown(false);
+                }}
+              >
+                <div className={`agent-status-indicator ${agent.online ? 'online' : 'offline'}`} />
+                <div className="agent-info">
+                  <div className="agent-name">{agent.username}</div>
+                  <div className="agent-email">{agent.email}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+);
   const renderNotificationDetails = () => {
     if (!selectedNotification) {
       return (
@@ -181,6 +253,7 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
         </div>
       );
     }
+
     const commonHeader = (
       <div className="detail-header">
         <h3>
@@ -190,8 +263,6 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
             ? 'Visual Detection Details'
             : selectedNotification.event_type === 'chat_detection'
             ? 'Chat Detection Details'
-            : selectedNotification.event_type === 'video_notification'
-            ? 'Video Notification Details'
             : selectedNotification.event_type === 'stream_created'
             ? 'New Stream Created'
             : 'Notification Details'}
@@ -202,6 +273,7 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
               Mark as Read
             </button>
           )}
+          {user?.role === 'admin' && renderForwardSection()}
           <button className="delete-btn" onClick={() => deleteNotification(selectedNotification.id)}>
             Delete
           </button>
@@ -264,8 +336,7 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
                 <div className="info-item">
                   <span className="info-label">Assigned Agent:</span>
                   <span className="info-value">
-                    {selectedNotification.details?.assigned_agent ||
-                      selectedNotification.assigned_agent ||
+                    {selectedNotification.assigned_agent ||
                       <span className="unassigned-badge">⚠️ UNASSIGNED</span>}
                   </span>
                 </div>
@@ -297,16 +368,6 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
             <div className="chat-detection-content">
               <p>Detected chat keyword: <strong>{selectedNotification.details?.keyword}</strong></p>
               <p className="chat-excerpt">{selectedNotification.details?.ocr_text}</p>
-            </div>
-          </div>
-        );
-      case 'video_notification':
-        return (
-          <div className="notification-detail">
-            {commonHeader}
-            {commonTimestamp}
-            <div className="video-notification-content">
-              <p>{selectedNotification.details?.message || 'Video event occurred'}</p>
             </div>
           </div>
         );
@@ -343,12 +404,14 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
       <div className="notifications-controls">
         <div className="main-filter-controls">
           {['All', 'Unread', 'Detections'].map(tab => (
-            <button key={tab}
-                    className={`filter-btn ${mainFilter === tab ? 'active' : ''}`}
-                    onClick={() => {
-                      setMainFilter(tab);
-                      if (tab === 'Detections') setDetectionSubFilter('Visual');
-                    }}>
+            <button 
+              key={tab}
+              className={`filter-btn ${mainFilter === tab ? 'active' : ''}`}
+              onClick={() => {
+                setMainFilter(tab);
+                if (tab === 'Detections') setDetectionSubFilter('Visual');
+              }}
+            >
               {tab}
             </button>
           ))}
@@ -356,23 +419,29 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
         {mainFilter === 'Detections' && (
           <div className="sub-filter-controls">
             {['Visual', 'Audio', 'Chat'].map(subTab => (
-              <button key={subTab}
-                      className={`sub-filter-btn ${detectionSubFilter === subTab ? 'active' : ''}`}
-                      onClick={() => setDetectionSubFilter(subTab)}>
+              <button 
+                key={subTab}
+                className={`sub-filter-btn ${detectionSubFilter === subTab ? 'active' : ''}`}
+                onClick={() => setDetectionSubFilter(subTab)}
+              >
                 {subTab}
               </button>
             ))}
           </div>
         )}
         <div className="action-controls">
-          <button className="mark-all-read"
-                  onClick={markAllAsRead}
-                  disabled={notifications.filter(n => !n.read).length === 0}>
+          <button 
+            className="mark-all-read"
+            onClick={markAllAsRead}
+            disabled={notifications.filter(n => !n.read).length === 0}
+          >
             Mark All as Read
           </button>
-          <button className="delete-all"
-                  onClick={deleteAllNotifications}
-                  disabled={notifications.length === 0}>
+          <button 
+            className="delete-all"
+            onClick={deleteAllNotifications}
+            disabled={notifications.length === 0}
+          >
             Delete All
           </button>
           <button className="refresh-notifications" onClick={fetchNotifications}>
@@ -398,9 +467,11 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
           ) : (
             <div className="notifications-list">
               {notifications.map(notification => (
-                <div key={notification.id}
-                     className={`notification-item ${notification.read ? 'read' : 'unread'} ${selectedNotification?.id === notification.id ? 'selected' : ''}`}
-                     onClick={() => handleNotificationClick(notification)}>
+                <div 
+                  key={notification.id}
+                  className={`notification-item ${notification.read ? 'read' : 'unread'} ${selectedNotification?.id === notification.id ? 'selected' : ''}`}
+                  onClick={() => handleNotificationClick(notification)}
+                >
                   <div className="notification-indicator"
                        style={{
                          backgroundColor: notification.event_type === 'object_detection'
@@ -409,8 +480,6 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
                            ? '#007bff'
                            : notification.event_type === 'chat_detection'
                            ? '#8a2be2'
-                           : notification.event_type === 'video_notification'
-                           ? '#dc3545'
                            : notification.event_type === 'stream_created'
                            ? '#28a745'
                            : '#28a745'
@@ -423,8 +492,6 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
                         ? `Detected keyword: ${notification.details?.keyword}`
                         : notification.event_type === 'chat_detection'
                         ? `Chat event: ${notification.details?.keyword}`
-                        : notification.event_type === 'video_notification'
-                        ? notification.details?.message || 'Video event occurred'
                         : notification.event_type === 'stream_created'
                         ? `New stream created by ${notification.details?.streamer_name || 'Unknown'}`
                         : notification.message}

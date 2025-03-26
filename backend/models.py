@@ -15,6 +15,8 @@ class User(db.Model):
     staffid = db.Column(db.String(20), index=True)
     password = db.Column(db.String(120), nullable=False)
     role = db.Column(db.String(10), nullable=False, default="agent", index=True)
+    online = db.Column(db.Boolean, default=False, index=True)
+    last_active = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
 
     # Relationship with Assignments (agents may have multiple assignments)
     assignments = db.relationship('Assignment', back_populates='agent', lazy='selectin', cascade="all, delete")

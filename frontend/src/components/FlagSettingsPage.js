@@ -96,7 +96,11 @@ const styles = {
 };
 
 const FlagSettingsPage = () => {
-  const { showToast } = useToast();
+  // Use toast hook if available, otherwise provide a fallback
+  const toastContext = useToast();
+  const showToast = toastContext && toastContext.showToast 
+    ? toastContext.showToast 
+    : (message, type) => console.log(`[${type}] ${message}`);
 
   // ---------------------------
   // Keywords Section
@@ -305,7 +309,6 @@ const FlagSettingsPage = () => {
 
   return (
     <div style={styles.container}>
-      
       {/* Keywords Section */}
       <div style={styles.section}>
         <div style={styles.sectionHeader}>Chat Keywords</div>
@@ -346,7 +349,9 @@ const FlagSettingsPage = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="3" style={{ textAlign: 'center', padding: '1rem' }}>No keywords found.</td>
+                  <td colSpan="3" style={{ textAlign: 'center', padding: '1rem' }}>
+                    No keywords found.
+                  </td>
                 </tr>
               )}
             </tbody>
@@ -394,7 +399,9 @@ const FlagSettingsPage = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="3" style={{ textAlign: 'center', padding: '1rem' }}>No flagged objects found.</td>
+                  <td colSpan="3" style={{ textAlign: 'center', padding: '1rem' }}>
+                    No flagged objects found.
+                  </td>
                 </tr>
               )}
             </tbody>
@@ -446,7 +453,9 @@ const FlagSettingsPage = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="3" style={{ textAlign: 'center', padding: '1rem' }}>No recipients found.</td>
+                  <td colSpan="3" style={{ textAlign: 'center', padding: '1rem' }}>
+                    No recipients found.
+                  </td>
                 </tr>
               )}
             </tbody>

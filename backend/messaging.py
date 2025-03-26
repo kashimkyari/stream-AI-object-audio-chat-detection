@@ -1,39 +1,85 @@
 import datetime
-from flask import session, request
-from flask_socketio import SocketIO, emit
-from models import db, User, ChatMessage
+from flask import session
+from flask_socketio import SocketIO, emit, join_room
+from models import db, User, ChatMessage, DetectionLog
 from config import app
 
-# Initialize Flask-SocketIO with CORS settings as needed.
 socketio = SocketIO(app, cors_allowed_origins="*")
+online_users = {}  # {user_id: {sid: string, role: string}}
 
-# Dictionary to store online users (username -> Socket.IO session id)
-online_users = {}
 
 @socketio.on('connect')
 def handle_connect():
     user_id = session.get('user_id')
-    if not user_id:
-        return False  # Disconnect unauthorized client.
-    user = User.query.get(user_id)
-    if not user:
-        return False
-    # Store online user using the username as key.
-    online_users[user.username] = request.sid
-    # Notify all clients about the updated online users (usernames).
-    emit('online_users', list(online_users.keys()), broadcast=True)
+    if user_id:
+        user = User.query.get(user_id)
+        if user:
+            user.online = True
+            user.last_active = datetime.now(timezone.utc)
+            db.session.commit()
+            online_users[user_id] = request.sid
+            emit('user_status', {'userId': user_id, 'online': True}, broadcast=True)
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    username = None
-    # Find the username based on the Socket.IO session id.
-    for uname, sid in online_users.items():
-        if sid == request.sid:
-            username = uname
-            break
-    if username:
-        online_users.pop(username, None)
-        emit('online_users', list(online_users.keys()), broadcast=True)
+    user_id = session.get('user_id')
+    if user_id and user_id in online_users:
+        user = User.query.get(user_id)
+        if user:
+            user.online = False
+            db.session.commit()
+            del online_users[user_id]
+            emit('user_status', {'userId': user_id, 'online': False}, broadcast=True)
+
+@socketio.on('user_activity')
+def handle_activity():
+    user_id = session.get('user_id')
+    if user_id:
+        user = User.query.get(user_id)
+        if user:
+            user.last_active = datetime.now(timezone.utc)
+            db.session.commit()
+
+@socketio.on('forward_notification')
+def handle_forward_notification(data):
+    notification_id = data.get('notification_id')
+    agent_id = data.get('agent_id')
+    
+    notification = DetectionLog.query.get(notification_id)
+    agent = User.query.filter_by(id=agent_id, role='agent').first()
+    
+    if not notification or not agent:
+        emit('error', {'message': 'Invalid notification or agent'})
+        return
+    
+    # Create system message
+    sys_msg = ChatMessage(
+        sender_id=session['user_id'],
+        receiver_id=agent.id,
+        message=f"🚨 Forwarded Alert: {notification.details.get('message', 'New detection')}",
+        details=notification.details,
+        is_system=True,
+        timestamp=datetime.datetime.utcnow()
+    )
+    db.session.add(sys_msg)
+    db.session.commit()
+    
+    # Send to agent if online
+    if agent.id in online_users:
+        emit('receive_message', sys_msg.serialize(), room=online_users[agent.id]['sid'])
+    
+    # Send to admin UI
+    emit('notification_forwarded', {
+        'notification_id': notification.id,
+        'agent_id': agent.id,
+        'timestamp': datetime.datetime.utcnow().isoformat()
+    }, room='admin')
+
+@socketio.on('admin_subscribe')
+def handle_admin_subscribe():
+    if online_users.get(session.get('user_id'), {}).get('role') == 'admin':
+        join_room('admin')
+
 
 @socketio.on('send_message')
 def handle_send_message(data):
