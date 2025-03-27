@@ -18,6 +18,8 @@ import pytesseract
 from io import BytesIO
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
+import torch
+import torch.nn.functional as F
 
 from config import app
 from models import FlaggedObject, Log, ChatKeyword, DetectionLog, Stream, ChaturbateStream, StripchatStream, TelegramRecipient
@@ -291,7 +293,7 @@ def process_combined_detection(stream_url, cancel_event):
         audio_buffer = b""
 
         try:
-            whisper_model = load_model("base")
+            whisper_model = load_model("large-v3")
             logging.info("Whisper model loaded for combined detection.")
         except Exception as e:
             logging.error("Error loading Whisper model: %s", e)
@@ -325,14 +327,17 @@ def process_combined_detection(stream_url, cancel_event):
                                 audio_int16 = np.frombuffer(audio_buffer, dtype=np.int16)
                                 audio_float = audio_int16.astype(np.float32) / 32768.0
                                 try:
+                                    # Prepare audio input and compute mel spectrogram
                                     audio_input = whisper.pad_or_trim(audio_float)
                                     mel = whisper.log_mel_spectrogram(audio_input).to(whisper_model.device)
+                                    # Upsample mel spectrogram from 80 to 128 mel bins
+                                    if mel.shape[0] != 128:
+                                        mel = F.interpolate(mel.unsqueeze(0), size=(128, mel.shape[-1]), mode='bilinear', align_corners=False).squeeze(0)
                                     options = whisper.DecodingOptions(fp16=False)
                                     result = whisper.decode(whisper_model, mel, options)
                                     transcript = result.text.strip()
                                     logging.info("Combined audio transcription: '%s'", transcript)
                                     if transcript:
-                                        # Use a lowercase copy for keyword matching.
                                         transcript_lower = transcript.lower()
                                         with app.app_context():
                                             keywords = [kw.keyword.lower() for kw in ChatKeyword.query.all()]
