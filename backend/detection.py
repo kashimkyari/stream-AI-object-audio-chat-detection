@@ -336,7 +336,8 @@ def process_combined_detection(stream_url, cancel_event):
                                         mel = mel.unsqueeze(0).unsqueeze(0)  # shape: (1, 1, 80, T)
                                         mel = F.interpolate(mel, size=(128, T), mode='bilinear', align_corners=False)
                                         mel = mel.squeeze(0).squeeze(0)  # shape: (128, T)
-                                    options = whisper.DecodingOptions(fp16=False)
+                                    # Specify English language to force correct transcription.
+                                    options = whisper.DecodingOptions(fp16=False, language="en")
                                     result = whisper.decode(whisper_model, mel, options)
                                     transcript = result.text.strip()
                                     logging.info("Combined audio transcription: '%s'", transcript)
