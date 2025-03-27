@@ -209,7 +209,6 @@ def log_detection(detections, stream_url, annotated_image, platform_name, stream
     with app.app_context():
         stream = Stream.query.filter_by(room_url=stream_url).first()
         if stream and stream.assignments and len(stream.assignments) > 0:
-            # Here you could decide which assignment to use.
             assignment = stream.assignments[0]
             if assignment.agent:
                 assigned_agent = assignment.agent.username
@@ -258,8 +257,7 @@ def process_combined_detection(stream_url, cancel_event):
     """
     Use a single PyAV container to process both video and audio detection.
     Video frames are processed immediately for object detection.
-    Audio packets are accumulated in a buffer and processed in 5-second chunks for faster transcription.
-    If the connection is lost or an error occurs during packet pull/decoding, attempt to reconnect.
+    Audio packets are accumulated in a buffer and processed in 2-minute chunks before transcription.
     """
     platform_name, streamer_name = extract_stream_info_from_db(stream_url)
     if not platform_name or not streamer_name:
@@ -288,7 +286,8 @@ def process_combined_detection(stream_url, cancel_event):
             return
 
         logging.info("Combined detection started for %s", stream_url)
-        required_audio_bytes = 16000 * 2 * 5  # 5 seconds of audio (mono, 16-bit, 16kHz)
+        # Adjust required_audio_bytes for 2 minutes (120 seconds) of audio (mono, 16-bit, 16kHz)
+        required_audio_bytes = 16000 * 2 * 120  
         audio_buffer = b""
 
         try:
@@ -330,26 +329,29 @@ def process_combined_detection(stream_url, cancel_event):
                                     mel = whisper.log_mel_spectrogram(audio_input).to(whisper_model.device)
                                     options = whisper.DecodingOptions(fp16=False)
                                     result = whisper.decode(whisper_model, mel, options)
-                                    text = result.text.strip().lower()
-                                    logging.info("Combined audio transcription: '%s'", text)
-                                    if text:
+                                    transcript = result.text.strip()
+                                    logging.info("Combined audio transcription: '%s'", transcript)
+                                    if transcript:
+                                        # Use a lowercase copy for keyword matching.
+                                        transcript_lower = transcript.lower()
                                         with app.app_context():
                                             keywords = [kw.keyword.lower() for kw in ChatKeyword.query.all()]
-                                        detected = [kw for kw in keywords if kw in text]
+                                        detected = [kw for kw in keywords if kw in transcript_lower]
                                         if detected:
                                             logging.info("Combined flagged audio keywords detected: %s", detected)
-                                            if not update_latest_visual_log_with_audio(stream_url, text, detected):
+                                            if not update_latest_visual_log_with_audio(stream_url, transcript, detected):
                                                 with app.app_context():
-                                                    log_entry = Log(
+                                                    log_entry = DetectionLog(
                                                         room_url=stream_url,
                                                         event_type='audio_detection',
                                                         details={
                                                             'keywords': detected,
-                                                            'transcript': text,
+                                                            'transcript': transcript,
                                                             'platform': platform_name,
                                                             'streamer_name': streamer_name,
                                                             'timestamp': datetime.utcnow().isoformat()
-                                                        }
+                                                        },
+                                                        read=False
                                                     )
                                                     db.session.add(log_entry)
                                                     db.session.commit()
@@ -359,7 +361,6 @@ def process_combined_detection(stream_url, cancel_event):
                                 audio_buffer = b""
                 except Exception as e:
                     logging.error("Error decoding packet: %s", e)
-                    # If the error seems related to a connection drop, break to attempt reconnection.
                     break
         except Exception as e:
             logging.error("Error during demuxing: %s", e)
@@ -368,10 +369,7 @@ def process_combined_detection(stream_url, cancel_event):
             logging.info("Container closed for %s", stream_url)
             if cancel_event.is_set():
                 break
-            # Wait before attempting to reconnect.
             time.sleep(5)
-        # Loop back and try to reconnect to the stream.
-
     logging.info("Combined detection ended for %s", stream_url)
 
 def check_stream_online(m3u8_url, timeout=10):
