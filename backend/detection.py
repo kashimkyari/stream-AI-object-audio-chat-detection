@@ -261,6 +261,9 @@ def process_combined_detection(stream_url, cancel_event):
     Video frames are processed immediately for object detection.
     Audio packets are accumulated in a buffer and processed in 2-minute chunks before transcription.
     """
+    with app.app_context():
+    keywords = [kw.keyword.lower() for kw in ChatKeyword.query.all()]
+detected = [kw for kw in keywords if kw in transcript_lower]
     platform_name, streamer_name = extract_stream_info_from_db(stream_url)
     if not platform_name or not streamer_name:
         logging.error("Stream %s not found. Aborting combined detection.", stream_url)

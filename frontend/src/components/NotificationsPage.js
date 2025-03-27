@@ -342,16 +342,16 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
 
     switch (selectedNotification.event_type) {
       case 'audio_detection':
-        return (
-          <div className="notification-detail">
-            {commonHeader}
-            {commonTimestamp}
-            <div className="audio-detection-content">
-              <p>Detected keyword: <strong>{selectedNotification.details?.keyword}</strong></p>
-              <p>Transcript: {selectedNotification.details?.transcript}</p>
-            </div>
-          </div>
-        );
+  return (
+    <div className="notification-detail">
+      {commonHeader}
+      {commonTimestamp}
+      <div className="audio-detection-content">
+        <p>Detected keywords: <strong>{selectedNotification.details?.keywords?.join(', ')}</strong></p>
+        <p>Transcript: {selectedNotification.details?.transcript}</p>
+      </div>
+    </div>
+  );
       case 'object_detection': {
         // For visual detections, fetch assigned agent from dashboard and then look up agent username from agents.
         const assignedAgent = getAssignedAgentForStream();
