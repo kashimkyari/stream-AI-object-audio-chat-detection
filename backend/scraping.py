@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 import sys
 import types
-import tempfile
+import tempfile  # For generating unique user-data directories
 import os
 import re
 import logging
 import uuid
 import time
 import random
-
 
 # --- Monkey Patch for blinker._saferef ---
 if 'blinker._saferef' not in sys.modules:
@@ -29,11 +28,37 @@ if 'blinker._saferef' not in sys.modules:
     sys.modules['blinker._saferef'] = saferef
 # --- End of Monkey Patch ---
 
+from concurrent.futures import ThreadPoolExecutor
+from seleniumwire import webdriver
+from selenium.webdriver.chrome.options import Options
+from flask import jsonify
+
+# Import models and database session for stream creation.
+from models import ChaturbateStream, StripchatStream, Assignment, TelegramRecipient
+from extensions import db
+from config import app  # Use the Flask app for application context
+from notifications import send_text_message
+
 # New imports for proxy and anti-detection
 import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from fake_useragent import UserAgent
+
+# Global dictionaries to hold job statuses.
+scrape_jobs = {}
+stream_creation_jobs = {}
+executor = ThreadPoolExecutor(max_workers=5)  # Thread pool for parallel scraping
+
+# Logging configuration
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('scraping.log'),
+        logging.StreamHandler()
+    ]
+)
 
 # Proxy management class
 class ProxyManager:
@@ -102,7 +127,45 @@ class ProxyManager:
             "Upgrade-Insecure-Requests": "1"
         }
 
-# Modify existing functions to use proxy rotation
+def update_job_progress(job_id, percent, message):
+    """Update the progress of a scraping job with interactive data."""
+    now = time.time()
+    if job_id not in scrape_jobs or 'start_time' not in scrape_jobs[job_id]:
+        scrape_jobs[job_id] = {'start_time': now}
+    elapsed = now - scrape_jobs[job_id]['start_time']
+    estimated = None
+    if percent > 0:
+        estimated = (100 - percent) / percent * elapsed
+    scrape_jobs[job_id].update({
+        "progress": percent,
+        "message": message,
+        "elapsed": round(elapsed, 1),
+        "estimated_time": round(estimated, 1) if estimated is not None else None,
+    })
+    logging.info("Job %s progress: %s%% - %s (Elapsed: %ss, Est: %ss)",
+                 job_id, percent, message,
+                 scrape_jobs[job_id]['elapsed'],
+                 scrape_jobs[job_id]['estimated_time'])
+
+def update_stream_job_progress(job_id, percent, message):
+    """Update the progress of a stream creation job with interactive data."""
+    now = time.time()
+    if job_id not in stream_creation_jobs or 'start_time' not in stream_creation_jobs[job_id]:
+        stream_creation_jobs[job_id] = {'start_time': now}
+    elapsed = now - stream_creation_jobs[job_id]['start_time']
+    estimated = None
+    if percent > 0:
+        estimated = (100 - percent) / percent * elapsed
+    stream_creation_jobs[job_id].update({
+        "progress": percent,
+        "message": message,
+        "elapsed": round(elapsed, 1),
+        "estimated_time": round(estimated, 1) if estimated is not None else None,
+    })
+    logging.info("Stream Job %s progress: %s%% - %s (Elapsed: %ss, Est: %ss)",
+                 job_id, percent, message,
+                 stream_creation_jobs[job_id]['elapsed'],
+                 stream_creation_jobs[job_id]['estimated_time'])
 
 def fetch_page_content(url, proxy_manager=None, timeout=30):
     """
@@ -151,7 +214,20 @@ def fetch_page_content(url, proxy_manager=None, timeout=30):
         logging.error(f"Error fetching {url} with proxy {proxy}: {e}")
         raise
 
-# Modify Chaturbate and Stripchat scraping functions to use proxy rotation
+def extract_m3u8_urls(html_content):
+    """
+    Extract m3u8 URLs from the given HTML content using a regular expression.
+    
+    Args:
+        html_content (str): The HTML content to search within.
+    
+    Returns:
+        list: A list of found m3u8 URLs.
+    """
+    pattern = r'https?://[^\s"\']+\.m3u8'
+    urls = re.findall(pattern, html_content)
+    return urls
+
 def scrape_chaturbate_data(url, progress_callback=None, proxy_manager=None):
     """
     Updated Chaturbate scraping with proxy rotation and anti-detection.
@@ -256,9 +332,70 @@ def scrape_chaturbate_data(url, progress_callback=None, proxy_manager=None):
             progress_callback(100, f"Error: {e}")
         return None
 
-# Update other scraping functions similarly with proxy rotation and anti-detection techniques
+def fetch_m3u8_from_page(url, timeout=90):
+    """Fetch the M3U8 URL from the given page using Selenium."""
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--ignore-certificate-errors")
+    unique_user_data_dir = tempfile.mkdtemp()
+    chrome_options.add_argument(f"--user-data-dir={unique_user_data_dir}")
 
-# Main scraping function
+    driver = webdriver.Chrome(options=chrome_options)
+    driver.scopes = ['.*\\.m3u8']
+
+    try:
+        logging.info(f"Opening URL: {url}")
+        driver.get(url)
+        time.sleep(5)
+        found_url = None
+        elapsed = 0
+        while elapsed < timeout:
+            for request in driver.requests:
+                if request.response and ".m3u8" in request.url:
+                    found_url = request.url
+                    logging.info(f"Found M3U8 URL: {found_url}")
+                    break
+            if found_url:
+                break
+            time.sleep(1)
+            elapsed += 1
+        return found_url if found_url else None
+    except Exception as e:
+        logging.error(f"Error fetching M3U8 URL: {e}")
+        return None
+    finally:
+        driver.quit()
+
+def scrape_stripchat_data(url, progress_callback=None, proxy_manager=None):
+    """Scrape Stripchat data and update progress."""
+    try:
+        if progress_callback:
+            progress_callback(10, "Fetching Stripchat page")
+        stripchat_m3u8_url = fetch_m3u8_from_page(url)
+        if not stripchat_m3u8_url:
+            logging.error("Failed to fetch m3u8 URL for Stripchat stream.")
+            if progress_callback:
+                progress_callback(100, "Error: Failed to fetch m3u8 URL")
+            return None
+        if "playlistType=lowLatency" in stripchat_m3u8_url:
+            stripchat_m3u8_url = stripchat_m3u8_url.split('?')[0]
+        streamer_username = url.rstrip("/").split("/")[-1]
+        result = {
+            "streamer_username": streamer_username,
+            "stripchat_m3u8_url": stripchat_m3u8_url,
+        }
+        logging.info("Scraped details: %s", result)
+        if progress_callback:
+            progress_callback(100, "Scraping complete")
+        return result
+    except Exception as e:
+        logging.error("Error scraping Stripchat URL %s: %s", url, e)
+        if progress_callback:
+            progress_callback(100, f"Error: {e}")
+        return None
+
 def run_scrape_job(job_id, url):
     """
     Run a scraping job with proxy rotation.
@@ -277,7 +414,6 @@ def run_scrape_job(job_id, url):
             proxy_manager=proxy_manager
         )
     elif "stripchat.com" in url:
-        # Update Stripchat scraping function similarly
         result = scrape_stripchat_data(
             url, 
             progress_callback=lambda p, m: update_job_progress(job_id, p, m),
@@ -294,7 +430,170 @@ def run_scrape_job(job_id, url):
     
     update_job_progress(job_id, 100, scrape_jobs[job_id].get("error", "Scraping complete"))
 
-# Add method to test and validate proxies
+def run_stream_creation_job(job_id, room_url, platform, agent_id=None):
+    with app.app_context():
+        try:
+            update_stream_job_progress(job_id, 5, "Initializing scraping...")
+            proxy_manager = ProxyManager()
+            
+            if platform == "chaturbate":
+                scraped_data = scrape_chaturbate_data(
+                    room_url, 
+                    progress_callback=lambda p, m: update_stream_job_progress(job_id, 5 + p * 0.45, m),
+                    proxy_manager=proxy_manager
+                )
+            else:
+                scraped_data = scrape_stripchat_data(
+                    room_url, 
+                    progress_callback=lambda p, m: update_stream_job_progress(job_id, 5 + p * 0.45, m),
+                    proxy_manager=proxy_manager
+                )
+            
+            if not scraped_data:
+                update_stream_job_progress(job_id, 100, "Scraping failed")
+                return
+            
+            update_stream_job_progress(job_id, 50, "Creating stream...")
+            streamer_username = room_url.rstrip("/").split("/")[-1]
+            
+            if platform == "chaturbate":
+                stream = ChaturbateStream(
+                    room_url=room_url,
+                    streamer_username=streamer_username,
+                    chaturbate_m3u8_url=scraped_data["chaturbate_m3u8_url"]
+                )
+            else:
+                stream = StripchatStream(
+                    room_url=room_url,
+                    streamer_username=streamer_username,
+                    stripchat_m3u8_url=scraped_data["stripchat_m3u8_url"]
+                )
+            
+            db.session.add(stream)
+            db.session.commit()
+
+            # Assign agent if agent_id is provided
+            if agent_id:
+                assignment = Assignment(agent_id=agent_id, stream_id=stream.id)
+                db.session.add(assignment)
+                db.session.commit()
+
+            db.session.refresh(stream)
+
+            for prog in range(51, 101, 10):
+                time.sleep(0.5)
+                update_stream_job_progress(job_id, prog, "Finalizing stream...")
+
+            update_stream_job_progress(job_id, 100, "Stream created")
+
+            # Notify Telegram users when the stream is successfully created
+            recipients = TelegramRecipient.query.all()
+            message = (
+                f"🚀 **New Stream Created!**\n"
+                f"🎥 **Platform:** {platform.capitalize()}\n"
+                f"📡 **Streamer:** {streamer_username}\n"
+                f"🔗 **Stream URL:** {room_url}"
+            )
+            for recipient in recipients:
+                executor.submit(send_text_message, message, recipient.chat_id, None)
+
+            stream_creation_jobs[job_id]["stream"] = stream.serialize()
+
+        except Exception as e:
+            update_stream_job_progress(job_id, 100, f"Error: {str(e)}")
+
+def refresh_chaturbate_stream(room_slug):
+    """
+    Refresh the m3u8 URL for a Chaturbate stream based on the given room slug.
+    This function sends a POST request to the Chaturbate AJAX endpoint to fetch the latest HLS m3u8 URL,
+    and if a corresponding ChaturbateStream exists in the database, it updates its URL.
+    
+    Args:
+        room_slug (str): The room slug (streamer username).
+    
+    Returns:
+        str or None: The new m3u8 URL if successful, or None if an error occurred.
+    """
+    proxy_manager = ProxyManager()
+    ajax_url = "https://chaturbate.com/get_edge_hls_url_ajax/"
+    
+    headers = proxy_manager.get_headers()
+    headers.update({
+        "Referer": f"https://chaturbate.com/{room_slug}/",
+        "X-Requested-With": "XMLHttpRequest",
+        "Origin": "https://chaturbate.com",
+    })
+    
+    # Rotate proxies
+    proxy = proxy_manager.get_proxy()
+    proxies = {"http": proxy, "https": proxy} if proxy else None
+    
+    session_req = requests.Session()
+    retry_strategy = Retry(
+        total=3,
+        status_forcelist=[429, 500, 502, 503, 504],
+        method_whitelist=["HEAD", "POST", "OPTIONS"]
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session_req.mount("https://", adapter)
+    session_req.mount("http://", adapter)
+    
+    data = {
+        "room_slug": room_slug,
+        "jpeg": "1",
+        "csrfmiddlewaretoken": str(uuid.uuid4())  # Randomize token
+    }
+    
+    try:
+        response = session_req.post(
+            ajax_url, 
+            data=data, 
+            headers=headers, 
+            proxies=proxies, 
+            timeout=10
+        )
+        logging.info("POST response status: %s", response.status_code)
+    except Exception as e:
+        logging.error("Error during the POST request: %s", e)
+        return None
+    
+    if response.status_code != 200:
+        logging.error("HTTP error: %s", response.status_code)
+        logging.error("Response text: %s", response.text)
+        return None
+    
+    try:
+        result = response.json()
+        logging.info("Response JSON: %s", result)
+    except ValueError:
+        logging.error("Failed to decode JSON response: %s", response.text)
+        return None
+    
+    if result.get("success"):
+        new_url = result.get("url")
+        if not new_url:
+            logging.error("m3u8 URL missing in response")
+            return None
+    else:
+        logging.error("Request was not successful: %s", result)
+        return None
+    
+    # Update the corresponding ChaturbateStream in the database.
+    stream = ChaturbateStream.query.filter_by(streamer_username=room_slug).first()
+    if stream:
+        stream.chaturbate_m3u8_url = new_url  # Replace the old URL with the new one.
+        try:
+            db.session.commit()
+            logging.info("Updated stream '%s' with new m3u8 URL: %s", room_slug, new_url)
+        except Exception as db_e:
+            db.session.rollback()
+            logging.error("Database commit failed: %s", db_e)
+            return None
+        return new_url
+    else:
+        logging.error("No Chaturbate stream found for room slug: %s", room_slug)
+        return None
+
 def validate_proxies(proxies, test_url='https://httpbin.org/ip'):
     """
     Validate a list of proxies by testing their connectivity.
@@ -321,9 +620,6 @@ def validate_proxies(proxies, test_url='https://httpbin.org/ip'):
     
     return working_proxies
 
-# When setting up, create a proxies.txt file with your list of proxies
-# Example proxies.txt format:
-# http://123.45.67.89:8080
-# https://98.76.54.32:3128
-# socks4://12.34.56.78:1080
-
+if __name__ == '__main__':
+    # You can add any initialization or testing code here
+    logging.info("Scraping script initialized.")
