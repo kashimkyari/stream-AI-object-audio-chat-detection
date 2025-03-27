@@ -19,10 +19,9 @@ from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 
 from config import app
-from models import FlaggedObject, Log, ChatKeyword, DetectionLog, Stream, ChaturbateStream, StripchatStream, TelegramRecipient, Assignment
+from models import FlaggedObject, Log, ChatKeyword, DetectionLog, Stream, ChaturbateStream, StripchatStream, TelegramRecipient
 from extensions import db
 from notifications import send_notifications, send_text_message
-from sqlalchemy.orm import joinedload
 
 # Global variables and locks
 _yolo_model = None
@@ -207,17 +206,13 @@ def log_detection(detections, stream_url, annotated_image, platform_name, stream
 
     # Retrieve the stream from the database to extract its assignment and agent.
     with app.app_context():
-        # Eager load assignments and their agents
-        stream = Stream.query.options(
-            db.joinedload(Stream.assignments).joinedload(Assignment.agent)
-        ).filter_by(room_url=stream_url).first()
-        if stream:
-            # Use the first assignment with an assigned agent
-            for assignment in stream.assignments:
-                if assignment.agent:
-                    assigned_agent = assignment.agent.username
-                    assignment_id = assignment.id
-                    break  # Use the first valid assignment
+        stream = Stream.query.filter_by(room_url=stream_url).first()
+        if stream and stream.assignments and len(stream.assignments) > 0:
+            # Here you could decide which assignment to use.
+            assignment = stream.assignments[0]
+            if assignment.agent:
+                assigned_agent = assignment.agent.username
+                assignment_id = assignment.id
 
     details = {
         "detections": detections,

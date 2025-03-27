@@ -14,6 +14,7 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
   const [detectionSubFilter, setDetectionSubFilter] = useState('Visual');
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [agents, setAgents] = useState([]);
+  const [dashboardStreams, setDashboardStreams] = useState([]);
   const [showAgentDropdown, setShowAgentDropdown] = useState(false);
   const socketRef = useRef();
 
@@ -37,32 +38,83 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
     return image;
   }, []);
 
-const processNotifications = useCallback((data) => {
-  return data.map(notification => {
-    const fromUrl = extractStreamInfo(notification.room_url);
-    
-    return {
-      ...notification,
-      details: {
-        annotated_image: notification.details?.annotated_image || null,
-        captured_image: notification.details?.captured_image || null,
-        streamer_name: notification.details?.streamer_name ||
-          (notification.event_type === 'object_detection' ? fromUrl.streamer : ''),
-        platform: notification.details?.platform ||
-          (notification.event_type === 'object_detection' ? fromUrl.platform : ''),
-        stream_id: notification.details?.stream_id || null,
-        detections: (notification.details?.detections || []).map(det => ({
-          ...det,
-          confidence: det.score || det.confidence || 0,
-        })),
-        keyword: notification.details?.keyword || '',
-        message: notification.details?.message || '',
-      },
-      // Preserve the top-level assigned_agent from API response
-      assigned_agent: notification.assigned_agent 
+  const processNotifications = useCallback((data) => {
+    return data.map(notification => {
+      const assignedAgent = notification.details?.assigned_agent || notification.assigned_agent || "Unassigned";
+      const baseNotification = {
+        id: notification.id,
+        event_type: notification.event_type,
+        timestamp: notification.timestamp,
+        read: notification.read,
+        details: {
+          ...notification.details,
+          detections: (notification.details?.detections || []).map(d => ({
+            class: d.class,
+            confidence: d.confidence || d.score || 0,
+            bbox: d.bbox || []
+          })),
+          images: notification.details?.images || {
+            annotated: notification.details?.annotated_image,
+            original: notification.details?.captured_image
+          },
+          stream: notification.details?.stream || {
+            platform: notification.details?.platform,
+            streamer: notification.details?.streamer_name,
+            url: notification.room_url
+          },
+          agent: assignedAgent
+        },
+        assigned_agent: assignedAgent
+      };
+
+      return {
+        ...baseNotification,
+        displayType: notification.event_type === 'object_detection' ? 'object' : notification.event_type,
+        previewText: notification.event_type === 'object_detection'
+          ? `${notification.details.detections.length} objects detected`
+          : notification.details.message,
+        timestamp: notification.timestamp,
+        confidence: notification.event_type === 'object_detection'
+          ? Math.max(...(notification.details.detections.map(d => d.confidence))) || 0
+          : 0
+      };
+    });
+  }, []);
+
+  // Fetch dashboard streams when a visual detection notification is selected.
+  useEffect(() => {
+    const fetchDashboardStreams = async () => {
+      try {
+        const res = await axios.get('/api/dashboard');
+        if (res.status === 200 && res.data && res.data.streams) {
+          setDashboardStreams(res.data.streams);
+        }
+      } catch (err) {
+        console.error('Error fetching dashboard streams:', err);
+      }
     };
-  });
-}, [extractStreamInfo]);
+    if (selectedNotification && selectedNotification.event_type === 'object_detection') {
+      fetchDashboardStreams();
+    }
+  }, [selectedNotification]);
+
+  // Lookup the assigned agent using dashboard stream data and agents list.
+  const getAssignedAgentForStream = useCallback(() => {
+    if (dashboardStreams && dashboardStreams.length > 0 && selectedNotification && selectedNotification.details) {
+      const { platform, streamer } = selectedNotification.details.stream;
+      const matchedStream = dashboardStreams.find(s =>
+        s.platform.toLowerCase() === platform.toLowerCase() &&
+        s.streamer_username.toLowerCase() === streamer.toLowerCase()
+      );
+      if (matchedStream && matchedStream.assignments && matchedStream.assignments.length > 0 && matchedStream.assignments[0].agent) {
+        const agentId = matchedStream.assignments[0].agent.id;
+        const foundAgent = agents.find(a => a.id === agentId);
+        if (foundAgent) return foundAgent.username;
+        return matchedStream.assignments[0].agent.username || "Unassigned";
+      }
+    }
+    return "Unassigned";
+  }, [dashboardStreams, selectedNotification, agents]);
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -73,7 +125,7 @@ const processNotifications = useCallback((data) => {
         let processed = processNotifications(res.data);
         if (user && user.role === 'agent') {
           processed = processed.filter(n =>
-            (n.details?.assigned_agent || "").toLowerCase() === user.username.toLowerCase()
+            (n.assigned_agent || "").toLowerCase() === user.username.toLowerCase()
           );
         }
         if (mainFilter === 'Unread') {
@@ -199,51 +251,52 @@ const processNotifications = useCallback((data) => {
     return '#28a745';
   };
 
-// Update renderForwardSection in NotificationsPage.js
-const renderForwardSection = () => (
-  <div className="forward-section">
-    <button 
-      className="forward-btn"
-      onClick={() => setShowAgentDropdown(true)}
-    >
-      Forward to Agent
-    </button>
-    
-    {showAgentDropdown && (
-      <div className="forward-modal-overlay" onClick={() => setShowAgentDropdown(false)}>
-        <div className="forward-modal-content" onClick={(e) => e.stopPropagation()}>
-          <div className="modal-header">
-            <h3>Select Agent</h3>
-            <button 
-              className="modal-close-btn"
-              onClick={() => setShowAgentDropdown(false)}
-            >
-              &times;
-            </button>
-          </div>
-          <div className="agent-list">
-            {agents.map(agent => (
-              <div 
-                key={agent.id} 
-                className="agent-option"
-                onClick={() => {
-                  forwardNotification(agent.id);
-                  setShowAgentDropdown(false);
-                }}
+  // Render agent forwarding dropdown
+  const renderForwardSection = () => (
+    <div className="forward-section">
+      <button 
+        className="forward-btn"
+        onClick={() => setShowAgentDropdown(true)}
+      >
+        Forward to Agent
+      </button>
+      
+      {showAgentDropdown && (
+        <div className="forward-modal-overlay" onClick={() => setShowAgentDropdown(false)}>
+          <div className="forward-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Select Agent</h3>
+              <button 
+                className="modal-close-btn"
+                onClick={() => setShowAgentDropdown(false)}
               >
-                <div className={`agent-status-indicator ${agent.online ? 'online' : 'offline'}`} />
-                <div className="agent-info">
-                  <div className="agent-name">{agent.username}</div>
-                  <div className="agent-email">{agent.email}</div>
+                &times;
+              </button>
+            </div>
+            <div className="agent-list">
+              {agents.map(agent => (
+                <div 
+                  key={agent.id} 
+                  className="agent-option"
+                  onClick={() => {
+                    forwardNotification(agent.id);
+                    setShowAgentDropdown(false);
+                  }}
+                >
+                  <div className={`agent-status-indicator ${agent.online ? 'online' : 'offline'}`} />
+                  <div className="agent-info">
+                    <div className="agent-name">{agent.username}</div>
+                    <div className="agent-email">{agent.email}</div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
-      </div>
-    )}
-  </div>
-);
+      )}
+    </div>
+  );
+
   const renderNotificationDetails = () => {
     if (!selectedNotification) {
       return (
@@ -299,7 +352,9 @@ const renderForwardSection = () => (
             </div>
           </div>
         );
-      case 'object_detection':
+      case 'object_detection': {
+        // For visual detections, fetch assigned agent from dashboard and then look up agent username from agents.
+        const assignedAgent = getAssignedAgentForStream();
         return (
           <div className="notification-detail">
             {commonHeader}
@@ -336,8 +391,9 @@ const renderForwardSection = () => (
                 <div className="info-item">
                   <span className="info-label">Assigned Agent:</span>
                   <span className="info-value">
-                    {selectedNotification.assigned_agent ||
-                      <span className="unassigned-badge">⚠️ UNASSIGNED</span>}
+                    {assignedAgent !== "Unassigned"
+                      ? assignedAgent
+                      : <span className="unassigned-badge">⚠️ UNASSIGNED</span>}
                   </span>
                 </div>
                 <div className="info-item">
@@ -360,6 +416,7 @@ const renderForwardSection = () => (
             </div>
           </div>
         );
+      }
       case 'chat_detection':
         return (
           <div className="notification-detail">

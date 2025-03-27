@@ -272,7 +272,6 @@ def refresh_chaturbate_route():
     else:
         return jsonify({"message": "Failed to refresh stream"}), 500
 
-
 # --------------------------------------------------------------------
 # Interactive Stream Creation Endpoints
 # --------------------------------------------------------------------
@@ -783,54 +782,24 @@ def health():
 @login_required(role="admin")
 def get_logs():
     try:
-        # Retrieve logs from both tables with eager loading
-        logs1 = Log.query.options(
-            joinedload(Log.stream).joinedload(Stream.assignments).joinedload(Assignment.agent)
-        ).order_by(Log.timestamp.desc()).limit(100).all()
-        
-        logs2 = DetectionLog.query.options(
-            joinedload(DetectionLog.stream).joinedload(Stream.assignments).joinedload(Assignment.agent)
-        ).order_by(DetectionLog.timestamp.desc()).limit(100).all()
-
-        # Combine and sort all logs
+        # Retrieve logs from both Log and DetectionLog tables.
+        logs1 = Log.query.order_by(Log.timestamp.desc()).limit(100).all()
+        logs2 = DetectionLog.query.order_by(DetectionLog.timestamp.desc()).limit(100).all()
         all_logs = logs1 + logs2
+        # Sort combined logs by timestamp descending.
         all_logs.sort(key=lambda x: x.timestamp, reverse=True)
+        # Limit to 100 most recent entries.
         recent_logs = all_logs[:100]
-
-        # Serialize with agent information
         return jsonify([{
             "id": log.id,
             "event_type": log.event_type,
             "timestamp": log.timestamp.isoformat(),
-            "details": {
-                **log.details,
-                # Add agent info for DetectionLog
-                "assigned_agent": (
-                    log.details.get("assigned_agent") 
-                    if isinstance(log, DetectionLog)
-                    else log.details.get("assigned_agent", "Unassigned")
-                ),
-                # Add stream info
-                "stream": log.stream.serialize() if log.stream else None
-            },
-            "read": log.read,
-            "platform": (
-                log.stream.type 
-                if log.stream and isinstance(log.stream, Stream)
-                else None
-            ),
-            "streamer_name": (
-                log.stream.streamer_username 
-                if log.stream else None
-            )
-        } for log in recent_logs]), 200
-
+            "details": log.details,
+            "read": log.read
+        } for log in recent_logs])
     except Exception as e:
         app.logger.error("Error in /api/logs: %s", e)
-        return jsonify({
-            "message": "Error fetching logs",
-            "error": str(e)
-        }), 500
+        return jsonify({"message": "Error fetching dashboard data", "error": str(e)}), 500
 
 
 # Add these endpoints for notifications

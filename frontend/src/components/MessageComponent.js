@@ -20,20 +20,17 @@ const MessageComponent = ({ user }) => {
   const configureSocket = useCallback(() => {
     if (!user) return;
 
-    const socketUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+    const socketUrl = 'http://localhost:3000';
     
-// Update socket configuration
-socketRef.current = io(socketUrl, {
-  withCredentials: true,
-  transports: ['websocket', 'polling'],
-  reconnection: true,
-  reconnectionAttempts: Infinity,
-  reconnectionDelay: 1000,
-  query: { 
-    userId: user.id,
-    role: user.role 
-  }
-});
+    socketRef.current = io(socketUrl, {
+      withCredentials: true,
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: 5,
+      query: { 
+        userId: user.id,
+        role: user.role 
+      }
+    });
 
     // Connection handlers
     socketRef.current.on('connect', () => {
