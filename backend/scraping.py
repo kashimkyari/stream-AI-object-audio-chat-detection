@@ -158,6 +158,7 @@ def scrape_chaturbate_data(url, progress_callback=None):
             "Referer": f"https://chaturbate.com/{room_slug}/",
             "X-Requested-With": "XMLHttpRequest",
             "Origin": "https://chaturbate.com",
+            "Cookie": 'stcki="Eg6Gdq=1\054kHDa2i=1"'  # Added custom cookie
         }
         data = {
             "room_slug": room_slug,
@@ -165,7 +166,8 @@ def scrape_chaturbate_data(url, progress_callback=None):
             "csrfmiddlewaretoken": "vfO2sk8hUsSXVILMJwtcyGqhPy6WqwhH"
         }
         cookies = {
-            "csrftoken": "vfO2sk8hUsSXVILMJwtcyGqhPy6WqwhH"
+            "csrftoken": "vfO2sk8hUsSXVILMJwtcyGqhPy6WqwhH",
+            "stcki": '"Eg6Gdq=1,kHDa2i=1"'  # Added to session cookies
         }
         import requests
         session = requests.Session()
@@ -213,7 +215,7 @@ def scrape_chaturbate_data(url, progress_callback=None):
             progress_callback(100, f"Error: {e}")
         return None
 
-# --- Existing Functions Remain Unchanged ---
+        # --- Existing Functions Remain Unchanged ---
 def fetch_m3u8_from_page(url, timeout=90):
     """Fetch the M3U8 URL from the given page using Selenium."""
     chrome_options = Options()
@@ -356,6 +358,25 @@ def run_stream_creation_job(job_id, room_url, platform, agent_id=None):
         except Exception as e:
             update_stream_job_progress(job_id, 100, f"Error: {str(e)}")
 
+
+def fetch_chaturbate_chat_history(room_slug):
+    """Fetch chat history from Chaturbate's API endpoint."""
+    url = "https://chaturbate.com/push_service/room_history/"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0",
+        "X-Requested-With": "XMLHttpRequest",
+        "Referer": f"https://chaturbate.com/{room_slug}/",
+        "Origin": "https://chaturbate.com",
+        "Cookie": 'csrftoken=vfO2sk8hUsSXVILMJwtcyGqhPy6WqwhH; stcki="Eg6Gdq=1\054kHDa2i=1"'
+    }
+    
+    try:
+        response = requests.post(url, headers=headers)
+        response.raise_for_status()
+        return response.json().get("0", {}).values()
+    except Exception as e:
+        logging.error(f"Chat history fetch error: {str(e)}")
+        return []
 
 # --- New Function: Refresh Chaturbate Stream ---
 def refresh_chaturbate_stream(room_slug):

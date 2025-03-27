@@ -110,16 +110,19 @@ def send_notifications(log_entry, platform_name=None, streamer_name=None):
                 for recipient in recipients:
                     executor.submit(send_text_message, message, recipient.chat_id, None)
 
+            # Modify the chat detection notification message
             elif log_entry.event_type == 'chat_detection':
-                # For chat detection, we use the 'keywords' and 'ocr_text' fields from the log details.
-                keywords = details.get('keywords', [])
-                ocr_excerpt = details.get('ocr_text', 'No message available.')
+                detections = details.get('detections', [{}])
+                first_detection = detections[0] if detections else {}
+                
                 message = (
                     f"💬 **Chat Detection Alert**\n"
                     f"🎥 Platform: {platform}\n"
                     f"📡 Streamer: {streamer}\n"
-                    f"🔍 Keywords: {', '.join(keywords) if keywords else 'None'}\n"
-                    f"📝 Message: {ocr_excerpt[:300]}..."
+                    f"👤 Sender: {first_detection.get('sender', 'Unknown')}\n"
+                    f"🔍 Keywords: {', '.join(first_detection.get('keywords', []))}\n"
+                    f"📝 Message: {first_detection.get('message', '')[:300]}..."
+                
                 )
                 for recipient in recipients:
                     executor.submit(send_text_message, message, recipient.chat_id, None)

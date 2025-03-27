@@ -636,35 +636,47 @@ def advanced_detect():
                     "keywords": detected_keywords
                 }), 200
             return jsonify({"message": "No audio keywords detected"}), 200
+        # Update the chat detection part in advanced_detect()
         if 'chat_image' in request.files:
-            file = request.files["chat_image"]
-            stream_url = request.form.get("stream_url")
-            image_bytes = file.read()
-            image_stream = BytesIO(image_bytes)
-            image = Image.open(image_stream)
-            ocr_text = pytesseract.image_to_string(image)
-            refresh_keywords()
-            flagged_keywords = [kw.keyword for kw in ChatKeyword.query.all()]
-            detected_keywords = [kw for kw in flagged_keywords if kw.lower() in ocr_text.lower()]
-            if detected_keywords:
-                flagged_image_data = base64.b64encode(image_bytes).decode('utf-8')
-                stream = Stream.query.filter_by(room_url=stream_url).first() if stream_url else None
-                log_entry = Log(
-                    room_url=stream_url or "chat",
-                    event_type="chat_detection",
-                    details={
-                        'keywords': detected_keywords,
-                        'ocr_text': ocr_text,
-                        'streamer_name': stream.streamer_username if stream else "Unknown",
-                        'platform': stream.type if stream else "Unknown",
-                    }
-                )
-                db.session.add(log_entry)
-                db.session.commit()
-                send_notifications(log_entry)
-                return jsonify({"message": "Chat keywords detected", "keywords": detected_keywords}), 200
-            else:
-                return jsonify({"message": "No chat keywords detected"}), 200
+            # Replace OCR-based detection with API-based
+            room_url = request.form.get("stream_url")
+            if "chaturbate.com" in room_url:
+                room_slug = room_url.rstrip("/").split("/")[-1]
+                chat_messages = fetch_chaturbate_chat_history(room_slug)
+                flagged_keywords = [kw.keyword for kw in ChatKeyword.query.all()]
+                
+                detected = []
+                for msg in chat_messages:
+                    msg_data = msg.get("RoomMessageTopic#RoomMessageTopic:0YJW2WC", {})
+                    message = msg_data.get("message", "")
+                    sender = msg_data.get("from_user", {}).get("username", "unknown")
+                    
+                    detected_keywords = [
+                        kw for kw in flagged_keywords 
+                        if kw.lower() in message.lower()
+                    ]
+                    
+                    if detected_keywords:
+                        detected.append({
+                            "message": message,
+                            "sender": sender,
+                            "keywords": detected_keywords
+                        })
+
+                if detected:
+                    stream = Stream.query.filter_by(room_url=room_url).first()
+                    log_entry = DetectionLog(
+                        room_url=room_url,
+                        event_type="chat_detection",
+                        details={
+                            "detections": detected,
+                            "platform": "Chaturbate",
+                            "streamer_name": stream.streamer_username if stream else "Unknown"
+                        }
+                    )
+                    db.session.add(log_entry)
+                    db.session.commit()
+                    return jsonify({"detections": detected}), 200
         data = request.get_json(silent=True)
         if data is None:
             return jsonify({"message": "No valid JSON or files provided"}), 400

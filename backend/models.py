@@ -257,6 +257,7 @@ class DetectionLog(db.Model):
     assigned_agent = db.Column(db.String(100), nullable=True)  # New field for assigned agent username (for redundancy)
     assignment_id = db.Column(db.Integer, db.ForeignKey('assignments.id'), nullable=True)
     timestamp = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    sender_username = db.Column(db.String(100), nullable=True)
     read = db.Column(db.Boolean, default=False)
 
     # Relationship to Assignment (if this detection is associated with a stream assignment)
