@@ -291,7 +291,7 @@ def process_combined_detection(stream_url, cancel_event):
         audio_buffer = b""
 
         try:
-            whisper_model = load_model("base")
+            whisper_model = load_model("large-v3")
             logging.info("Whisper model loaded for combined detection.")
         except Exception as e:
             logging.error("Error loading Whisper model: %s", e)
