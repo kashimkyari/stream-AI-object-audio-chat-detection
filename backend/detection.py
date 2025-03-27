@@ -294,7 +294,7 @@ def process_combined_detection(stream_url, cancel_event):
 
         try:
             whisper_model = load_model("large-v3")
-            logging.info("Whisper model loaded for combined detection.")
+            logging.info("Whisper model (large-v3) loaded for combined detection.")
         except Exception as e:
             logging.error("Error loading Whisper model: %s", e)
             whisper_model = None
@@ -327,12 +327,15 @@ def process_combined_detection(stream_url, cancel_event):
                                 audio_int16 = np.frombuffer(audio_buffer, dtype=np.int16)
                                 audio_float = audio_int16.astype(np.float32) / 32768.0
                                 try:
-                                    # Prepare audio input and compute mel spectrogram
+                                    # Prepare audio input and compute mel spectrogram.
                                     audio_input = whisper.pad_or_trim(audio_float)
-                                    mel = whisper.log_mel_spectrogram(audio_input).to(whisper_model.device)
-                                    # Upsample mel spectrogram from 80 to 128 mel bins
+                                    mel = whisper.log_mel_spectrogram(audio_input).to(whisper_model.device)  # Expected shape: (80, T)
+                                    # Upsample mel spectrogram from 80 to 128 mel bins:
                                     if mel.shape[0] != 128:
-                                        mel = F.interpolate(mel.unsqueeze(0), size=(128, mel.shape[-1]), mode='bilinear', align_corners=False).squeeze(0)
+                                        T = mel.shape[1]
+                                        mel = mel.unsqueeze(0).unsqueeze(0)  # shape: (1, 1, 80, T)
+                                        mel = F.interpolate(mel, size=(128, T), mode='bilinear', align_corners=False)
+                                        mel = mel.squeeze(0).squeeze(0)  # shape: (128, T)
                                     options = whisper.DecodingOptions(fp16=False)
                                     result = whisper.decode(whisper_model, mel, options)
                                     transcript = result.text.strip()
