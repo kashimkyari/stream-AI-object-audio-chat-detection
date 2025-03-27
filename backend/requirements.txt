@@ -28,5 +28,6 @@ SpeechRecognition
 tensorflow
 ultralytics
 av
-vosk
+undetected-chromedriver
+openai-whisper
 

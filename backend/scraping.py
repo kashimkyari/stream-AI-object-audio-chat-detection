@@ -7,8 +7,6 @@ import re
 import logging
 import uuid
 import time
-import random
-
 # --- Monkey Patch for blinker._saferef ---
 if 'blinker._saferef' not in sys.modules:
     saferef = types.ModuleType('blinker._saferef')
@@ -27,7 +25,6 @@ if 'blinker._saferef' not in sys.modules:
     saferef.SafeRef = SafeRef
     sys.modules['blinker._saferef'] = saferef
 # --- End of Monkey Patch ---
-
 from concurrent.futures import ThreadPoolExecutor
 from seleniumwire import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -39,93 +36,10 @@ from extensions import db
 from config import app  # Use the Flask app for application context
 from notifications import send_text_message
 
-# New imports for proxy and anti-detection
-import requests
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
-from fake_useragent import UserAgent
-
 # Global dictionaries to hold job statuses.
 scrape_jobs = {}
 stream_creation_jobs = {}
 executor = ThreadPoolExecutor(max_workers=5)  # Thread pool for parallel scraping
-
-# Logging configuration
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('scraping.log'),
-        logging.StreamHandler()
-    ]
-)
-
-# Proxy management class
-class ProxyManager:
-    def __init__(self, proxy_list_file='proxies.txt'):
-        """
-        Initialize ProxyManager with a list of proxies from a file.
-        
-        Proxy file format should be:
-        protocol://ip:port
-        http://123.45.67.89:8080
-        https://98.76.54.32:3128
-        """
-        self.proxies = self.load_proxies(proxy_list_file)
-        self.used_proxies = set()
-        self.ua = UserAgent()
-    
-    def load_proxies(self, proxy_list_file):
-        """
-        Load proxies from a text file.
-        
-        Args:
-            proxy_list_file (str): Path to the proxy list file
-        
-        Returns:
-            list: List of proxy strings
-        """
-        try:
-            with open(proxy_list_file, 'r') as f:
-                return [line.strip() for line in f if line.strip()]
-        except FileNotFoundError:
-            logging.warning(f"Proxy list file {proxy_list_file} not found. No proxies available.")
-            return []
-    
-    def get_proxy(self):
-        """
-        Get a fresh proxy from the list, avoiding recently used proxies.
-        
-        Returns:
-            str or None: A proxy URL or None if no proxies are available
-        """
-        available_proxies = list(set(self.proxies) - self.used_proxies)
-        
-        if not available_proxies:
-            # Reset used proxies if all have been tried
-            self.used_proxies.clear()
-            available_proxies = self.proxies
-        
-        if available_proxies:
-            proxy = random.choice(available_proxies)
-            self.used_proxies.add(proxy)
-            return proxy
-        return None
-    
-    def get_headers(self):
-        """
-        Generate headers with a random user agent to avoid detection.
-        
-        Returns:
-            dict: Headers with a random user agent
-        """
-        return {
-            "User-Agent": self.ua.random,
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.5",
-            "Connection": "keep-alive",
-            "Upgrade-Insecure-Requests": "1"
-        }
 
 def update_job_progress(job_id, percent, message):
     """Update the progress of a scraping job with interactive data."""
@@ -167,52 +81,31 @@ def update_stream_job_progress(job_id, percent, message):
                  stream_creation_jobs[job_id]['elapsed'],
                  stream_creation_jobs[job_id]['estimated_time'])
 
-def fetch_page_content(url, proxy_manager=None, timeout=30):
+# --- New Scraper Helper Functions ---
+def fetch_page_content(url):
     """
-    Fetch the HTML content of the provided URL with proxy rotation and retry logic.
+    Fetch the HTML content of the provided URL using a standard User-Agent header.
     
     Args:
-        url (str): The URL of the webpage to scrape
-        proxy_manager (ProxyManager, optional): Proxy manager instance
-        timeout (int, optional): Request timeout in seconds
+        url (str): The URL of the webpage to scrape.
     
     Returns:
-        str: The HTML content of the webpage
+        str: The HTML content of the webpage.
     
     Raises:
-        requests.HTTPError: If the request to the webpage fails
+        requests.HTTPError: If the request to the webpage fails.
     """
-    if not proxy_manager:
-        proxy_manager = ProxyManager()
-    
-    # Retry strategy
-    retry_strategy = Retry(
-        total=3,
-        status_forcelist=[429, 500, 502, 503, 504],
-        method_whitelist=["HEAD", "GET", "OPTIONS"]
-    )
-    adapter = HTTPAdapter(max_retries=retry_strategy)
-    
-    session = requests.Session()
-    session.mount("https://", adapter)
-    session.mount("http://", adapter)
-    
-    # Rotate proxies
-    proxy = proxy_manager.get_proxy()
-    proxies = {"http": proxy, "https": proxy} if proxy else None
-    
-    try:
-        response = session.get(
-            url, 
-            headers=proxy_manager.get_headers(), 
-            proxies=proxies, 
-            timeout=timeout
+    import requests
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/90.0.4430.93 Safari/537.36"
         )
-        response.raise_for_status()
-        return response.text
-    except Exception as e:
-        logging.error(f"Error fetching {url} with proxy {proxy}: {e}")
-        raise
+    }
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+    return response.text
 
 def extract_m3u8_urls(html_content):
     """
@@ -228,110 +121,99 @@ def extract_m3u8_urls(html_content):
     urls = re.findall(pattern, html_content)
     return urls
 
-def scrape_chaturbate_data(url, progress_callback=None, proxy_manager=None):
+# --- End of New Scraper Helper Functions ---
+
+# --- Updated Chaturbate Scraping Function ---
+def scrape_chaturbate_data(url, progress_callback=None):
     """
-    Updated Chaturbate scraping with proxy rotation and anti-detection.
+    Scrape Chaturbate data using the new AJAX endpoint and update progress.
+    
+    This function extracts the room slug from the full URL provided by the user,
+    then sends a POST request to the Chaturbate AJAX endpoint to fetch the HLS m3u8 URL.
     
     Args:
-        url (str): The full Chaturbate room URL
-        progress_callback (callable, optional): Progress update function
-        proxy_manager (ProxyManager, optional): Proxy manager instance
+        url (str): The full Chaturbate room URL (e.g., "https://chaturbate.com/bunnydollstella/").
+        progress_callback (callable, optional): A callback function to update progress.
+            It should accept two arguments: a percentage (int) and a message (str).
     
     Returns:
-        dict or None: Scraped stream data
+        dict or None: A dictionary with 'streamer_username' and 'chaturbate_m3u8_url'
+            keys if successful, or None if an error occurred.
     """
-    if not proxy_manager:
-        proxy_manager = ProxyManager()
-    
     try:
         if progress_callback:
             progress_callback(10, "Extracting room slug")
-        
+        # Extract room slug from the URL
         room_slug = url.rstrip("/").split("/")[-1]
         
         if progress_callback:
             progress_callback(20, "Fetching m3u8 URL via AJAX endpoint")
         
+        # Set up the endpoint and headers as per the traditional approach
         ajax_url = "https://chaturbate.com/get_edge_hls_url_ajax/"
-        
-        # Use session with proxy and retry logic
-        session = requests.Session()
-        retry_strategy = Retry(
-            total=3,
-            status_forcelist=[429, 500, 502, 503, 504],
-            method_whitelist=["HEAD", "POST", "OPTIONS"]
-        )
-        adapter = HTTPAdapter(max_retries=retry_strategy)
-        session.mount("https://", adapter)
-        session.mount("http://", adapter)
-        
-        # Rotate proxies
-        proxy = proxy_manager.get_proxy()
-        proxies = {"http": proxy, "https": proxy} if proxy else None
-        
-        headers = proxy_manager.get_headers()
-        headers.update({
+        headers = {
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0",
+            "Accept": "*/*",
+            "Accept-Language": "en-US,en;q=0.5",
             "Referer": f"https://chaturbate.com/{room_slug}/",
             "X-Requested-With": "XMLHttpRequest",
             "Origin": "https://chaturbate.com",
-        })
-        
+        }
         data = {
             "room_slug": room_slug,
             "jpeg": "1",
-            "csrfmiddlewaretoken": str(uuid.uuid4())  # Randomize token
+            "csrfmiddlewaretoken": "vfO2sk8hUsSXVILMJwtcyGqhPy6WqwhH"
         }
+        cookies = {
+            "csrftoken": "vfO2sk8hUsSXVILMJwtcyGqhPy6WqwhH"
+        }
+        import requests
+        session = requests.Session()
+        session.cookies.update(cookies)
+        response = session.post(ajax_url, data=data, headers=headers)
+        if response.status_code != 200:
+            error_msg = f"HTTP error: {response.status_code}"
+            logging.error(error_msg)
+            if progress_callback:
+                progress_callback(100, f"Error: {error_msg}")
+            return None
         
         try:
-            response = session.post(
-                ajax_url, 
-                data=data, 
-                headers=headers, 
-                proxies=proxies, 
-                timeout=30
-            )
-            
-            if response.status_code != 200:
-                logging.error(f"HTTP error: {response.status_code}")
-                if progress_callback:
-                    progress_callback(100, f"Error: HTTP {response.status_code}")
-                return None
-            
             result = response.json()
-            
-            if result.get("success"):
-                m3u8_url = result.get("url")
-                if not m3u8_url:
-                    logging.error("m3u8 URL missing in response")
-                    if progress_callback:
-                        progress_callback(100, "Error: m3u8 URL missing")
-                    return None
-                
-                if progress_callback:
-                    progress_callback(100, "Scraping complete")
-                
-                return {
-                    "streamer_username": room_slug,
-                    "chaturbate_m3u8_url": m3u8_url,
-                }
-            else:
-                logging.error(f"Request unsuccessful: {result}")
-                if progress_callback:
-                    progress_callback(100, "Error: Request unsuccessful")
-                return None
-        
-        except Exception as e:
-            logging.error(f"Error during Chaturbate scraping: {e}")
+        except ValueError:
+            error_msg = "Failed to decode JSON response"
+            logging.error(error_msg)
             if progress_callback:
-                progress_callback(100, f"Error: {e}")
+                progress_callback(100, f"Error: {error_msg}")
             return None
-    
+        
+        if result.get("success"):
+            m3u8_url = result.get("url")
+            if not m3u8_url:
+                error_msg = "m3u8 URL missing in response"
+                logging.error(error_msg)
+                if progress_callback:
+                    progress_callback(100, f"Error: {error_msg}")
+                return None
+            if progress_callback:
+                progress_callback(100, "Scraping complete")
+            return {
+                "streamer_username": room_slug,
+                "chaturbate_m3u8_url": m3u8_url,
+            }
+        else:
+            error_msg = f"Request was not successful: {result}"
+            logging.error(error_msg)
+            if progress_callback:
+                progress_callback(100, f"Error: {error_msg}")
+            return None
     except Exception as e:
-        logging.error(f"Error scraping Chaturbate URL {url}: {e}")
+        logging.error("Error scraping Chaturbate URL %s: %s", url, e)
         if progress_callback:
             progress_callback(100, f"Error: {e}")
         return None
 
+# --- Existing Functions Remain Unchanged ---
 def fetch_m3u8_from_page(url, timeout=90):
     """Fetch the M3U8 URL from the given page using Selenium."""
     chrome_options = Options()
@@ -368,7 +250,7 @@ def fetch_m3u8_from_page(url, timeout=90):
     finally:
         driver.quit()
 
-def scrape_stripchat_data(url, progress_callback=None, proxy_manager=None):
+def scrape_stripchat_data(url, progress_callback=None):
     """Scrape Stripchat data and update progress."""
     try:
         if progress_callback:
@@ -397,57 +279,29 @@ def scrape_stripchat_data(url, progress_callback=None, proxy_manager=None):
         return None
 
 def run_scrape_job(job_id, url):
-    """
-    Run a scraping job with proxy rotation.
-    
-    Args:
-        job_id (str): Unique job identifier
-        url (str): URL to scrape
-    """
-    proxy_manager = ProxyManager()
+    """Run a scraping job and update progress interactively."""
     update_job_progress(job_id, 0, "Starting scrape job")
-    
     if "chaturbate.com" in url:
-        result = scrape_chaturbate_data(
-            url, 
-            progress_callback=lambda p, m: update_job_progress(job_id, p, m),
-            proxy_manager=proxy_manager
-        )
+        result = scrape_chaturbate_data(url, progress_callback=lambda p, m: update_job_progress(job_id, p, m))
     elif "stripchat.com" in url:
-        result = scrape_stripchat_data(
-            url, 
-            progress_callback=lambda p, m: update_job_progress(job_id, p, m),
-            proxy_manager=proxy_manager
-        )
+        result = scrape_stripchat_data(url, progress_callback=lambda p, m: update_job_progress(job_id, p, m))
     else:
         logging.error("Unsupported platform for URL: %s", url)
         result = None
-    
     if result:
         scrape_jobs[job_id]["result"] = result
     else:
         scrape_jobs[job_id]["error"] = "Scraping failed"
-    
     update_job_progress(job_id, 100, scrape_jobs[job_id].get("error", "Scraping complete"))
 
 def run_stream_creation_job(job_id, room_url, platform, agent_id=None):
     with app.app_context():
         try:
             update_stream_job_progress(job_id, 5, "Initializing scraping...")
-            proxy_manager = ProxyManager()
-            
             if platform == "chaturbate":
-                scraped_data = scrape_chaturbate_data(
-                    room_url, 
-                    progress_callback=lambda p, m: update_stream_job_progress(job_id, 5 + p * 0.45, m),
-                    proxy_manager=proxy_manager
-                )
+                scraped_data = scrape_chaturbate_data(room_url, progress_callback=lambda p, m: update_stream_job_progress(job_id, 5 + p * 0.45, m))
             else:
-                scraped_data = scrape_stripchat_data(
-                    room_url, 
-                    progress_callback=lambda p, m: update_stream_job_progress(job_id, 5 + p * 0.45, m),
-                    proxy_manager=proxy_manager
-                )
+                scraped_data = scrape_stripchat_data(room_url, progress_callback=lambda p, m: update_stream_job_progress(job_id, 5 + p * 0.45, m))
             
             if not scraped_data:
                 update_stream_job_progress(job_id, 100, "Scraping failed")
@@ -502,6 +356,8 @@ def run_stream_creation_job(job_id, room_url, platform, agent_id=None):
         except Exception as e:
             update_stream_job_progress(job_id, 100, f"Error: {str(e)}")
 
+
+# --- New Function: Refresh Chaturbate Stream ---
 def refresh_chaturbate_stream(room_slug):
     """
     Refresh the m3u8 URL for a Chaturbate stream based on the given room slug.
@@ -514,44 +370,29 @@ def refresh_chaturbate_stream(room_slug):
     Returns:
         str or None: The new m3u8 URL if successful, or None if an error occurred.
     """
-    proxy_manager = ProxyManager()
+    import requests
     ajax_url = "https://chaturbate.com/get_edge_hls_url_ajax/"
-    
-    headers = proxy_manager.get_headers()
-    headers.update({
+    headers = {
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0",
+        "Accept": "*/*",
+        "Accept-Language": "en-US,en;q=0.5",
         "Referer": f"https://chaturbate.com/{room_slug}/",
         "X-Requested-With": "XMLHttpRequest",
         "Origin": "https://chaturbate.com",
-    })
-    
-    # Rotate proxies
-    proxy = proxy_manager.get_proxy()
-    proxies = {"http": proxy, "https": proxy} if proxy else None
-    
-    session_req = requests.Session()
-    retry_strategy = Retry(
-        total=3,
-        status_forcelist=[429, 500, 502, 503, 504],
-        method_whitelist=["HEAD", "POST", "OPTIONS"]
-    )
-    adapter = HTTPAdapter(max_retries=retry_strategy)
-    session_req.mount("https://", adapter)
-    session_req.mount("http://", adapter)
-    
+    }
     data = {
         "room_slug": room_slug,
         "jpeg": "1",
-        "csrfmiddlewaretoken": str(uuid.uuid4())  # Randomize token
+        "csrfmiddlewaretoken": "vfO2sk8hUsSXVILMJwtcyGqhPy6WqwhH"
     }
+    cookies = {
+        "csrftoken": "vfO2sk8hUsSXVILMJwtcyGqhPy6WqwhH"
+    }
+    session_req = requests.Session()
+    session_req.cookies.update(cookies)
     
     try:
-        response = session_req.post(
-            ajax_url, 
-            data=data, 
-            headers=headers, 
-            proxies=proxies, 
-            timeout=10
-        )
+        response = session_req.post(ajax_url, data=data, headers=headers, timeout=10)
         logging.info("POST response status: %s", response.status_code)
     except Exception as e:
         logging.error("Error during the POST request: %s", e)
@@ -594,32 +435,5 @@ def refresh_chaturbate_stream(room_slug):
         logging.error("No Chaturbate stream found for room slug: %s", room_slug)
         return None
 
-def validate_proxies(proxies, test_url='https://httpbin.org/ip'):
-    """
-    Validate a list of proxies by testing their connectivity.
-    
-    Args:
-        proxies (list): List of proxy URLs
-        test_url (str): URL to test proxy connectivity
-    
-    Returns:
-        list: List of working proxies
-    """
-    working_proxies = []
-    for proxy in proxies:
-        try:
-            response = requests.get(
-                test_url, 
-                proxies={'http': proxy, 'https': proxy}, 
-                timeout=10
-            )
-            if response.status_code == 200:
-                working_proxies.append(proxy)
-        except Exception as e:
-            logging.warning(f"Proxy {proxy} failed: {e}")
-    
-    return working_proxies
 
-if __name__ == '__main__':
-    # You can add any initialization or testing code here
-    logging.info("Scraping script initialized.")
+        

@@ -2704,3 +2704,1038 @@
 2025-03-27 05:00:00,186 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:00:00] "[33mGET /socket.io/?EIO=4&transport=polling&t=trwkvfjf HTTP/1.1[0m" 404 -
 2025-03-27 05:00:06,199 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:00:06] "[33mGET /socket.io/?EIO=4&transport=polling&t=ts17x8xp HTTP/1.1[0m" 404 -
 2025-03-27 05:00:12,216 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:00:12] "[33mGET /socket.io/?EIO=4&transport=polling&t=ts5v2t28 HTTP/1.1[0m" 404 -
+2025-03-27 05:22:32,445 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.199:5000
+2025-03-27 05:22:32,445 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-03-27 05:22:33,279 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:22:33] "[33mGET /socket.io/?EIO=4&transport=polling&t=ukwmvjdj HTTP/1.1[0m" 404 -
+2025-03-27 05:22:39,292 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:22:39] "[33mGET /socket.io/?EIO=4&transport=polling&t=ul19wttt HTTP/1.1[0m" 404 -
+2025-03-27 05:22:45,305 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:22:45] "[33mGET /socket.io/?EIO=4&transport=polling&t=ul5wzrso HTTP/1.1[0m" 404 -
+2025-03-27 05:22:51,320 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:22:51] "[33mGET /socket.io/?EIO=4&transport=polling&t=ulajzbu2 HTTP/1.1[0m" 404 -
+2025-03-27 05:22:57,361 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:22:57] "[33mGET /socket.io/?EIO=4&transport=polling&t=ulf7tj82 HTTP/1.1[0m" 404 -
+2025-03-27 05:23:03,376 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:03] "[33mGET /socket.io/?EIO=4&transport=polling&t=uljuv7od HTTP/1.1[0m" 404 -
+2025-03-27 05:23:09,387 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:09] "[33mGET /socket.io/?EIO=4&transport=polling&t=ulohvq80 HTTP/1.1[0m" 404 -
+2025-03-27 05:23:15,403 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:15] "[33mGET /socket.io/?EIO=4&transport=polling&t=ult4xkwr HTTP/1.1[0m" 404 -
+2025-03-27 05:23:21,418 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:21] "[33mGET /socket.io/?EIO=4&transport=polling&t=ulxs4hqv HTTP/1.1[0m" 404 -
+2025-03-27 05:23:27,430 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:27] "[33mGET /socket.io/?EIO=4&transport=polling&t=um2f17mg HTTP/1.1[0m" 404 -
+2025-03-27 05:23:33,445 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:33] "[33mGET /socket.io/?EIO=4&transport=polling&t=um725esc HTTP/1.1[0m" 404 -
+2025-03-27 05:23:39,453 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:39] "[33mGET /socket.io/?EIO=4&transport=polling&t=umbp41a5 HTTP/1.1[0m" 404 -
+2025-03-27 05:23:45,829 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:45] "[33mGET /socket.io/?EIO=4&transport=polling&t=umgm2ptu HTTP/1.1[0m" 404 -
+2025-03-27 05:23:51,847 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:51] "[33mGET /socket.io/?EIO=4&transport=polling&t=uml9aci1 HTTP/1.1[0m" 404 -
+2025-03-27 05:23:54,128 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:54] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-03-27 05:23:54,219 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:54] "GET /api/session HTTP/1.1" 200 -
+2025-03-27 05:23:54,262 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:54] "GET /api/session HTTP/1.1" 200 -
+2025-03-27 05:23:54,314 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:54] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:23:54,315 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:54] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:23:54,389 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:54] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:23:54,418 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:54] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:23:54,441 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:54] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:23:54,444 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:54] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:23:54,575 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:54] "GET /api/streams?platform=chaturbate&streamer=ellinrose HTTP/1.1" 200 -
+2025-03-27 05:23:55,552 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:55] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:23:55,563 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:55] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:23:55,645 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:55] "GET /api/streams?platform=chaturbate&streamer=littlee33 HTTP/1.1" 200 -
+2025-03-27 05:23:55,715 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:55] "GET /api/streams?platform=chaturbate&streamer=ellinrose HTTP/1.1" 200 -
+2025-03-27 05:23:55,733 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:55] "GET /api/streams?platform=chaturbate&streamer=maudcouncil HTTP/1.1" 200 -
+2025-03-27 05:23:55,736 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:55] "GET /api/streams?platform=chaturbate&streamer=ellinrose HTTP/1.1" 200 -
+2025-03-27 05:23:55,864 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:55] "[31m[1mPOST /api/trigger-detection HTTP/1.1[0m" 400 -
+2025-03-27 05:23:55,868 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:55] "GET /api/streams?platform=chaturbate&streamer=littlee33 HTTP/1.1" 200 -
+2025-03-27 05:23:55,872 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:55] "GET /api/streams?platform=chaturbate&streamer=x_lily_x HTTP/1.1" 200 -
+2025-03-27 05:23:55,877 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:55] "GET /api/streams?platform=chaturbate&streamer=maudcouncil HTTP/1.1" 200 -
+2025-03-27 05:23:55,929 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:55] "GET /api/streams?platform=chaturbate&streamer=x_lily_x HTTP/1.1" 200 -
+2025-03-27 05:23:57,877 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:57] "[33mGET /socket.io/?EIO=4&transport=polling&t=umpwgk21 HTTP/1.1[0m" 404 -
+2025-03-27 05:23:58,660 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:23:58] "[33mPOST /api/stop-detection HTTP/1.1[0m" 404 -
+2025-03-27 05:24:04,084 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:24:04] "[33mGET /socket.io/?EIO=4&transport=polling&t=umup6fpk HTTP/1.1[0m" 404 -
+2025-03-27 05:24:04,582 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:24:04] "[31m[1mPOST /api/trigger-detection HTTP/1.1[0m" 400 -
+2025-03-27 05:24:06,845 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:24:06] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:24:06,869 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:24:06] "GET /api/streams?platform=stripchat HTTP/1.1" 200 -
+2025-03-27 05:24:06,888 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:24:06] "GET /api/streams?platform=stripchat HTTP/1.1" 200 -
+2025-03-27 05:24:06,915 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:24:06] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:24:06,924 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:24:06] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:24:06,932 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:24:06] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:24:06,948 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:24:06] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:24:06,979 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:24:06] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:24:09,846 - root - INFO - Stream Job 78faa48b-09b5-4d40-af34-7a8d9785467c progress: 5% - Initializing scraping... (Elapsed: 0.0s, Est: 0.0s)
+2025-03-27 05:24:09,849 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:24:09] "[35m[1mPOST /api/streams/interactive HTTP/1.1[0m" 202 -
+2025-03-27 05:24:09,925 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:24:09] "GET /api/streams/interactive/sse?job_id=78faa48b-09b5-4d40-af34-7a8d9785467c HTTP/1.1" 200 -
+2025-03-27 05:24:10,100 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:24:10] "[33mGET /socket.io/?EIO=4&transport=polling&t=umzcb6an HTTP/1.1[0m" 404 -
+2025-03-27 05:24:10,214 - root - INFO - Stream Job 78faa48b-09b5-4d40-af34-7a8d9785467c progress: 9.5% - Fetching Stripchat page (Elapsed: 0.4s, Est: 3.5s)
+2025-03-27 05:24:10,252 - seleniumwire.storage - INFO - Using default request storage
+2025-03-27 05:24:10,995 - seleniumwire.backend - INFO - Created proxy listening on 127.0.0.1:42093
+2025-03-27 05:24:16,155 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:24:16] "[33mGET /socket.io/?EIO=4&transport=polling&t=un40h58c HTTP/1.1[0m" 404 -
+2025-03-27 05:24:17,085 - selenium.webdriver.common.selenium_manager - WARNING - Error sending stats to Plausible: error sending request for url (https://plausible.io/api/event)
+2025-03-27 05:24:22,170 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:24:22] "[33mGET /socket.io/?EIO=4&transport=polling&t=un8nmvgo HTTP/1.1[0m" 404 -
+2025-03-27 05:24:28,220 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:24:28] "[33mGET /socket.io/?EIO=4&transport=polling&t=undbn2fy HTTP/1.1[0m" 404 -
+2025-03-27 05:24:34,235 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:24:34] "[33mGET /socket.io/?EIO=4&transport=polling&t=unhytjrd HTTP/1.1[0m" 404 -
+2025-03-27 05:24:35,350 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:24:35] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:24:40,386 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:24:40] "[33mGET /socket.io/?EIO=4&transport=polling&t=unmp291j HTTP/1.1[0m" 404 -
+2025-03-27 05:24:46,787 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:24:46] "[33mGET /socket.io/?EIO=4&transport=polling&t=unrngtsy HTTP/1.1[0m" 404 -
+2025-03-27 05:24:52,800 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:24:52] "[33mGET /socket.io/?EIO=4&transport=polling&t=unwagzg4 HTTP/1.1[0m" 404 -
+2025-03-27 05:24:54,761 - seleniumwire.handler - INFO - Capturing request: https://optimizationguide-pa.googleapis.com/v1:GetModels?key=AIzaSyBqJZh-7pA44blAaAkH6490hUFOwX0KCYM
+2025-03-27 05:24:54,778 - seleniumwire.handler - INFO - Capturing request: https://accounts.google.com/ListAccounts?gpsia=1&source=ChromiumBrowser&json=standard
+2025-03-27 05:24:55,132 - seleniumwire.handler - INFO - Capturing response: https://optimizationguide-pa.googleapis.com/v1:GetModels?key=AIzaSyBqJZh-7pA44blAaAkH6490hUFOwX0KCYM 200 
+2025-03-27 05:24:55,312 - seleniumwire.handler - INFO - Capturing response: https://accounts.google.com/ListAccounts?gpsia=1&source=ChromiumBrowser&json=standard 200 
+2025-03-27 05:24:55,530 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:24:55] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:24:55,817 - seleniumwire.handler - INFO - Capturing request: https://optimizationguide-pa.googleapis.com/downloads?name=1679317318&target=OPTIMIZATION_TARGET_LANGUAGE_DETECTION
+2025-03-27 05:24:55,825 - seleniumwire.handler - INFO - Capturing request: https://optimizationguide-pa.googleapis.com/downloads?name=1741017781&target=OPTIMIZATION_TARGET_NOTIFICATION_PERMISSION_PREDICTIONS
+2025-03-27 05:24:56,101 - root - INFO - Opening URL: https://stripchat.com/leagambit__
+2025-03-27 05:24:56,513 - seleniumwire.handler - INFO - Capturing response: https://optimizationguide-pa.googleapis.com/downloads?name=1741017781&target=OPTIMIZATION_TARGET_NOTIFICATION_PERMISSION_PREDICTIONS 200 
+2025-03-27 05:24:57,531 - seleniumwire.handler - INFO - Capturing response: https://optimizationguide-pa.googleapis.com/downloads?name=1679317318&target=OPTIMIZATION_TARGET_LANGUAGE_DETECTION 200 
+2025-03-27 05:24:58,819 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:24:58] "[33mGET /socket.io/?EIO=4&transport=polling&t=uo0xhl2j HTTP/1.1[0m" 404 -
+2025-03-27 05:25:04,837 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:25:04] "[33mGET /socket.io/?EIO=4&transport=polling&t=uo5kscms HTTP/1.1[0m" 404 -
+2025-03-27 05:25:10,892 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:25:10] "[33mGET /socket.io/?EIO=4&transport=polling&t=uoa90qgk HTTP/1.1[0m" 404 -
+2025-03-27 05:25:16,906 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:25:16] "[33mGET /socket.io/?EIO=4&transport=polling&t=uoew15qz HTTP/1.1[0m" 404 -
+2025-03-27 05:25:17,484 - seleniumwire.server - INFO - 127.0.0.1:34830: ProtocolException("Error in HTTP connection: Http2ZombieException('Connection or stream already dead: 1743049517.4810638, False')")
+2025-03-27 05:25:22,917 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:25:22] "[33mGET /socket.io/?EIO=4&transport=polling&t=uojj51z5 HTTP/1.1[0m" 404 -
+2025-03-27 05:25:28,933 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:25:28] "[33mGET /socket.io/?EIO=4&transport=polling&t=uoo62zxk HTTP/1.1[0m" 404 -
+2025-03-27 05:25:30,098 - seleniumwire.server - INFO - 127.0.0.1:34830: ProtocolException("Error in HTTP connection: Http2ZombieException('Connection or stream already dead: 1743049530.0965395, False')")
+2025-03-27 05:25:34,971 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:25:34] "[33mGET /socket.io/?EIO=4&transport=polling&t=uostv6q2 HTTP/1.1[0m" 404 -
+2025-03-27 05:25:35,364 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:25:35] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:25:35,561 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:25:35] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:25:40,989 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:25:40] "[33mGET /socket.io/?EIO=4&transport=polling&t=uoxgz12r HTTP/1.1[0m" 404 -
+2025-03-27 05:25:47,002 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:25:47] "[33mGET /socket.io/?EIO=4&transport=polling&t=up243ruq HTTP/1.1[0m" 404 -
+2025-03-27 05:25:50,059 - seleniumwire.server - INFO - 127.0.0.1:34830: ProtocolException("Error in HTTP connection: Http2ZombieException('Connection or stream already dead: 1743049550.0567834, False')")
+2025-03-27 05:25:53,021 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:25:53] "[33mGET /socket.io/?EIO=4&transport=polling&t=up6r4tql HTTP/1.1[0m" 404 -
+2025-03-27 05:25:55,536 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:25:55] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:25:59,037 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:25:59] "[33mGET /socket.io/?EIO=4&transport=polling&t=upbedvqa HTTP/1.1[0m" 404 -
+2025-03-27 05:26:05,051 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:05] "[33mGET /socket.io/?EIO=4&transport=polling&t=upg1ghcb HTTP/1.1[0m" 404 -
+2025-03-27 05:26:11,066 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:11] "[33mGET /socket.io/?EIO=4&transport=polling&t=upkojz4h HTTP/1.1[0m" 404 -
+2025-03-27 05:26:17,082 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:17] "[33mGET /socket.io/?EIO=4&transport=polling&t=uppbk4k4 HTTP/1.1[0m" 404 -
+2025-03-27 05:26:23,099 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:23] "[33mGET /socket.io/?EIO=4&transport=polling&t=uptyq5rf HTTP/1.1[0m" 404 -
+2025-03-27 05:26:24,282 - seleniumwire.server - INFO - 127.0.0.1:34830: ProtocolException("Error in HTTP connection: Http2ZombieException('Connection or stream already dead: 1743049584.2806149, False')")
+2025-03-27 05:26:29,118 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:29] "[33mGET /socket.io/?EIO=4&transport=polling&t=upyltcqe HTTP/1.1[0m" 404 -
+2025-03-27 05:26:31,293 - seleniumwire.server - INFO - 127.0.0.1:34830: ProtocolException('Error in HTTP connection: TcpDisconnect("(104, \'ECONNRESET\')")')
+2025-03-27 05:26:35,145 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:35] "[33mGET /socket.io/?EIO=4&transport=polling&t=uq39arx7 HTTP/1.1[0m" 404 -
+2025-03-27 05:26:36,170 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:36] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:26:40,782 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:40] "[33mPOST /api/stop-detection HTTP/1.1[0m" 404 -
+2025-03-27 05:26:41,055 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:41] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-03-27 05:26:41,090 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:41] "GET /api/session HTTP/1.1" 200 -
+2025-03-27 05:26:41,112 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:41] "GET /api/session HTTP/1.1" 200 -
+2025-03-27 05:26:41,203 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:41] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:26:41,205 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:41] "[33mGET /socket.io/?EIO=4&transport=polling&t=uq7wf2a5 HTTP/1.1[0m" 404 -
+2025-03-27 05:26:41,231 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:41] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:26:41,232 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:41] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:26:41,246 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:41] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:26:41,251 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:41] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:26:41,277 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:41] "GET /api/streams?platform=chaturbate&streamer=ellinrose HTTP/1.1" 200 -
+2025-03-27 05:26:41,278 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:41] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:26:42,312 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:42] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:26:42,335 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:42] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:26:42,447 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:42] "GET /api/streams?platform=chaturbate&streamer=littlee33 HTTP/1.1" 200 -
+2025-03-27 05:26:42,449 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:42] "GET /api/streams?platform=chaturbate&streamer=ellinrose HTTP/1.1" 200 -
+2025-03-27 05:26:42,466 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:42] "GET /api/streams?platform=chaturbate&streamer=x_lily_x HTTP/1.1" 200 -
+2025-03-27 05:26:42,483 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:42] "GET /api/streams?platform=chaturbate&streamer=maudcouncil HTTP/1.1" 200 -
+2025-03-27 05:26:42,484 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:42] "GET /api/streams?platform=chaturbate&streamer=littlee33 HTTP/1.1" 200 -
+2025-03-27 05:26:42,563 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:42] "GET /api/streams?platform=chaturbate&streamer=maudcouncil HTTP/1.1" 200 -
+2025-03-27 05:26:42,566 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:42] "GET /api/streams?platform=chaturbate&streamer=x_lily_x HTTP/1.1" 200 -
+2025-03-27 05:26:42,620 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:42] "GET /api/streams?platform=chaturbate&streamer=ellinrose HTTP/1.1" 200 -
+2025-03-27 05:26:42,756 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:42] "[31m[1mPOST /api/trigger-detection HTTP/1.1[0m" 400 -
+2025-03-27 05:26:44,481 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:44] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:26:44,582 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:44] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:26:44,612 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:44] "GET /api/streams?platform=stripchat HTTP/1.1" 200 -
+2025-03-27 05:26:44,655 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:44] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:26:44,671 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:44] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:26:44,726 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:44] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:26:44,728 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:44] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:26:44,730 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:44] "GET /api/streams?platform=stripchat HTTP/1.1" 200 -
+2025-03-27 05:26:46,593 - root - ERROR - Failed to fetch m3u8 URL for Stripchat stream.
+2025-03-27 05:26:46,593 - root - INFO - Stream Job 78faa48b-09b5-4d40-af34-7a8d9785467c progress: 50.0% - Error: Failed to fetch m3u8 URL (Elapsed: 156.7s, Est: 156.7s)
+2025-03-27 05:26:46,593 - root - INFO - Stream Job 78faa48b-09b5-4d40-af34-7a8d9785467c progress: 100% - Scraping failed (Elapsed: 156.7s, Est: 0.0s)
+2025-03-27 05:26:47,146 - root - INFO - Stream Job c37fbf36-2fe0-4fc5-b75b-e7c5c4cf6d15 progress: 5% - Initializing scraping... (Elapsed: 0.0s, Est: 0.0s)
+2025-03-27 05:26:47,151 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:47] "[35m[1mPOST /api/streams/interactive HTTP/1.1[0m" 202 -
+2025-03-27 05:26:47,186 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:47] "GET /api/streams/interactive/sse?job_id=c37fbf36-2fe0-4fc5-b75b-e7c5c4cf6d15 HTTP/1.1" 200 -
+2025-03-27 05:26:47,265 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:47] "[33mGET /socket.io/?EIO=4&transport=polling&t=uqclyi9y HTTP/1.1[0m" 404 -
+2025-03-27 05:26:47,407 - root - INFO - Stream Job c37fbf36-2fe0-4fc5-b75b-e7c5c4cf6d15 progress: 9.5% - Fetching Stripchat page (Elapsed: 0.3s, Est: 2.5s)
+2025-03-27 05:26:47,408 - seleniumwire.storage - INFO - Using default request storage
+2025-03-27 05:26:47,727 - seleniumwire.backend - INFO - Created proxy listening on 127.0.0.1:35969
+2025-03-27 05:26:49,121 - seleniumwire.handler - INFO - Capturing request: http://clients2.google.com/time/1/current?cup2key=8:bMWl3k0qRIJMQ8D6AfoIPQwBy4Pp2ZyWFmJZxK8mzk4&cup2hreq=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+2025-03-27 05:26:49,435 - seleniumwire.handler - INFO - Capturing response: http://clients2.google.com/time/1/current?cup2key=8:bMWl3k0qRIJMQ8D6AfoIPQwBy4Pp2ZyWFmJZxK8mzk4&cup2hreq=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 200 OK
+2025-03-27 05:26:49,593 - root - INFO - Opening URL: https://stripchat.com/leagambit__
+2025-03-27 05:26:53,285 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:53] "[33mGET /socket.io/?EIO=4&transport=polling&t=uqh94k8m HTTP/1.1[0m" 404 -
+2025-03-27 05:26:55,051 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:55] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:26:55,069 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:55] "GET /api/streams?platform=stripchat HTTP/1.1" 200 -
+2025-03-27 05:26:55,525 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:55] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:26:59,307 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:26:59] "[33mGET /socket.io/?EIO=4&transport=polling&t=uqlw9pqk HTTP/1.1[0m" 404 -
+2025-03-27 05:27:05,328 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:27:05] "[33mGET /socket.io/?EIO=4&transport=polling&t=uqqjtyuz HTTP/1.1[0m" 404 -
+2025-03-27 05:27:11,346 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:27:11] "[33mGET /socket.io/?EIO=4&transport=polling&t=uqv6x7de HTTP/1.1[0m" 404 -
+2025-03-27 05:27:13,883 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:27:13] "[33mPOST /api/stop-detection HTTP/1.1[0m" 404 -
+2025-03-27 05:27:15,562 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:27:15] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:27:17,364 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:27:17] "[33mGET /socket.io/?EIO=4&transport=polling&t=uqzu11qh HTTP/1.1[0m" 404 -
+2025-03-27 05:27:19,937 - seleniumwire.server - INFO - 127.0.0.1:43388: ProtocolException("Error in HTTP connection: Http2ZombieException('Connection or stream already dead: 1743049639.933595, False')")
+2025-03-27 05:27:23,380 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:27:23] "[33mGET /socket.io/?EIO=4&transport=polling&t=ur4h7fht HTTP/1.1[0m" 404 -
+2025-03-27 05:27:29,396 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:27:29] "[33mGET /socket.io/?EIO=4&transport=polling&t=ur94cc9u HTTP/1.1[0m" 404 -
+2025-03-27 05:27:35,425 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:27:35] "[33mGET /socket.io/?EIO=4&transport=polling&t=urdruzyk HTTP/1.1[0m" 404 -
+2025-03-27 05:27:41,194 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:27:41] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:27:41,439 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:27:41] "[33mGET /socket.io/?EIO=4&transport=polling&t=urieucaj HTTP/1.1[0m" 404 -
+2025-03-27 05:27:43,137 - seleniumwire.server - INFO - 127.0.0.1:43388: ProtocolException("Error in HTTP connection: Http2ZombieException('Connection or stream already dead: 1743049663.1355062, False')")
+2025-03-27 05:27:47,453 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:27:47] "[33mGET /socket.io/?EIO=4&transport=polling&t=urn1wf3t HTTP/1.1[0m" 404 -
+2025-03-27 05:27:48,110 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:27:48] "[31m[1mPOST /api/trigger-detection HTTP/1.1[0m" 400 -
+2025-03-27 05:27:53,473 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:27:53] "[33mGET /socket.io/?EIO=4&transport=polling&t=urrp0320 HTTP/1.1[0m" 404 -
+2025-03-27 05:27:53,530 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:27:53] "[33mPOST /api/stop-detection HTTP/1.1[0m" 404 -
+2025-03-27 05:27:55,523 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:27:55] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:27:59,492 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:27:59] "[33mGET /socket.io/?EIO=4&transport=polling&t=urwce82t HTTP/1.1[0m" 404 -
+2025-03-27 05:28:05,500 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:28:05] "[33mGET /socket.io/?EIO=4&transport=polling&t=us0zczzl HTTP/1.1[0m" 404 -
+2025-03-27 05:28:11,510 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:28:11] "[33mGET /socket.io/?EIO=4&transport=polling&t=us5m9moe HTTP/1.1[0m" 404 -
+2025-03-27 05:28:17,531 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:28:17] "[33mGET /socket.io/?EIO=4&transport=polling&t=usa965xs HTTP/1.1[0m" 404 -
+2025-03-27 05:28:23,546 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:28:23] "[33mGET /socket.io/?EIO=4&transport=polling&t=usewht89 HTTP/1.1[0m" 404 -
+2025-03-27 05:28:24,851 - seleniumwire.server - INFO - 127.0.0.1:43388: ProtocolException('Error in HTTP connection: TcpDisconnect("(32, \'EPIPE\')")')
+2025-03-27 05:28:29,559 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:28:29] "[33mGET /socket.io/?EIO=4&transport=polling&t=usjjlsjr HTTP/1.1[0m" 404 -
+2025-03-27 05:28:34,229 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:28:34] "[31m[1mPOST /api/trigger-detection HTTP/1.1[0m" 400 -
+2025-03-27 05:28:34,716 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:28:34] "GET /api/keywords HTTP/1.1" 200 -
+2025-03-27 05:28:34,731 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:28:34] "GET /api/objects HTTP/1.1" 200 -
+2025-03-27 05:28:34,734 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:28:34] "GET /api/telegram_recipients HTTP/1.1" 200 -
+2025-03-27 05:28:34,734 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:28:34] "GET /api/objects HTTP/1.1" 200 -
+2025-03-27 05:28:34,726 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:28:34] "GET /api/keywords HTTP/1.1" 200 -
+2025-03-27 05:28:34,729 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:28:34] "GET /api/telegram_recipients HTTP/1.1" 200 -
+2025-03-27 05:28:35,578 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:28:35] "[33mGET /socket.io/?EIO=4&transport=polling&t=uso6scyo HTTP/1.1[0m" 404 -
+2025-03-27 05:28:40,203 - root - ERROR - Failed to fetch m3u8 URL for Stripchat stream.
+2025-03-27 05:28:40,203 - root - INFO - Stream Job c37fbf36-2fe0-4fc5-b75b-e7c5c4cf6d15 progress: 50.0% - Error: Failed to fetch m3u8 URL (Elapsed: 113.1s, Est: 113.1s)
+2025-03-27 05:28:40,203 - root - INFO - Stream Job c37fbf36-2fe0-4fc5-b75b-e7c5c4cf6d15 progress: 100% - Scraping failed (Elapsed: 113.1s, Est: 0.0s)
+2025-03-27 05:28:41,166 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:28:41] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:28:41,590 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:28:41] "[33mGET /socket.io/?EIO=4&transport=polling&t=usstrjsm HTTP/1.1[0m" 404 -
+2025-03-27 05:28:47,600 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:28:47] "[33mGET /socket.io/?EIO=4&transport=polling&t=usxgr292 HTTP/1.1[0m" 404 -
+2025-03-27 05:28:50,795 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:28:50] "[35m[1mPOST /api/telegram_recipients HTTP/1.1[0m" 201 -
+2025-03-27 05:28:50,836 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:28:50] "GET /api/telegram_recipients HTTP/1.1" 200 -
+2025-03-27 05:28:53,612 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:28:53] "[33mGET /socket.io/?EIO=4&transport=polling&t=ut23of2e HTTP/1.1[0m" 404 -
+2025-03-27 05:28:55,526 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:28:55] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:28:56,546 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:28:56] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:28:59,634 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:28:59] "[33mGET /socket.io/?EIO=4&transport=polling&t=ut6qqibe HTTP/1.1[0m" 404 -
+2025-03-27 05:29:00,865 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:29:00] "[33mPOST /api/stop-detection HTTP/1.1[0m" 404 -
+2025-03-27 05:29:05,664 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:29:05] "[33mGET /socket.io/?EIO=4&transport=polling&t=utbea08y HTTP/1.1[0m" 404 -
+2025-03-27 05:29:11,681 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:29:11] "[33mGET /socket.io/?EIO=4&transport=polling&t=utg1ox27 HTTP/1.1[0m" 404 -
+2025-03-27 05:29:17,694 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:29:17] "[33mGET /socket.io/?EIO=4&transport=polling&t=utkomwro HTTP/1.1[0m" 404 -
+2025-03-27 05:29:23,728 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:29:23] "[33mGET /socket.io/?EIO=4&transport=polling&t=utpc7a51 HTTP/1.1[0m" 404 -
+2025-03-27 05:29:29,746 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:29:29] "[33mGET /socket.io/?EIO=4&transport=polling&t=uttzeabm HTTP/1.1[0m" 404 -
+2025-03-27 05:29:35,770 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:29:35] "[33mGET /socket.io/?EIO=4&transport=polling&t=utymphs4 HTTP/1.1[0m" 404 -
+2025-03-27 05:30:20,715 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.199:5000
+2025-03-27 05:30:20,716 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-03-27 05:30:23,997 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:23] "[33mGET /socket.io/?EIO=4&transport=polling&t=uuzsva11 HTTP/1.1[0m" 404 -
+2025-03-27 05:30:25,479 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:25] "[31m[1mPOST /api/trigger-detection HTTP/1.1[0m" 400 -
+2025-03-27 05:30:26,611 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:26] "[33mPOST /api/stop-detection HTTP/1.1[0m" 404 -
+2025-03-27 05:30:26,877 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:26] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-03-27 05:30:26,912 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:26] "GET /api/session HTTP/1.1" 200 -
+2025-03-27 05:30:26,926 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:26] "GET /api/session HTTP/1.1" 200 -
+2025-03-27 05:30:27,013 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:27] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:30:27,010 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:27] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:30:27,033 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:27] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:30:27,050 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:27] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:30:27,202 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:27] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:30:27,213 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:27] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:30:27,278 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:27] "GET /api/streams?platform=chaturbate&streamer=ellinrose HTTP/1.1" 200 -
+2025-03-27 05:30:28,103 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:28] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:30:28,113 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:28] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:30:28,199 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:28] "GET /api/streams?platform=chaturbate&streamer=littlee33 HTTP/1.1" 200 -
+2025-03-27 05:30:28,214 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:28] "GET /api/streams?platform=chaturbate&streamer=maudcouncil HTTP/1.1" 200 -
+2025-03-27 05:30:28,233 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:28] "GET /api/streams?platform=chaturbate&streamer=ellinrose HTTP/1.1" 200 -
+2025-03-27 05:30:28,247 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:28] "GET /api/streams?platform=chaturbate&streamer=maudcouncil HTTP/1.1" 200 -
+2025-03-27 05:30:28,266 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:28] "GET /api/streams?platform=chaturbate&streamer=x_lily_x HTTP/1.1" 200 -
+2025-03-27 05:30:28,663 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:28] "GET /api/streams?platform=chaturbate&streamer=ellinrose HTTP/1.1" 200 -
+2025-03-27 05:30:28,678 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:28] "GET /api/streams?platform=chaturbate&streamer=littlee33 HTTP/1.1" 200 -
+2025-03-27 05:30:28,682 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:28] "GET /api/streams?platform=chaturbate&streamer=x_lily_x HTTP/1.1" 200 -
+2025-03-27 05:30:28,916 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:28] "[31m[1mPOST /api/trigger-detection HTTP/1.1[0m" 400 -
+2025-03-27 05:30:30,012 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:30] "[33mGET /socket.io/?EIO=4&transport=polling&t=uv4hf780 HTTP/1.1[0m" 404 -
+2025-03-27 05:30:30,993 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:30] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:30:31,047 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:31] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:30:31,083 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:31] "GET /api/streams?platform=stripchat HTTP/1.1" 200 -
+2025-03-27 05:30:31,096 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:31] "GET /api/streams?platform=stripchat HTTP/1.1" 200 -
+2025-03-27 05:30:31,116 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:31] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:30:31,115 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:31] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:30:31,121 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:31] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:30:31,158 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:31] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:30:32,125 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:32] "[33mPOST /api/stop-detection HTTP/1.1[0m" 404 -
+2025-03-27 05:30:36,037 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:36] "[33mGET /socket.io/?EIO=4&transport=polling&t=uv94tcd9 HTTP/1.1[0m" 404 -
+2025-03-27 05:30:37,286 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:37] "[31m[1mPOST /api/trigger-detection HTTP/1.1[0m" 400 -
+2025-03-27 05:30:39,011 - root - INFO - Stream Job 375d212d-5a19-48b4-b446-f2bd65f34653 progress: 5% - Initializing scraping... (Elapsed: 0.0s, Est: 0.0s)
+2025-03-27 05:30:39,015 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:39] "[35m[1mPOST /api/streams/interactive HTTP/1.1[0m" 202 -
+2025-03-27 05:30:39,061 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:39] "GET /api/streams/interactive/sse?job_id=375d212d-5a19-48b4-b446-f2bd65f34653 HTTP/1.1" 200 -
+2025-03-27 05:30:39,123 - root - INFO - Stream Job 375d212d-5a19-48b4-b446-f2bd65f34653 progress: 9.5% - Fetching Stripchat page (Elapsed: 0.1s, Est: 1.1s)
+2025-03-27 05:30:39,124 - seleniumwire.storage - INFO - Using default request storage
+2025-03-27 05:30:39,139 - seleniumwire.backend - INFO - Created proxy listening on 127.0.0.1:33669
+2025-03-27 05:30:39,837 - seleniumwire.handler - INFO - Capturing request: http://clients2.google.com/time/1/current?cup2key=8:t_QrfooEOb7NTKhRxJfr0DWEHhnrsQheAVc4PdtEFPA&cup2hreq=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+2025-03-27 05:30:40,018 - root - INFO - Opening URL: https://stripchat.com/your_paris
+2025-03-27 05:30:40,275 - seleniumwire.handler - INFO - Capturing response: http://clients2.google.com/time/1/current?cup2key=8:t_QrfooEOb7NTKhRxJfr0DWEHhnrsQheAVc4PdtEFPA&cup2hreq=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 200 OK
+2025-03-27 05:30:40,852 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:40] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:30:42,050 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:42] "[33mGET /socket.io/?EIO=4&transport=polling&t=uvdrwo8x HTTP/1.1[0m" 404 -
+2025-03-27 05:30:45,699 - seleniumwire.server - INFO - 127.0.0.1:57864: ProtocolException("Error in HTTP connection: Http2ZombieException('Connection or stream already dead: 1743049845.6214728, False')")
+2025-03-27 05:30:48,060 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:48] "[33mGET /socket.io/?EIO=4&transport=polling&t=uvievgf1 HTTP/1.1[0m" 404 -
+2025-03-27 05:30:54,070 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:54] "[33mGET /socket.io/?EIO=4&transport=polling&t=uvn1rypw HTTP/1.1[0m" 404 -
+2025-03-27 05:30:55,594 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:30:55] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:31:00,092 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:00] "[33mGET /socket.io/?EIO=4&transport=polling&t=uvrot0m2 HTTP/1.1[0m" 404 -
+2025-03-27 05:31:04,288 - seleniumwire.handler - INFO - Capturing request: https://edge-hls.doppiocdn.live/hls/132050357/master/132050357_auto.m3u8?maxHeight=677&playlistType=lowLatency
+2025-03-27 05:31:04,845 - seleniumwire.handler - INFO - Capturing response: https://edge-hls.doppiocdn.live/hls/132050357/master/132050357_auto.m3u8?maxHeight=677&playlistType=lowLatency 200 
+2025-03-27 05:31:04,990 - root - INFO - Found M3U8 URL: https://edge-hls.doppiocdn.live/hls/132050357/master/132050357_auto.m3u8?maxHeight=677&playlistType=lowLatency
+2025-03-27 05:31:06,133 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:06] "[33mGET /socket.io/?EIO=4&transport=polling&t=uvwcsg47 HTTP/1.1[0m" 404 -
+2025-03-27 05:31:06,316 - root - INFO - Scraped details: {'streamer_username': 'your_paris', 'stripchat_m3u8_url': 'https://edge-hls.doppiocdn.live/hls/132050357/master/132050357_auto.m3u8'}
+2025-03-27 05:31:06,316 - root - INFO - Stream Job 375d212d-5a19-48b4-b446-f2bd65f34653 progress: 50.0% - Scraping complete (Elapsed: 27.3s, Est: 27.3s)
+2025-03-27 05:31:06,317 - root - INFO - Stream Job 375d212d-5a19-48b4-b446-f2bd65f34653 progress: 50% - Creating stream... (Elapsed: 27.3s, Est: 27.3s)
+2025-03-27 05:31:07,334 - root - INFO - Stream Job 375d212d-5a19-48b4-b446-f2bd65f34653 progress: 51% - Finalizing stream... (Elapsed: 28.3s, Est: 27.2s)
+2025-03-27 05:31:07,835 - root - INFO - Stream Job 375d212d-5a19-48b4-b446-f2bd65f34653 progress: 61% - Finalizing stream... (Elapsed: 28.8s, Est: 18.4s)
+2025-03-27 05:31:08,337 - root - INFO - Stream Job 375d212d-5a19-48b4-b446-f2bd65f34653 progress: 71% - Finalizing stream... (Elapsed: 29.3s, Est: 12.0s)
+2025-03-27 05:31:08,838 - root - INFO - Stream Job 375d212d-5a19-48b4-b446-f2bd65f34653 progress: 81% - Finalizing stream... (Elapsed: 29.8s, Est: 7.0s)
+2025-03-27 05:31:09,339 - root - INFO - Stream Job 375d212d-5a19-48b4-b446-f2bd65f34653 progress: 91% - Finalizing stream... (Elapsed: 30.3s, Est: 3.0s)
+2025-03-27 05:31:09,340 - root - INFO - Stream Job 375d212d-5a19-48b4-b446-f2bd65f34653 progress: 100% - Stream created (Elapsed: 30.3s, Est: 0.0s)
+2025-03-27 05:31:10,235 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:10] "GET /api/streams?platform=stripchat HTTP/1.1" 200 -
+2025-03-27 05:31:10,367 - root - ERROR - Failed to send Telegram message to chat_id 5968381745: object Message can't be used in 'await' expression
+2025-03-27 05:31:12,143 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:12] "[33mGET /socket.io/?EIO=4&transport=polling&t=uw0ztjui HTTP/1.1[0m" 404 -
+2025-03-27 05:31:14,639 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:14] "[33mPOST /api/stop-detection HTTP/1.1[0m" 404 -
+2025-03-27 05:31:14,986 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:14] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-03-27 05:31:15,049 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:15] "GET /api/session HTTP/1.1" 200 -
+2025-03-27 05:31:15,050 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:15] "GET /api/session HTTP/1.1" 200 -
+2025-03-27 05:31:15,200 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:15] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:31:15,303 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:15] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:31:15,351 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:15] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:31:15,387 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:15] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:31:15,388 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:15] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:31:15,390 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:15] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:31:15,426 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:15] "GET /api/streams?platform=chaturbate&streamer=ellinrose HTTP/1.1" 200 -
+2025-03-27 05:31:16,369 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:16] "[31m[1mPOST /api/trigger-detection HTTP/1.1[0m" 400 -
+2025-03-27 05:31:16,603 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:16] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:31:16,604 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:16] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:31:16,691 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:16] "GET /api/streams?platform=chaturbate&streamer=ellinrose HTTP/1.1" 200 -
+2025-03-27 05:31:16,855 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:16] "GET /api/streams?platform=chaturbate&streamer=maudcouncil HTTP/1.1" 200 -
+2025-03-27 05:31:16,887 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:16] "GET /api/streams?platform=chaturbate&streamer=ellinrose HTTP/1.1" 200 -
+2025-03-27 05:31:16,858 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:16] "GET /api/streams?platform=chaturbate&streamer=littlee33 HTTP/1.1" 200 -
+2025-03-27 05:31:16,954 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:16] "GET /api/streams?platform=chaturbate&streamer=x_lily_x HTTP/1.1" 200 -
+2025-03-27 05:31:16,965 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:16] "GET /api/streams?platform=chaturbate&streamer=littlee33 HTTP/1.1" 200 -
+2025-03-27 05:31:16,985 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:16] "GET /api/streams?platform=stripchat&streamer=your_paris HTTP/1.1" 200 -
+2025-03-27 05:31:17,163 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:17] "GET /api/streams?platform=chaturbate&streamer=x_lily_x HTTP/1.1" 200 -
+2025-03-27 05:31:17,172 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:17] "GET /api/streams?platform=chaturbate&streamer=maudcouncil HTTP/1.1" 200 -
+2025-03-27 05:31:17,192 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:17] "GET /api/streams?platform=stripchat&streamer=your_paris HTTP/1.1" 200 -
+2025-03-27 05:31:17,406 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:17] "[33mPOST /api/stop-detection HTTP/1.1[0m" 404 -
+2025-03-27 05:31:18,157 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:18] "[33mGET /socket.io/?EIO=4&transport=polling&t=uw5mrzcj HTTP/1.1[0m" 404 -
+2025-03-27 05:31:22,750 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:22] "[31m[1mPOST /api/trigger-detection HTTP/1.1[0m" 400 -
+2025-03-27 05:31:23,203 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:23] "[33mPOST /api/stop-detection HTTP/1.1[0m" 404 -
+2025-03-27 05:31:24,189 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:24] "[33mGET /socket.io/?EIO=4&transport=polling&t=uwaa35jq HTTP/1.1[0m" 404 -
+2025-03-27 05:31:27,957 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:27] "[31m[1mPOST /api/trigger-detection HTTP/1.1[0m" 400 -
+2025-03-27 05:31:28,210 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:28] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:31:28,350 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:28] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:31:28,359 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:28] "GET /api/streams?platform=stripchat HTTP/1.1" 200 -
+2025-03-27 05:31:28,362 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:28] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:31:28,401 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:28] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:31:28,485 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:28] "GET /api/streams?platform=stripchat HTTP/1.1" 200 -
+2025-03-27 05:31:28,487 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:28] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:31:28,502 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:28] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:31:28,610 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:28] "POST /api/trigger-detection HTTP/1.1" 200 -
+2025-03-27 05:31:29,538 - root - INFO - Livestream offline for https://stripchat.com/your_paris. Skipping chat detection.
+2025-03-27 05:31:30,237 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:30] "[33mGET /socket.io/?EIO=4&transport=polling&t=uwexhffy HTTP/1.1[0m" 404 -
+2025-03-27 05:31:31,343 - root - INFO - Stream Job 712ab321-c2e6-4a7b-b979-a6c69beb525d progress: 5% - Initializing scraping... (Elapsed: 0.0s, Est: 0.0s)
+2025-03-27 05:31:31,354 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:31] "[35m[1mPOST /api/streams/interactive HTTP/1.1[0m" 202 -
+2025-03-27 05:31:31,406 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:31] "GET /api/streams/interactive/sse?job_id=712ab321-c2e6-4a7b-b979-a6c69beb525d HTTP/1.1" 200 -
+2025-03-27 05:31:31,466 - root - INFO - Stream Job 712ab321-c2e6-4a7b-b979-a6c69beb525d progress: 9.5% - Fetching Chaturbate page (Elapsed: 0.1s, Est: 1.2s)
+2025-03-27 05:31:31,467 - seleniumwire.storage - INFO - Using default request storage
+2025-03-27 05:31:31,476 - seleniumwire.backend - INFO - Created proxy listening on 127.0.0.1:46703
+2025-03-27 05:31:32,260 - seleniumwire.handler - INFO - Capturing request: http://clients2.google.com/time/1/current?cup2key=8:OnwF2KlMgthue3eEeVR9y_2wEQXeEjHjL51C7Sx9_n0&cup2hreq=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+2025-03-27 05:31:32,611 - seleniumwire.handler - INFO - Capturing response: http://clients2.google.com/time/1/current?cup2key=8:OnwF2KlMgthue3eEeVR9y_2wEQXeEjHjL51C7Sx9_n0&cup2hreq=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 200 OK
+2025-03-27 05:31:32,735 - root - INFO - Opening URL: https://chaturbate.com/mckenziefoster/
+2025-03-27 05:31:36,289 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:36] "[33mGET /socket.io/?EIO=4&transport=polling&t=uwjm8etg HTTP/1.1[0m" 404 -
+2025-03-27 05:31:42,309 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:42] "[33mGET /socket.io/?EIO=4&transport=polling&t=uwo9nguo HTTP/1.1[0m" 404 -
+2025-03-27 05:31:48,324 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:48] "[33mGET /socket.io/?EIO=4&transport=polling&t=uwswspcl HTTP/1.1[0m" 404 -
+2025-03-27 05:31:54,434 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:54] "[33mGET /socket.io/?EIO=4&transport=polling&t=uwxk9ghk HTTP/1.1[0m" 404 -
+2025-03-27 05:31:55,573 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:31:55] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:32:00,507 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:00] "[33mGET /socket.io/?EIO=4&transport=polling&t=ux2b2cu1 HTTP/1.1[0m" 404 -
+2025-03-27 05:32:06,524 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:06] "[33mGET /socket.io/?EIO=4&transport=polling&t=ux6yd5l1 HTTP/1.1[0m" 404 -
+2025-03-27 05:32:12,589 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:12] "[33mGET /socket.io/?EIO=4&transport=polling&t=uxblen2q HTTP/1.1[0m" 404 -
+2025-03-27 05:32:16,818 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:16] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:32:17,243 - seleniumwire.server - INFO - 127.0.0.1:33112: HTTP/2 connection terminated by server: error code: 0, last stream id: 1, additional data: None
+2025-03-27 05:32:18,707 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:18] "[33mGET /socket.io/?EIO=4&transport=polling&t=uxga4814 HTTP/1.1[0m" 404 -
+2025-03-27 05:32:20,750 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:20] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:32:20,802 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:20] "GET /api/streams?platform=stripchat&streamer=your_paris HTTP/1.1" 200 -
+2025-03-27 05:32:20,803 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:20] "GET /api/streams?platform=stripchat&streamer=your_paris HTTP/1.1" 200 -
+2025-03-27 05:32:24,827 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:24] "[33mGET /socket.io/?EIO=4&transport=polling&t=uxl2rnp2 HTTP/1.1[0m" 404 -
+2025-03-27 05:32:28,163 - seleniumwire.server - INFO - 127.0.0.1:45996: HTTP/2 connection terminated by server: error code: 0, last stream id: 1, additional data: None
+2025-03-27 05:32:30,598 - root - INFO - Livestream offline for https://stripchat.com/your_paris. Skipping chat detection.
+2025-03-27 05:32:31,054 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:31] "[33mGET /socket.io/?EIO=4&transport=polling&t=uxpvrsif HTTP/1.1[0m" 404 -
+2025-03-27 05:32:32,125 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:32] "POST /api/trigger-detection HTTP/1.1" 200 -
+2025-03-27 05:32:36,579 - root - ERROR - Error fetching M3U8 URL: Message: Timed out after 20s waiting for request matching .*\.m3u8
+
+2025-03-27 05:32:37,089 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:37] "[33mGET /socket.io/?EIO=4&transport=polling&t=uxuiz03z HTTP/1.1[0m" 404 -
+2025-03-27 05:32:38,684 - root - ERROR - Failed to fetch m3u8 URL for Chaturbate stream.
+2025-03-27 05:32:38,684 - root - INFO - Stream Job 712ab321-c2e6-4a7b-b979-a6c69beb525d progress: 50.0% - Error: Failed to fetch m3u8 URL (Elapsed: 67.3s, Est: 67.3s)
+2025-03-27 05:32:38,684 - root - INFO - Stream Job 712ab321-c2e6-4a7b-b979-a6c69beb525d progress: 100% - Scraping failed (Elapsed: 67.3s, Est: 0.0s)
+2025-03-27 05:32:38,893 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:38] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:32:43,101 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:43] "[33mGET /socket.io/?EIO=4&transport=polling&t=uxz6f2p1 HTTP/1.1[0m" 404 -
+2025-03-27 05:32:44,340 - root - ERROR - Failed to open stream https://edge-hls.doppiocdn.live/hls/132050357/master/132050357_auto.m3u8: [Errno 875574520] Server returned 404 Not Found: 'https://edge-hls.doppiocdn.live/hls/132050357/master/132050357_auto.m3u8'
+2025-03-27 05:32:47,885 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:47] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:32:47,892 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:47] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:32:48,103 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:48] "GET /api/streams?platform=chaturbate&streamer=littlee33 HTTP/1.1" 200 -
+2025-03-27 05:32:48,138 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:48] "GET /api/streams?platform=chaturbate&streamer=ellinrose HTTP/1.1" 200 -
+2025-03-27 05:32:48,165 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:48] "GET /api/streams?platform=chaturbate&streamer=x_lily_x HTTP/1.1" 200 -
+2025-03-27 05:32:48,152 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:48] "GET /api/streams?platform=chaturbate&streamer=maudcouncil HTTP/1.1" 200 -
+2025-03-27 05:32:48,185 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:48] "GET /api/streams?platform=chaturbate&streamer=ellinrose HTTP/1.1" 200 -
+2025-03-27 05:32:48,187 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:48] "GET /api/streams?platform=stripchat&streamer=your_paris HTTP/1.1" 200 -
+2025-03-27 05:32:48,421 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:48] "GET /api/streams?platform=chaturbate&streamer=x_lily_x HTTP/1.1" 200 -
+2025-03-27 05:32:48,436 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:48] "GET /api/streams?platform=chaturbate&streamer=maudcouncil HTTP/1.1" 200 -
+2025-03-27 05:32:48,464 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:48] "GET /api/streams?platform=chaturbate&streamer=littlee33 HTTP/1.1" 200 -
+2025-03-27 05:32:48,465 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:48] "GET /api/streams?platform=stripchat&streamer=your_paris HTTP/1.1" 200 -
+2025-03-27 05:32:48,758 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:48] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:32:48,773 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:48] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:32:48,823 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:48] "GET /api/streams?platform=stripchat HTTP/1.1" 200 -
+2025-03-27 05:32:48,827 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:48] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:32:48,811 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:48] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:32:48,944 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:48] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:32:48,993 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:48] "GET /api/streams?platform=stripchat HTTP/1.1" 200 -
+2025-03-27 05:32:49,037 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:49] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:32:49,117 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:49] "[33mGET /socket.io/?EIO=4&transport=polling&t=uy3tdpo4 HTTP/1.1[0m" 404 -
+2025-03-27 05:32:51,763 - root - INFO - Stream Job 45078c14-da54-4291-aef2-88359b1c7e3d progress: 5% - Initializing scraping... (Elapsed: 0.0s, Est: 0.0s)
+2025-03-27 05:32:51,765 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:51] "[35m[1mPOST /api/streams/interactive HTTP/1.1[0m" 202 -
+2025-03-27 05:32:51,816 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:51] "GET /api/streams/interactive/sse?job_id=45078c14-da54-4291-aef2-88359b1c7e3d HTTP/1.1" 200 -
+2025-03-27 05:32:51,875 - root - INFO - Stream Job 45078c14-da54-4291-aef2-88359b1c7e3d progress: 9.5% - Fetching Chaturbate page (Elapsed: 0.1s, Est: 1.1s)
+2025-03-27 05:32:51,877 - seleniumwire.storage - INFO - Using default request storage
+2025-03-27 05:32:51,886 - seleniumwire.backend - INFO - Created proxy listening on 127.0.0.1:40635
+2025-03-27 05:32:53,874 - seleniumwire.handler - INFO - Capturing request: http://clients2.google.com/time/1/current?cup2key=8:MINz-fTa2R_92oncO4r3HCr416KfN4NShyUa3-FlgTo&cup2hreq=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+2025-03-27 05:32:54,163 - seleniumwire.handler - INFO - Capturing response: http://clients2.google.com/time/1/current?cup2key=8:MINz-fTa2R_92oncO4r3HCr416KfN4NShyUa3-FlgTo&cup2hreq=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 200 OK
+2025-03-27 05:32:55,133 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:55] "[33mGET /socket.io/?EIO=4&transport=polling&t=uy8gj8qr HTTP/1.1[0m" 404 -
+2025-03-27 05:32:55,287 - root - INFO - Opening URL: https://chaturbate.com/mckenziefoster/
+2025-03-27 05:32:55,545 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:32:55] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:33:01,162 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:01] "[33mGET /socket.io/?EIO=4&transport=polling&t=uyd3padw HTTP/1.1[0m" 404 -
+2025-03-27 05:33:07,197 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:07] "[33mGET /socket.io/?EIO=4&transport=polling&t=uyhrb0r4 HTTP/1.1[0m" 404 -
+2025-03-27 05:33:11,023 - root - ERROR - Failed to open stream https://edge-hls.doppiocdn.live/hls/132050357/master/132050357_auto.m3u8: [Errno 875574520] Server returned 404 Not Found: 'https://edge-hls.doppiocdn.live/hls/132050357/master/132050357_auto.m3u8'
+2025-03-27 05:33:13,215 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:13] "[33mGET /socket.io/?EIO=4&transport=polling&t=uymexkxr HTTP/1.1[0m" 404 -
+2025-03-27 05:33:14,528 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:14] "[33mGET /socket.io/?EIO=4&transport=polling&t=uynd0nr9 HTTP/1.1[0m" 404 -
+2025-03-27 05:33:14,537 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:14] "[33mGET /socket.io/?EIO=4&transport=polling&t=uyncuinw HTTP/1.1[0m" 404 -
+2025-03-27 05:33:14,611 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:14] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:33:14,618 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:14] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:33:14,631 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:14] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:33:14,629 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:14] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:33:15,688 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:15] "[33mGET /socket.io/?EIO=4&transport=polling&t=uyobhleh HTTP/1.1[0m" 404 -
+2025-03-27 05:33:16,181 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:16] "[33mGET /socket.io/?userId=1&role=admin&EIO=4&transport=websocket HTTP/1.1[0m" 404 -
+2025-03-27 05:33:16,561 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:16] "[33mGET /socket.io/?userId=1&role=admin&EIO=4&transport=websocket HTTP/1.1[0m" 404 -
+2025-03-27 05:33:16,661 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:16] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:33:17,309 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:17] "GET /api/objects HTTP/1.1" 200 -
+2025-03-27 05:33:17,405 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:17] "GET /api/keywords HTTP/1.1" 200 -
+2025-03-27 05:33:17,448 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:17] "GET /api/telegram_recipients HTTP/1.1" 200 -
+2025-03-27 05:33:17,450 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:17] "GET /api/keywords HTTP/1.1" 200 -
+2025-03-27 05:33:17,455 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:17] "GET /api/objects HTTP/1.1" 200 -
+2025-03-27 05:33:17,473 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:17] "GET /api/telegram_recipients HTTP/1.1" 200 -
+2025-03-27 05:33:17,475 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:17] "[33mGET /socket.io/?userId=1&role=admin&EIO=4&transport=websocket HTTP/1.1[0m" 404 -
+2025-03-27 05:33:18,284 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:18] "[33mGET /socket.io/?userId=1&role=admin&EIO=4&transport=websocket HTTP/1.1[0m" 404 -
+2025-03-27 05:33:19,238 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:19] "[33mGET /socket.io/?EIO=4&transport=polling&t=uyr1vlj2 HTTP/1.1[0m" 404 -
+2025-03-27 05:33:19,421 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:19] "[33mGET /socket.io/?userId=1&role=admin&EIO=4&transport=websocket HTTP/1.1[0m" 404 -
+2025-03-27 05:33:21,102 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:21] "[33mGET /socket.io/?userId=1&role=admin&EIO=4&transport=websocket HTTP/1.1[0m" 404 -
+2025-03-27 05:33:24,215 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:24] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:33:24,259 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:24] "GET /api/streams?platform=stripchat HTTP/1.1" 200 -
+2025-03-27 05:33:24,409 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:24] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:33:24,420 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:24] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:33:24,437 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:24] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:33:24,437 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:24] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:33:24,498 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:24] "GET /api/streams?platform=stripchat HTTP/1.1" 200 -
+2025-03-27 05:33:24,550 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:24] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:33:24,564 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:24] "[33mGET /socket.io/?userId=1&role=admin&EIO=4&transport=websocket HTTP/1.1[0m" 404 -
+2025-03-27 05:33:25,267 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:25] "[33mGET /socket.io/?EIO=4&transport=polling&t=uyvpedhl HTTP/1.1[0m" 404 -
+2025-03-27 05:33:28,441 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:28] "[33mGET /socket.io/?userId=1&role=admin&EIO=4&transport=websocket HTTP/1.1[0m" 404 -
+2025-03-27 05:33:30,222 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:30] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:33:30,223 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:30] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:33:30,464 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:30] "GET /api/streams?platform=chaturbate&streamer=ellinrose HTTP/1.1" 200 -
+2025-03-27 05:33:30,511 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:30] "GET /api/streams?platform=chaturbate&streamer=littlee33 HTTP/1.1" 200 -
+2025-03-27 05:33:30,516 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:30] "GET /api/streams?platform=stripchat&streamer=your_paris HTTP/1.1" 200 -
+2025-03-27 05:33:30,530 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:30] "GET /api/streams?platform=chaturbate&streamer=maudcouncil HTTP/1.1" 200 -
+2025-03-27 05:33:30,612 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:30] "GET /api/streams?platform=chaturbate&streamer=x_lily_x HTTP/1.1" 200 -
+2025-03-27 05:33:30,815 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:30] "GET /api/streams?platform=chaturbate&streamer=ellinrose HTTP/1.1" 200 -
+2025-03-27 05:33:30,832 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:30] "GET /api/streams?platform=chaturbate&streamer=littlee33 HTTP/1.1" 200 -
+2025-03-27 05:33:30,864 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:30] "GET /api/streams?platform=chaturbate&streamer=maudcouncil HTTP/1.1" 200 -
+2025-03-27 05:33:30,911 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:30] "GET /api/streams?platform=chaturbate&streamer=x_lily_x HTTP/1.1" 200 -
+2025-03-27 05:33:31,029 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:31] "GET /api/streams?platform=stripchat&streamer=your_paris HTTP/1.1" 200 -
+2025-03-27 05:33:31,094 - seleniumwire.server - INFO - Streaming WebSocket messages between 127.0.0.1:55450 and realtime.pa.highwebmedia.com:443
+2025-03-27 05:33:31,280 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:31] "[33mGET /socket.io/?EIO=4&transport=polling&t=uz0cr7aw HTTP/1.1[0m" 404 -
+2025-03-27 05:33:31,789 - root - INFO - Livestream offline for https://stripchat.com/your_paris. Skipping chat detection.
+2025-03-27 05:33:34,097 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:34] "[33mGET /socket.io/?userId=1&role=admin&EIO=4&transport=websocket HTTP/1.1[0m" 404 -
+2025-03-27 05:33:37,313 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:37] "[33mGET /socket.io/?EIO=4&transport=polling&t=uz4zsath HTTP/1.1[0m" 404 -
+2025-03-27 05:33:42,090 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:42] "POST /api/trigger-detection HTTP/1.1" 200 -
+2025-03-27 05:33:42,444 - seleniumwire.server - INFO - 127.0.0.1:55434: HTTP/2 connection terminated by server: error code: 0, last stream id: 1, additional data: None
+2025-03-27 05:33:42,544 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:42] "[33mGET /socket.io/?userId=1&role=admin&EIO=4&transport=websocket HTTP/1.1[0m" 404 -
+2025-03-27 05:33:43,342 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:43] "[33mGET /socket.io/?EIO=4&transport=polling&t=uz9nnu1n HTTP/1.1[0m" 404 -
+2025-03-27 05:33:45,701 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:45] "GET /api/keywords HTTP/1.1" 200 -
+2025-03-27 05:33:45,744 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:45] "GET /api/objects HTTP/1.1" 200 -
+2025-03-27 05:33:45,783 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:45] "GET /api/objects HTTP/1.1" 200 -
+2025-03-27 05:33:45,786 - seleniumwire.server - INFO - 127.0.0.1:55450: Ping Received from server
+  -> 1743050025570
+2025-03-27 05:33:45,795 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:45] "GET /api/telegram_recipients HTTP/1.1" 200 -
+2025-03-27 05:33:45,813 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:45] "GET /api/telegram_recipients HTTP/1.1" 200 -
+2025-03-27 05:33:45,819 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:45] "GET /api/keywords HTTP/1.1" 200 -
+2025-03-27 05:33:45,832 - seleniumwire.server - INFO - 127.0.0.1:55450: Pong Received from client
+  -> 
+2025-03-27 05:33:49,357 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:49] "[33mGET /socket.io/?EIO=4&transport=polling&t=uzeaqbwv HTTP/1.1[0m" 404 -
+2025-03-27 05:33:50,441 - root - ERROR - Error fetching M3U8 URL: Message: Timed out after 20s waiting for request matching .*\.m3u8
+
+2025-03-27 05:33:51,803 - root - INFO - Audio keywords retrieved: ['chat', 'hi', 'fuck']
+2025-03-27 05:33:51,806 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:51] "[35m[1mPOST /api/keywords HTTP/1.1[0m" 201 -
+2025-03-27 05:33:51,824 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:51] "GET /api/keywords HTTP/1.1" 200 -
+2025-03-27 05:33:52,300 - root - ERROR - Failed to fetch m3u8 URL for Chaturbate stream.
+2025-03-27 05:33:52,301 - root - INFO - Stream Job 45078c14-da54-4291-aef2-88359b1c7e3d progress: 50.0% - Error: Failed to fetch m3u8 URL (Elapsed: 60.5s, Est: 60.5s)
+2025-03-27 05:33:52,301 - root - INFO - Stream Job 45078c14-da54-4291-aef2-88359b1c7e3d progress: 100% - Scraping failed (Elapsed: 60.5s, Est: 0.0s)
+2025-03-27 05:33:55,142 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:55] "[33mGET /socket.io/?userId=1&role=admin&EIO=4&transport=websocket HTTP/1.1[0m" 404 -
+2025-03-27 05:33:55,374 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:55] "[33mGET /socket.io/?EIO=4&transport=polling&t=uzixy3rx HTTP/1.1[0m" 404 -
+2025-03-27 05:33:55,549 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:55] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:33:58,085 - root - INFO - Audio keywords retrieved: ['chat', 'hi', 'fuck', 'that']
+2025-03-27 05:33:58,089 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:58] "[35m[1mPOST /api/keywords HTTP/1.1[0m" 201 -
+2025-03-27 05:33:58,136 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:33:58] "GET /api/keywords HTTP/1.1" 200 -
+2025-03-27 05:34:00,780 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:00] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:34:01,388 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:01] "[33mGET /socket.io/?EIO=4&transport=polling&t=uznl08l3 HTTP/1.1[0m" 404 -
+2025-03-27 05:34:01,753 - root - INFO - Audio keywords retrieved: ['chat', 'hi', 'fuck', 'that', 'enough']
+2025-03-27 05:34:01,761 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:01] "[35m[1mPOST /api/keywords HTTP/1.1[0m" 201 -
+2025-03-27 05:34:01,823 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:01] "GET /api/keywords HTTP/1.1" 200 -
+2025-03-27 05:34:04,402 - root - INFO - Audio keywords retrieved: ['chat', 'hi', 'fuck', 'that', 'enough', 'more']
+2025-03-27 05:34:04,409 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:04] "[35m[1mPOST /api/keywords HTTP/1.1[0m" 201 -
+2025-03-27 05:34:04,477 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:04] "GET /api/keywords HTTP/1.1" 200 -
+2025-03-27 05:34:07,212 - root - INFO - Audio keywords retrieved: ['chat', 'hi', 'fuck', 'that', 'enough', 'more', 'like']
+2025-03-27 05:34:07,217 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:07] "[35m[1mPOST /api/keywords HTTP/1.1[0m" 201 -
+2025-03-27 05:34:07,262 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:07] "GET /api/keywords HTTP/1.1" 200 -
+2025-03-27 05:34:07,405 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:07] "[33mGET /socket.io/?EIO=4&transport=polling&t=uzs848ud HTTP/1.1[0m" 404 -
+2025-03-27 05:34:08,415 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:08] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:34:08,469 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:08] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:34:08,549 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:08] "GET /api/streams?platform=chaturbate&streamer=littlee33 HTTP/1.1" 200 -
+2025-03-27 05:34:08,598 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:08] "GET /api/streams?platform=chaturbate&streamer=x_lily_x HTTP/1.1" 200 -
+2025-03-27 05:34:08,620 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:08] "GET /api/streams?platform=chaturbate&streamer=ellinrose HTTP/1.1" 200 -
+2025-03-27 05:34:08,645 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:08] "GET /api/streams?platform=chaturbate&streamer=ellinrose HTTP/1.1" 200 -
+2025-03-27 05:34:08,633 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:08] "GET /api/streams?platform=chaturbate&streamer=maudcouncil HTTP/1.1" 200 -
+2025-03-27 05:34:08,621 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:08] "GET /api/streams?platform=stripchat&streamer=your_paris HTTP/1.1" 200 -
+2025-03-27 05:34:08,776 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:08] "GET /api/streams?platform=chaturbate&streamer=littlee33 HTTP/1.1" 200 -
+2025-03-27 05:34:08,800 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:08] "GET /api/streams?platform=chaturbate&streamer=maudcouncil HTTP/1.1" 200 -
+2025-03-27 05:34:08,806 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:08] "GET /api/streams?platform=chaturbate&streamer=x_lily_x HTTP/1.1" 200 -
+2025-03-27 05:34:08,823 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:08] "GET /api/streams?platform=stripchat&streamer=your_paris HTTP/1.1" 200 -
+2025-03-27 05:34:13,418 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:13] "[33mGET /socket.io/?EIO=4&transport=polling&t=uzwv7j5z HTTP/1.1[0m" 404 -
+2025-03-27 05:34:16,732 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:16] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:34:19,613 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:19] "[33mGET /socket.io/?EIO=4&transport=polling&t=v01ict6p HTTP/1.1[0m" 404 -
+2025-03-27 05:34:20,140 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:20] "POST /api/trigger-detection HTTP/1.1" 200 -
+2025-03-27 05:34:21,823 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:21] "GET /api/streams?platform=stripchat&streamer=your_paris HTTP/1.1" 200 -
+2025-03-27 05:34:21,843 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:21] "GET /api/streams?platform=stripchat&streamer=your_paris HTTP/1.1" 200 -
+2025-03-27 05:34:25,626 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:25] "[33mGET /socket.io/?EIO=4&transport=polling&t=v06abqbh HTTP/1.1[0m" 404 -
+2025-03-27 05:34:31,645 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:31] "[33mGET /socket.io/?EIO=4&transport=polling&t=v0axbdvf HTTP/1.1[0m" 404 -
+2025-03-27 05:34:32,856 - root - INFO - Livestream offline for https://stripchat.com/your_paris. Skipping chat detection.
+2025-03-27 05:34:33,231 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:33] "POST /api/trigger-detection HTTP/1.1" 200 -
+2025-03-27 05:34:37,678 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:37] "[33mGET /socket.io/?EIO=4&transport=polling&t=v0fkn26j HTTP/1.1[0m" 404 -
+2025-03-27 05:34:43,699 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:43] "[33mGET /socket.io/?EIO=4&transport=polling&t=v0k8dmdd HTTP/1.1[0m" 404 -
+2025-03-27 05:34:49,718 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:49] "[33mGET /socket.io/?EIO=4&transport=polling&t=v0ovfzse HTTP/1.1[0m" 404 -
+2025-03-27 05:34:55,544 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:55] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:34:55,735 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:34:55] "[33mGET /socket.io/?EIO=4&transport=polling&t=v0tipw49 HTTP/1.1[0m" 404 -
+2025-03-27 05:35:01,752 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:35:01] "[33mGET /socket.io/?EIO=4&transport=polling&t=v0y5oizd HTTP/1.1[0m" 404 -
+2025-03-27 05:35:07,762 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:35:07] "[33mGET /socket.io/?EIO=4&transport=polling&t=v12su0mx HTTP/1.1[0m" 404 -
+2025-03-27 05:35:13,774 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:35:13] "[33mGET /socket.io/?EIO=4&transport=polling&t=v17fq2hh HTTP/1.1[0m" 404 -
+2025-03-27 05:35:16,724 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:35:16] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:35:19,791 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:35:19] "[33mGET /socket.io/?EIO=4&transport=polling&t=v1c2st2c HTTP/1.1[0m" 404 -
+2025-03-27 05:35:25,810 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:35:25] "[33mGET /socket.io/?EIO=4&transport=polling&t=v1gpyee3 HTTP/1.1[0m" 404 -
+2025-03-27 05:35:31,829 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:35:31] "[33mGET /socket.io/?EIO=4&transport=polling&t=v1ld66l0 HTTP/1.1[0m" 404 -
+2025-03-27 05:35:33,896 - root - INFO - Livestream offline for https://stripchat.com/your_paris. Skipping chat detection.
+2025-03-27 05:35:37,843 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:35:37] "[33mGET /socket.io/?EIO=4&transport=polling&t=v1q0c96o HTTP/1.1[0m" 404 -
+2025-03-27 05:35:41,264 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:35:41] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:35:43,857 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:35:43] "[33mGET /socket.io/?EIO=4&transport=polling&t=v1undnjj HTTP/1.1[0m" 404 -
+2025-03-27 05:35:48,346 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:35:48] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:35:49,870 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:35:49] "[33mGET /socket.io/?EIO=4&transport=polling&t=v1zadh5g HTTP/1.1[0m" 404 -
+2025-03-27 05:35:55,544 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:35:55] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:35:55,890 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:35:55] "[33mGET /socket.io/?EIO=4&transport=polling&t=v23xi57l HTTP/1.1[0m" 404 -
+2025-03-27 05:36:01,916 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:36:01] "[33mGET /socket.io/?EIO=4&transport=polling&t=v28kuh6p HTTP/1.1[0m" 404 -
+2025-03-27 05:36:07,931 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:36:07] "[33mGET /socket.io/?EIO=4&transport=polling&t=v2d84c8g HTTP/1.1[0m" 404 -
+2025-03-27 05:36:13,954 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:36:13] "[33mGET /socket.io/?EIO=4&transport=polling&t=v2hv81y6 HTTP/1.1[0m" 404 -
+2025-03-27 05:36:16,674 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:36:16] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:36:19,980 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:36:19] "[33mGET /socket.io/?EIO=4&transport=polling&t=v2mip3ab HTTP/1.1[0m" 404 -
+2025-03-27 05:36:26,021 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:36:26] "[33mGET /socket.io/?EIO=4&transport=polling&t=v2r609dz HTTP/1.1[0m" 404 -
+2025-03-27 05:36:32,047 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:36:32] "[33mGET /socket.io/?EIO=4&transport=polling&t=v2vttdqe HTTP/1.1[0m" 404 -
+2025-03-27 05:36:34,945 - root - INFO - Livestream offline for https://stripchat.com/your_paris. Skipping chat detection.
+2025-03-27 05:36:38,093 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:36:38] "[33mGET /socket.io/?EIO=4&transport=polling&t=v30h803y HTTP/1.1[0m" 404 -
+2025-03-27 05:36:44,125 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:36:44] "[33mGET /socket.io/?EIO=4&transport=polling&t=v3559sb9 HTTP/1.1[0m" 404 -
+2025-03-27 05:36:50,142 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:36:50] "[33mGET /socket.io/?EIO=4&transport=polling&t=v39soedk HTTP/1.1[0m" 404 -
+2025-03-27 05:36:55,530 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:36:55] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:36:56,154 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:36:56] "[33mGET /socket.io/?EIO=4&transport=polling&t=v3efm9jw HTTP/1.1[0m" 404 -
+2025-03-27 05:37:02,166 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:37:02] "[33mGET /socket.io/?EIO=4&transport=polling&t=v3j2nkcy HTTP/1.1[0m" 404 -
+2025-03-27 05:37:08,180 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:37:08] "[33mGET /socket.io/?EIO=4&transport=polling&t=v3npnwnx HTTP/1.1[0m" 404 -
+2025-03-27 05:37:14,189 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:37:14] "[33mGET /socket.io/?EIO=4&transport=polling&t=v3scpc6r HTTP/1.1[0m" 404 -
+2025-03-27 05:37:16,736 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:37:16] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:37:20,202 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:37:20] "[33mGET /socket.io/?EIO=4&transport=polling&t=v3wzn44g HTTP/1.1[0m" 404 -
+2025-03-27 05:37:21,191 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:37:21] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:37:26,218 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:37:26] "[33mGET /socket.io/?EIO=4&transport=polling&t=v41mntl3 HTTP/1.1[0m" 404 -
+2025-03-27 05:37:28,342 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:37:28] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:37:32,231 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:37:32] "[33mGET /socket.io/?EIO=4&transport=polling&t=v469riek HTTP/1.1[0m" 404 -
+2025-03-27 05:37:35,887 - root - INFO - Livestream offline for https://stripchat.com/your_paris. Skipping chat detection.
+2025-03-27 05:37:38,248 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:37:38] "[33mGET /socket.io/?EIO=4&transport=polling&t=v4awszl5 HTTP/1.1[0m" 404 -
+2025-03-27 05:37:38,605 - root - INFO - Connected to stream https://edge-hls.doppiocdn.live/hls/132050357/master/132050357_auto.m3u8
+2025-03-27 05:37:38,605 - root - INFO - Combined detection started for https://edge-hls.doppiocdn.live/hls/132050357/master/132050357_auto.m3u8
+2025-03-27 05:37:44,273 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:37:44] "[33mGET /socket.io/?EIO=4&transport=polling&t=v4fk2vwe HTTP/1.1[0m" 404 -
+2025-03-27 05:37:46,216 - root - INFO - Whisper model (large-v3) loaded for combined detection.
+2025-03-27 05:37:46,731 - root - INFO - YOLO11 model loaded successfully.
+2025-03-27 05:37:50,290 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:37:50] "[33mGET /socket.io/?EIO=4&transport=polling&t=v4k7f6w2 HTTP/1.1[0m" 404 -
+2025-03-27 05:37:55,530 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:37:55] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:37:56,307 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:37:56] "[33mGET /socket.io/?EIO=4&transport=polling&t=v4oufa37 HTTP/1.1[0m" 404 -
+2025-03-27 05:38:02,321 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:38:02] "[33mGET /socket.io/?EIO=4&transport=polling&t=v4thoobu HTTP/1.1[0m" 404 -
+2025-03-27 05:38:08,343 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:38:08] "[33mGET /socket.io/?EIO=4&transport=polling&t=v4y4vpo1 HTTP/1.1[0m" 404 -
+2025-03-27 05:38:08,841 - libav.aac - ERROR - decode_band_types: Input buffer exhausted before END element found
+2025-03-27 05:38:08,842 - root - ERROR - Error decoding packet: [Errno 1094995529] Invalid data found when processing input: 'avcodec_send_packet()'; last error log: [aac] decode_band_types: Input buffer exhausted before END element found
+2025-03-27 05:38:08,844 - root - INFO - Container closed for https://edge-hls.doppiocdn.live/hls/132050357/master/132050357_auto.m3u8
+2025-03-27 05:38:14,354 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:38:14] "[33mGET /socket.io/?EIO=4&transport=polling&t=v52rwan9 HTTP/1.1[0m" 404 -
+2025-03-27 05:38:16,826 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:38:16] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:38:20,366 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:38:20] "[33mGET /socket.io/?EIO=4&transport=polling&t=v57evtd3 HTTP/1.1[0m" 404 -
+2025-03-27 05:38:26,388 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:38:26] "[33mGET /socket.io/?EIO=4&transport=polling&t=v5c1v1rv HTTP/1.1[0m" 404 -
+2025-03-27 05:38:29,700 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:38:29] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:38:29,713 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:38:29] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:38:29,764 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:38:29] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:38:29,782 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:38:29] "GET /api/streams?platform=stripchat HTTP/1.1" 200 -
+2025-03-27 05:38:29,822 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:38:29] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:38:29,829 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:38:29] "GET /api/streams?platform=stripchat HTTP/1.1" 200 -
+2025-03-27 05:38:29,880 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:38:29] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:38:29,945 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:38:29] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:38:32,413 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:38:32] "[33mGET /socket.io/?EIO=4&transport=polling&t=v5gpczyz HTTP/1.1[0m" 404 -
+2025-03-27 05:38:36,892 - root - INFO - Livestream offline for https://stripchat.com/your_paris. Skipping chat detection.
+2025-03-27 05:38:39,001 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:38:39] "[33mGET /socket.io/?EIO=4&transport=polling&t=v5lqdhwc HTTP/1.1[0m" 404 -
+2025-03-27 05:38:41,650 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:38:41] "[33mPOST /api/stop-detection HTTP/1.1[0m" 404 -
+2025-03-27 05:38:45,018 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:38:45] "[33mGET /socket.io/?EIO=4&transport=polling&t=v5qfijk7 HTTP/1.1[0m" 404 -
+2025-03-27 05:38:51,034 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:38:51] "[33mGET /socket.io/?EIO=4&transport=polling&t=v5v2rg2v HTTP/1.1[0m" 404 -
+2025-03-27 05:38:51,915 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:38:51] "[31m[1mPOST /api/trigger-detection HTTP/1.1[0m" 400 -
+2025-03-27 05:38:55,550 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:38:55] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:38:57,069 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:38:57] "[33mGET /socket.io/?EIO=4&transport=polling&t=v5zpugvx HTTP/1.1[0m" 404 -
+2025-03-27 05:39:01,259 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:39:01] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:39:03,237 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:39:03] "[33mGET /socket.io/?EIO=4&transport=polling&t=v64dkbc8 HTTP/1.1[0m" 404 -
+2025-03-27 05:39:09,366 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:39:09] "[33mGET /socket.io/?EIO=4&transport=polling&t=v697tsea HTTP/1.1[0m" 404 -
+2025-03-27 05:39:15,384 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:39:15] "[33mGET /socket.io/?EIO=4&transport=polling&t=v6dv0hro HTTP/1.1[0m" 404 -
+2025-03-27 05:39:16,814 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:39:16] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:39:21,413 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:39:21] "[33mGET /socket.io/?EIO=4&transport=polling&t=v6iib16p HTTP/1.1[0m" 404 -
+2025-03-27 05:39:27,434 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:39:27] "[33mGET /socket.io/?EIO=4&transport=polling&t=v6n5tgou HTTP/1.1[0m" 404 -
+2025-03-27 05:39:33,501 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:39:33] "[33mGET /socket.io/?EIO=4&transport=polling&t=v6rstwpc HTTP/1.1[0m" 404 -
+2025-03-27 05:39:37,987 - root - INFO - Livestream offline for https://stripchat.com/your_paris. Skipping chat detection.
+2025-03-27 05:39:39,629 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:39:39] "[33mGET /socket.io/?EIO=4&transport=polling&t=v6whw8h2 HTTP/1.1[0m" 404 -
+2025-03-27 05:39:45,670 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:39:45] "[33mGET /socket.io/?EIO=4&transport=polling&t=v7188u9g HTTP/1.1[0m" 404 -
+2025-03-27 05:39:52,001 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:39:52] "[33mGET /socket.io/?EIO=4&transport=polling&t=v76478z3 HTTP/1.1[0m" 404 -
+2025-03-27 05:39:58,020 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:39:58] "[33mGET /socket.io/?EIO=4&transport=polling&t=v7arfik4 HTTP/1.1[0m" 404 -
+2025-03-27 05:40:04,035 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:40:04] "[33mGET /socket.io/?EIO=4&transport=polling&t=v7fehs40 HTTP/1.1[0m" 404 -
+2025-03-27 05:40:10,049 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:40:10] "[33mGET /socket.io/?EIO=4&transport=polling&t=v7k1pncj HTTP/1.1[0m" 404 -
+2025-03-27 05:40:16,066 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:40:16] "[33mGET /socket.io/?EIO=4&transport=polling&t=v7oollmg HTTP/1.1[0m" 404 -
+2025-03-27 05:40:16,818 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:40:16] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:40:22,197 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:40:22] "[33mGET /socket.io/?EIO=4&transport=polling&t=v7tc0o25 HTTP/1.1[0m" 404 -
+2025-03-27 05:40:28,211 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:40:28] "[33mGET /socket.io/?EIO=4&transport=polling&t=v7y229g6 HTTP/1.1[0m" 404 -
+2025-03-27 05:40:34,231 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:40:34] "[33mGET /socket.io/?EIO=4&transport=polling&t=v82p651r HTTP/1.1[0m" 404 -
+2025-03-27 05:40:39,032 - root - INFO - Livestream offline for https://stripchat.com/your_paris. Skipping chat detection.
+2025-03-27 05:40:40,256 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:40:40] "[33mGET /socket.io/?EIO=4&transport=polling&t=v87ch4x0 HTTP/1.1[0m" 404 -
+2025-03-27 05:40:43,259 - libav.hls - ERROR - Error when loading first segment 'https://b-hls-03.doppiocdn.live/hls/132050357/132050357_240p_527_gOgNcbGoYDMK8Qmz_1743050302.mp4'
+2025-03-27 05:40:43,261 - root - ERROR - Failed to open stream https://edge-hls.doppiocdn.live/hls/132050357/master/132050357_auto.m3u8: [Errno 875574520] Server returned 404 Not Found: 'https://edge-hls.doppiocdn.live/hls/132050357/master/132050357_auto.m3u8'; last error log: [hls] Error when loading first segment 'https://b-hls-03.doppiocdn.live/hls/132050357/132050357_240p_527_gOgNcbGoYDMK8Qmz_1743050302.mp4'
+2025-03-27 05:40:46,280 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:40:46] "[33mGET /socket.io/?EIO=4&transport=polling&t=v8bzv8ms HTTP/1.1[0m" 404 -
+2025-03-27 05:40:52,298 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:40:52] "[33mGET /socket.io/?EIO=4&transport=polling&t=v8gn5qsg HTTP/1.1[0m" 404 -
+2025-03-27 05:40:54,293 - root - ERROR - Stream https://edge-hls.doppiocdn.live/hls/132050357/master/132050357_auto.m3u8 appears offline. Aborting combined detection.
+2025-03-27 05:40:58,319 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:40:58] "[33mGET /socket.io/?EIO=4&transport=polling&t=v8lacq04 HTTP/1.1[0m" 404 -
+2025-03-27 05:41:04,429 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:41:04] "[33mGET /socket.io/?EIO=4&transport=polling&t=v8q04r3j HTTP/1.1[0m" 404 -
+2025-03-27 05:41:10,448 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:41:10] "[33mGET /socket.io/?EIO=4&transport=polling&t=v8un9ca2 HTTP/1.1[0m" 404 -
+2025-03-27 05:41:16,463 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:41:16] "[33mGET /socket.io/?EIO=4&transport=polling&t=v8zaiocf HTTP/1.1[0m" 404 -
+2025-03-27 05:41:16,822 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:41:16] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:41:22,480 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:41:22] "[33mGET /socket.io/?EIO=4&transport=polling&t=v93xfj0m HTTP/1.1[0m" 404 -
+2025-03-27 05:41:28,495 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:41:28] "[33mGET /socket.io/?EIO=4&transport=polling&t=v98kojdx HTTP/1.1[0m" 404 -
+2025-03-27 05:41:34,508 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:41:34] "[33mGET /socket.io/?EIO=4&transport=polling&t=v9d7qkwx HTTP/1.1[0m" 404 -
+2025-03-27 05:41:40,107 - root - INFO - Livestream offline for https://stripchat.com/your_paris. Skipping chat detection.
+2025-03-27 05:41:40,537 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:41:40] "[33mGET /socket.io/?EIO=4&transport=polling&t=v9hupsqg HTTP/1.1[0m" 404 -
+2025-03-27 05:41:46,561 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:41:46] "[33mGET /socket.io/?EIO=4&transport=polling&t=v9mid9da HTTP/1.1[0m" 404 -
+2025-03-27 05:41:52,576 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:41:52] "[33mGET /socket.io/?EIO=4&transport=polling&t=v9r5no7r HTTP/1.1[0m" 404 -
+2025-03-27 05:41:58,593 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:41:58] "[33mGET /socket.io/?EIO=4&transport=polling&t=v9vsmysm HTTP/1.1[0m" 404 -
+2025-03-27 05:42:04,612 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:42:04] "[33mGET /socket.io/?EIO=4&transport=polling&t=va0fu3g0 HTTP/1.1[0m" 404 -
+2025-03-27 05:42:10,635 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:42:10] "[33mGET /socket.io/?EIO=4&transport=polling&t=va532nsm HTTP/1.1[0m" 404 -
+2025-03-27 05:42:16,655 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:42:16] "[33mGET /socket.io/?EIO=4&transport=polling&t=va9qaujd HTTP/1.1[0m" 404 -
+2025-03-27 05:42:16,821 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:42:16] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:42:22,674 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:42:22] "[33mGET /socket.io/?EIO=4&transport=polling&t=vaedikae HTTP/1.1[0m" 404 -
+2025-03-27 05:42:28,707 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:42:28] "[33mGET /socket.io/?EIO=4&transport=polling&t=vaj0toj2 HTTP/1.1[0m" 404 -
+2025-03-27 05:42:34,725 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:42:34] "[33mGET /socket.io/?EIO=4&transport=polling&t=vanobcrq HTTP/1.1[0m" 404 -
+2025-03-27 05:42:40,857 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:42:40] "[33mGET /socket.io/?EIO=4&transport=polling&t=vascw88l HTTP/1.1[0m" 404 -
+2025-03-27 05:42:41,161 - root - INFO - Livestream offline for https://stripchat.com/your_paris. Skipping chat detection.
+2025-03-27 05:42:46,880 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:42:46] "[33mGET /socket.io/?EIO=4&transport=polling&t=vax1q5c7 HTTP/1.1[0m" 404 -
+2025-03-27 05:42:52,902 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:42:52] "[33mGET /socket.io/?EIO=4&transport=polling&t=vb1pclxn HTTP/1.1[0m" 404 -
+2025-03-27 05:42:58,926 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:42:58] "[33mGET /socket.io/?EIO=4&transport=polling&t=vb6cb58l HTTP/1.1[0m" 404 -
+2025-03-27 05:43:04,959 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:43:04] "[33mGET /socket.io/?EIO=4&transport=polling&t=vbazvb3d HTTP/1.1[0m" 404 -
+2025-03-27 05:43:10,975 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:43:10] "[33mGET /socket.io/?EIO=4&transport=polling&t=vbfnayzo HTTP/1.1[0m" 404 -
+2025-03-27 05:44:18,981 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.199:5000
+2025-03-27 05:44:18,984 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-03-27 05:44:23,106 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:23] "[33mGET /socket.io/?EIO=4&transport=polling&t=vcza8c5p HTTP/1.1[0m" 404 -
+2025-03-27 05:44:27,228 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:27] "[31m[1mPOST /api/trigger-detection HTTP/1.1[0m" 400 -
+2025-03-27 05:44:28,753 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:28] "[33mGET /socket.io/?EIO=4&transport=polling&t=vd3n8ki7 HTTP/1.1[0m" 404 -
+2025-03-27 05:44:29,793 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:29] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-03-27 05:44:29,822 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:29] "GET /api/session HTTP/1.1" 200 -
+2025-03-27 05:44:29,846 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:29] "GET /api/session HTTP/1.1" 200 -
+2025-03-27 05:44:29,931 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:29] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:44:29,940 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:29] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:44:29,954 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:29] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:44:29,956 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:29] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:44:30,214 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:30] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:44:30,225 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:30] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:44:30,700 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:30] "GET /api/streams?platform=chaturbate&streamer=ellinrose HTTP/1.1" 200 -
+2025-03-27 05:44:31,586 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:31] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:44:31,599 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:31] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:44:31,667 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:31] "GET /api/streams?platform=chaturbate&streamer=ellinrose HTTP/1.1" 200 -
+2025-03-27 05:44:31,752 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:31] "GET /api/streams?platform=chaturbate&streamer=maudcouncil HTTP/1.1" 200 -
+2025-03-27 05:44:31,755 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:31] "GET /api/streams?platform=chaturbate&streamer=x_lily_x HTTP/1.1" 200 -
+2025-03-27 05:44:31,761 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:31] "GET /api/streams?platform=stripchat&streamer=your_paris HTTP/1.1" 200 -
+2025-03-27 05:44:31,765 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:31] "[31m[1mPOST /api/trigger-detection HTTP/1.1[0m" 400 -
+2025-03-27 05:44:31,795 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:31] "GET /api/streams?platform=chaturbate&streamer=littlee33 HTTP/1.1" 200 -
+2025-03-27 05:44:31,798 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:31] "GET /api/streams?platform=chaturbate&streamer=littlee33 HTTP/1.1" 200 -
+2025-03-27 05:44:31,820 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:31] "[33mPOST /api/stop-detection HTTP/1.1[0m" 404 -
+2025-03-27 05:44:31,963 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:31] "GET /api/streams?platform=chaturbate&streamer=maudcouncil HTTP/1.1" 200 -
+2025-03-27 05:44:32,162 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:32] "GET /api/streams?platform=chaturbate&streamer=x_lily_x HTTP/1.1" 200 -
+2025-03-27 05:44:32,166 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:32] "GET /api/streams?platform=stripchat&streamer=your_paris HTTP/1.1" 200 -
+2025-03-27 05:44:32,170 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:32] "GET /api/streams?platform=chaturbate&streamer=ellinrose HTTP/1.1" 200 -
+2025-03-27 05:44:34,783 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:34] "[33mGET /socket.io/?EIO=4&transport=polling&t=vd8b1ebr HTTP/1.1[0m" 404 -
+2025-03-27 05:44:37,544 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:37] "[31m[1mPOST /api/trigger-detection HTTP/1.1[0m" 400 -
+2025-03-27 05:44:38,208 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:38] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:44:38,267 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:38] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:44:38,330 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:38] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:44:38,331 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:38] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:44:38,354 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:38] "GET /api/streams?platform=stripchat HTTP/1.1" 200 -
+2025-03-27 05:44:38,355 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:38] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:44:38,358 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:38] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:44:38,387 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:38] "GET /api/streams?platform=stripchat HTTP/1.1" 200 -
+2025-03-27 05:44:40,836 - root - INFO - Stream Job d067641f-a877-4d1a-be82-d2115724f1ae progress: 5% - Initializing scraping... (Elapsed: 0.0s, Est: 0.0s)
+2025-03-27 05:44:40,838 - root - INFO - Stream Job d067641f-a877-4d1a-be82-d2115724f1ae progress: 9.5% - Fetching Chaturbate page (Elapsed: 0.0s, Est: 0.0s)
+2025-03-27 05:44:40,838 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:40] "[35m[1mPOST /api/streams/interactive HTTP/1.1[0m" 202 -
+2025-03-27 05:44:40,870 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:40] "GET /api/streams/interactive/sse?job_id=d067641f-a877-4d1a-be82-d2115724f1ae HTTP/1.1" 200 -
+2025-03-27 05:44:41,083 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:41] "[33mGET /socket.io/?EIO=4&transport=polling&t=vdd4grlq HTTP/1.1[0m" 404 -
+2025-03-27 05:44:43,079 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:43] "POST /api/trigger-detection HTTP/1.1" 200 -
+2025-03-27 05:44:44,135 - root - INFO - Livestream offline for https://stripchat.com/your_paris. Skipping chat detection.
+2025-03-27 05:44:45,314 - undetected_chromedriver.patcher - INFO - patching driver executable /home/kashim/.local/share/undetected_chromedriver/undetected_chromedriver
+2025-03-27 05:44:47,095 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:47] "[33mGET /socket.io/?EIO=4&transport=polling&t=vdhtf8k4 HTTP/1.1[0m" 404 -
+2025-03-27 05:44:53,294 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:53] "[33mGET /socket.io/?EIO=4&transport=polling&t=vdmlmxk9 HTTP/1.1[0m" 404 -
+2025-03-27 05:44:59,302 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:44:59] "[33mGET /socket.io/?EIO=4&transport=polling&t=vdr8hzr4 HTTP/1.1[0m" 404 -
+2025-03-27 05:45:05,317 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:45:05] "[33mGET /socket.io/?EIO=4&transport=polling&t=vdvviw06 HTTP/1.1[0m" 404 -
+2025-03-27 05:45:11,133 - root - INFO - Opening URL: https://chaturbate.com/raycarterr/
+2025-03-27 05:45:11,332 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:45:11] "[33mGET /socket.io/?EIO=4&transport=polling&t=ve0ilr55 HTTP/1.1[0m" 404 -
+2025-03-27 05:45:17,348 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:45:17] "[33mGET /socket.io/?EIO=4&transport=polling&t=ve55lumg HTTP/1.1[0m" 404 -
+2025-03-27 05:45:22,524 - root - ERROR - Failed to open stream https://edge-hls.doppiocdn.live/hls/132050357/master/132050357_auto.m3u8: [Errno 875574520] Server returned 404 Not Found: 'https://edge-hls.doppiocdn.live/hls/132050357/master/132050357_auto.m3u8'
+2025-03-27 05:45:23,358 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:45:23] "[33mGET /socket.io/?EIO=4&transport=polling&t=ve9spzmf HTTP/1.1[0m" 404 -
+2025-03-27 05:45:29,031 - root - ERROR - Error fetching M3U8 URL: 'Chrome' object has no attribute 'wait_for_request'
+2025-03-27 05:45:29,033 - root - ERROR - Failed to fetch m3u8 URL for Chaturbate stream.
+2025-03-27 05:45:29,035 - root - INFO - Stream Job d067641f-a877-4d1a-be82-d2115724f1ae progress: 50.0% - Error: Failed to fetch m3u8 URL (Elapsed: 48.2s, Est: 48.2s)
+2025-03-27 05:45:29,035 - root - INFO - Stream Job d067641f-a877-4d1a-be82-d2115724f1ae progress: 100% - Scraping failed (Elapsed: 48.2s, Est: 0.0s)
+2025-03-27 05:45:29,368 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:45:29] "[33mGET /socket.io/?EIO=4&transport=polling&t=veefmqdq HTTP/1.1[0m" 404 -
+2025-03-27 05:45:30,147 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:45:30] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:45:30,183 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:45:30] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:45:30,245 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:45:30] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:45:35,382 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:45:35] "[33mGET /socket.io/?EIO=4&transport=polling&t=vej2kssr HTTP/1.1[0m" 404 -
+2025-03-27 05:45:41,415 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:45:41] "[33mGET /socket.io/?EIO=4&transport=polling&t=venpzadt HTTP/1.1[0m" 404 -
+2025-03-27 05:45:45,215 - root - INFO - Livestream offline for https://stripchat.com/your_paris. Skipping chat detection.
+2025-03-27 05:45:47,438 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:45:47] "[33mGET /socket.io/?EIO=4&transport=polling&t=vesdfsp5 HTTP/1.1[0m" 404 -
+2025-03-27 05:45:53,457 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:45:53] "[33mGET /socket.io/?EIO=4&transport=polling&t=vex0nxrw HTTP/1.1[0m" 404 -
+2025-03-27 05:45:58,359 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:45:58] "[33mPOST /api/stop-detection HTTP/1.1[0m" 404 -
+2025-03-27 05:45:59,480 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:45:59] "[33mGET /socket.io/?EIO=4&transport=polling&t=vf1nuggn HTTP/1.1[0m" 404 -
+2025-03-27 05:46:05,507 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:46:05] "[33mGET /socket.io/?EIO=4&transport=polling&t=vf6b6rbn HTTP/1.1[0m" 404 -
+2025-03-27 05:46:11,993 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:46:11] "[33mGET /socket.io/?EIO=4&transport=polling&t=vfayju7x HTTP/1.1[0m" 404 -
+2025-03-27 05:46:18,051 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:46:18] "[33mGET /socket.io/?EIO=4&transport=polling&t=vffzzgbq HTTP/1.1[0m" 404 -
+2025-03-27 05:46:24,380 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:46:24] "[33mGET /socket.io/?EIO=4&transport=polling&t=vfkmwhf3 HTTP/1.1[0m" 404 -
+2025-03-27 05:46:25,606 - root - ERROR - Failed to open stream https://edge-hls.doppiocdn.live/hls/132050357/master/132050357_auto.m3u8: [Errno 875574520] Server returned 404 Not Found: 'https://edge-hls.doppiocdn.live/hls/132050357/master/132050357_auto.m3u8'
+2025-03-27 05:46:30,128 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:46:30] "[33mGET /socket.io/?EIO=4&transport=polling&t=vfpbdvum HTTP/1.1[0m" 404 -
+2025-03-27 05:46:32,062 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:46:32] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:46:32,152 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:46:32] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:46:36,141 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:46:36] "[33mGET /socket.io/?EIO=4&transport=polling&t=vftybxs4 HTTP/1.1[0m" 404 -
+2025-03-27 05:46:42,210 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:46:42] "[33mGET /socket.io/?EIO=4&transport=polling&t=vfymsopb HTTP/1.1[0m" 404 -
+2025-03-27 05:46:46,563 - root - INFO - Livestream offline for https://stripchat.com/your_paris. Skipping chat detection.
+2025-03-27 05:46:48,429 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:46:48] "[33mGET /socket.io/?EIO=4&transport=polling&t=vg3ffv39 HTTP/1.1[0m" 404 -
+2025-03-27 05:46:54,524 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:46:54] "[33mGET /socket.io/?EIO=4&transport=polling&t=vg83mnhd HTTP/1.1[0m" 404 -
+2025-03-27 05:47:00,541 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:47:00] "[33mGET /socket.io/?EIO=4&transport=polling&t=vgcs0t4l HTTP/1.1[0m" 404 -
+2025-03-27 05:47:06,573 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:47:06] "[33mGET /socket.io/?EIO=4&transport=polling&t=vghfcoby HTTP/1.1[0m" 404 -
+2025-03-27 05:47:12,597 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:47:12] "[33mGET /socket.io/?EIO=4&transport=polling&t=vgm2qkj5 HTTP/1.1[0m" 404 -
+2025-03-27 05:47:18,624 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:47:18] "[33mGET /socket.io/?EIO=4&transport=polling&t=vgqqb0bv HTTP/1.1[0m" 404 -
+2025-03-27 05:47:25,069 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:47:25] "[33mGET /socket.io/?EIO=4&transport=polling&t=vgvdkdcb HTTP/1.1[0m" 404 -
+2025-03-27 05:47:31,655 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:47:31] "[33mGET /socket.io/?EIO=4&transport=polling&t=vh0semec HTTP/1.1[0m" 404 -
+2025-03-27 05:47:32,059 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:47:32] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:47:32,131 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:47:32] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:47:37,673 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:47:37] "[33mGET /socket.io/?EIO=4&transport=polling&t=vh5fh2xu HTTP/1.1[0m" 404 -
+2025-03-27 05:47:43,687 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:47:43] "[33mGET /socket.io/?EIO=4&transport=polling&t=vha2mdxq HTTP/1.1[0m" 404 -
+2025-03-27 05:47:47,745 - root - INFO - Livestream offline for https://stripchat.com/your_paris. Skipping chat detection.
+2025-03-27 05:47:49,711 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:47:49] "[33mGET /socket.io/?EIO=4&transport=polling&t=vhepzp30 HTTP/1.1[0m" 404 -
+2025-03-27 05:47:55,724 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:47:55] "[33mGET /socket.io/?EIO=4&transport=polling&t=vhjd2nsy HTTP/1.1[0m" 404 -
+2025-03-27 05:48:01,877 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:48:01] "[33mGET /socket.io/?EIO=4&transport=polling&t=vho02pv0 HTTP/1.1[0m" 404 -
+2025-03-27 05:48:07,898 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:48:07] "[33mGET /socket.io/?EIO=4&transport=polling&t=vhsr3r1o HTTP/1.1[0m" 404 -
+2025-03-27 05:48:13,926 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:48:13] "[33mGET /socket.io/?EIO=4&transport=polling&t=vhxemwrz HTTP/1.1[0m" 404 -
+2025-03-27 05:48:19,954 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:48:19] "[33mGET /socket.io/?EIO=4&transport=polling&t=vi21uy23 HTTP/1.1[0m" 404 -
+2025-03-27 05:48:26,640 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:48:26] "[33mGET /socket.io/?EIO=4&transport=polling&t=vi77t820 HTTP/1.1[0m" 404 -
+2025-03-27 05:48:32,088 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:48:32] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:48:32,173 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:48:32] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:48:32,653 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:48:32] "[33mGET /socket.io/?EIO=4&transport=polling&t=vibuul7b HTTP/1.1[0m" 404 -
+2025-03-27 05:48:38,671 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:48:38] "[33mGET /socket.io/?EIO=4&transport=polling&t=vighuftg HTTP/1.1[0m" 404 -
+2025-03-27 05:48:44,707 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:48:44] "[33mGET /socket.io/?EIO=4&transport=polling&t=vil5la5k HTTP/1.1[0m" 404 -
+2025-03-27 05:48:49,758 - root - INFO - Connected to stream https://edge-hls.doppiocdn.live/hls/132050357/master/132050357_auto.m3u8
+2025-03-27 05:48:49,759 - root - INFO - Combined detection started for https://edge-hls.doppiocdn.live/hls/132050357/master/132050357_auto.m3u8
+2025-03-27 05:48:50,317 - root - INFO - Livestream offline for https://stripchat.com/your_paris. Skipping chat detection.
+2025-03-27 05:48:50,740 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:48:50] "[33mGET /socket.io/?EIO=4&transport=polling&t=vipsplli HTTP/1.1[0m" 404 -
+2025-03-27 05:48:56,611 - root - INFO - Whisper model (large-v3) loaded for combined detection.
+2025-03-27 05:48:57,383 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:48:57] "[33mGET /socket.io/?EIO=4&transport=polling&t=viuxkmu0 HTTP/1.1[0m" 404 -
+2025-03-27 05:48:58,050 - root - INFO - YOLO11 model loaded successfully.
+2025-03-27 05:49:03,413 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:49:03] "[33mGET /socket.io/?EIO=4&transport=polling&t=vizkt6o5 HTTP/1.1[0m" 404 -
+2025-03-27 05:49:07,381 - root - INFO - Notification sent for your_paris on stripchat
+2025-03-27 05:49:08,226 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:08,633 - root - ERROR - Failed to send Telegram image to chat_id 5968381745: object Message can't be used in 'await' expression
+2025-03-27 05:49:09,094 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:09,428 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:49:09] "[33mGET /socket.io/?EIO=4&transport=polling&t=vj48dh1c HTTP/1.1[0m" 404 -
+2025-03-27 05:49:09,961 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:11,060 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:12,000 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:13,264 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:14,156 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:14,905 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:15,439 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:49:15] "[33mGET /socket.io/?EIO=4&transport=polling&t=vj8vevwn HTTP/1.1[0m" 404 -
+2025-03-27 05:49:15,981 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:18,041 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:19,166 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:20,302 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:21,455 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:49:21] "[33mGET /socket.io/?EIO=4&transport=polling&t=vjdifv6j HTTP/1.1[0m" 404 -
+2025-03-27 05:49:21,526 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:22,708 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:23,793 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:25,040 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:26,213 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:27,490 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:49:27] "[33mGET /socket.io/?EIO=4&transport=polling&t=vji6140s HTTP/1.1[0m" 404 -
+2025-03-27 05:49:27,765 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:28,851 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:30,264 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:31,523 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:32,197 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:49:32] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:49:32,383 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:49:32] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:49:32,422 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:49:32] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:49:32,591 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:49:32] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:49:32,848 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:33,511 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:49:33] "[33mGET /socket.io/?EIO=4&transport=polling&t=vjmt902s HTTP/1.1[0m" 404 -
+2025-03-27 05:49:33,691 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:34,870 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:36,120 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:37,070 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:37,318 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:49:37] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:49:37,937 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:39,245 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:39,522 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:49:39] "[33mGET /socket.io/?EIO=4&transport=polling&t=vjrgdrxh HTTP/1.1[0m" 404 -
+2025-03-27 05:49:40,266 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:41,361 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:42,355 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:43,369 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:44,298 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:45,202 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:45,532 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:49:45] "[33mGET /socket.io/?EIO=4&transport=polling&t=vjw3b3en HTTP/1.1[0m" 404 -
+2025-03-27 05:49:46,016 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:46,831 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:47,654 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:48,980 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:49,828 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:50,625 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:51,482 - root - INFO - Livestream offline for https://stripchat.com/your_paris. Skipping chat detection.
+2025-03-27 05:49:51,711 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:49:51] "[33mGET /socket.io/?EIO=4&transport=polling&t=vk0tpw6f HTTP/1.1[0m" 404 -
+2025-03-27 05:49:51,864 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:53,343 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:54,956 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:55,894 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:56,645 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:57,729 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:49:57] "[33mGET /socket.io/?EIO=4&transport=polling&t=vk5i16wl HTTP/1.1[0m" 404 -
+2025-03-27 05:49:57,936 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:49:59,585 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:50:00,905 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:50:01,809 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:50:02,548 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:50:03,247 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:50:03,742 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:50:03] "[33mGET /socket.io/?EIO=4&transport=polling&t=vka54bss HTTP/1.1[0m" 404 -
+2025-03-27 05:50:03,962 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:50:04,698 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:50:05,434 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:50:06,202 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:50:06,962 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:50:07,690 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:50:08,404 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:50:09,134 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:50:09,749 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:50:09] "[33mGET /socket.io/?EIO=4&transport=polling&t=vkes13lb HTTP/1.1[0m" 404 -
+2025-03-27 05:50:15,765 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:50:15] "[33mGET /socket.io/?EIO=4&transport=polling&t=vkjexfm4 HTTP/1.1[0m" 404 -
+2025-03-27 05:50:21,781 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:50:21] "[33mGET /socket.io/?EIO=4&transport=polling&t=vko22w9j HTTP/1.1[0m" 404 -
+2025-03-27 05:50:27,798 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:50:27] "[33mGET /socket.io/?EIO=4&transport=polling&t=vkspcd61 HTTP/1.1[0m" 404 -
+2025-03-27 05:50:32,337 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:50:32] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:50:32,443 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:50:32] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:50:33,815 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:50:33] "[33mGET /socket.io/?EIO=4&transport=polling&t=vkxcce0a HTTP/1.1[0m" 404 -
+2025-03-27 05:50:39,830 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:50:39] "[33mGET /socket.io/?EIO=4&transport=polling&t=vl1zfd88 HTTP/1.1[0m" 404 -
+2025-03-27 05:50:45,845 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:50:45] "[33mGET /socket.io/?EIO=4&transport=polling&t=vl6mjyqj HTTP/1.1[0m" 404 -
+2025-03-27 05:50:51,898 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:50:51] "[33mGET /socket.io/?EIO=4&transport=polling&t=vlba94sj HTTP/1.1[0m" 404 -
+2025-03-27 05:50:52,684 - root - INFO - Livestream offline for https://stripchat.com/your_paris. Skipping chat detection.
+2025-03-27 05:50:57,934 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:50:57] "[33mGET /socket.io/?EIO=4&transport=polling&t=vlfygzxa HTTP/1.1[0m" 404 -
+2025-03-27 05:51:03,957 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:51:03] "[33mGET /socket.io/?EIO=4&transport=polling&t=vlklgw8t HTTP/1.1[0m" 404 -
+2025-03-27 05:51:09,976 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:51:09] "[33mGET /socket.io/?EIO=4&transport=polling&t=vlp8wzdm HTTP/1.1[0m" 404 -
+2025-03-27 05:51:16,003 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:51:16] "[33mGET /socket.io/?EIO=4&transport=polling&t=vltvypd7 HTTP/1.1[0m" 404 -
+2025-03-27 05:51:22,018 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:51:22] "[33mGET /socket.io/?EIO=4&transport=polling&t=vlyjeo8l HTTP/1.1[0m" 404 -
+2025-03-27 05:51:28,048 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:51:28] "[33mGET /socket.io/?EIO=4&transport=polling&t=vm36yrkb HTTP/1.1[0m" 404 -
+2025-03-27 05:51:32,341 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:51:32] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:51:32,452 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:51:32] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:51:34,064 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:51:34] "[33mGET /socket.io/?EIO=4&transport=polling&t=vm7tw2ya HTTP/1.1[0m" 404 -
+2025-03-27 05:51:39,732 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:51:40,078 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:51:40] "[33mGET /socket.io/?EIO=4&transport=polling&t=vmch2eqj HTTP/1.1[0m" 404 -
+2025-03-27 05:51:46,096 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:51:46] "[33mGET /socket.io/?EIO=4&transport=polling&t=vmh45ymn HTTP/1.1[0m" 404 -
+2025-03-27 05:51:52,126 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:51:52] "[33mGET /socket.io/?EIO=4&transport=polling&t=vmlrjfm6 HTTP/1.1[0m" 404 -
+2025-03-27 05:51:53,881 - root - INFO - Livestream offline for https://stripchat.com/your_paris. Skipping chat detection.
+2025-03-27 05:51:57,781 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:51:58,182 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:51:58] "[33mGET /socket.io/?EIO=4&transport=polling&t=vmqfqasx HTTP/1.1[0m" 404 -
+2025-03-27 05:51:59,063 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:52:00,312 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:52:01,847 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:52:03,089 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:52:04,197 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:52:04] "[33mGET /socket.io/?EIO=4&transport=polling&t=vmv2xlij HTTP/1.1[0m" 404 -
+2025-03-27 05:52:04,443 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:52:05,849 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:52:09,909 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:52:10,210 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:52:10] "[33mGET /socket.io/?EIO=4&transport=polling&t=vmzq0iih HTTP/1.1[0m" 404 -
+2025-03-27 05:52:11,108 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:52:12,454 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:52:13,761 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:52:15,058 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:52:16,229 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:52:16] "[33mGET /socket.io/?EIO=4&transport=polling&t=vn4d33p8 HTTP/1.1[0m" 404 -
+2025-03-27 05:52:16,358 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:52:17,588 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:52:18,906 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:52:20,143 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:52:21,602 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:52:22,314 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:52:22] "[33mGET /socket.io/?EIO=4&transport=polling&t=vn90ix86 HTTP/1.1[0m" 404 -
+2025-03-27 05:52:23,839 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:52:24,963 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:52:28,330 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:52:28] "[33mGET /socket.io/?EIO=4&transport=polling&t=vndpjkf6 HTTP/1.1[0m" 404 -
+2025-03-27 05:52:29,420 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:52:30,122 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:52:30,809 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:52:31,480 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:52:32,350 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:52:32] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:52:32,480 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:52:32] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:52:34,351 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:52:34] "[33mGET /socket.io/?EIO=4&transport=polling&t=vnickuek HTTP/1.1[0m" 404 -
+2025-03-27 05:52:36,905 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:52:37,659 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:52:38,350 - root - INFO - Duplicate detection for your_paris; skipping alert.
+2025-03-27 05:53:37,129 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.199:5000
+2025-03-27 05:53:37,130 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-03-27 05:53:40,712 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:53:40] "[33mGET /socket.io/?EIO=4&transport=polling&t=voxjwsea HTTP/1.1[0m" 404 -
+2025-03-27 05:53:46,727 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:53:46] "[33mGET /socket.io/?EIO=4&transport=polling&t=vp273zyi HTTP/1.1[0m" 404 -
+2025-03-27 05:53:52,747 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:53:52] "[33mGET /socket.io/?EIO=4&transport=polling&t=vp6u66qk HTTP/1.1[0m" 404 -
+2025-03-27 05:53:55,319 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:53:55] "[31m[1mPOST /api/trigger-detection HTTP/1.1[0m" 400 -
+2025-03-27 05:53:58,761 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:53:58] "[33mGET /socket.io/?EIO=4&transport=polling&t=vpbhcvs5 HTTP/1.1[0m" 404 -
+2025-03-27 05:54:04,779 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:04] "[33mGET /socket.io/?EIO=4&transport=polling&t=vpg4ib4f HTTP/1.1[0m" 404 -
+2025-03-27 05:54:05,709 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:05] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-03-27 05:54:05,899 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:05] "GET /api/session HTTP/1.1" 200 -
+2025-03-27 05:54:05,924 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:05] "GET /api/session HTTP/1.1" 200 -
+2025-03-27 05:54:06,037 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:06] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:54:06,043 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:06] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:54:06,043 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:06] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:54:06,076 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:06] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:54:06,080 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:06] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:54:07,499 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:07] "GET /api/streams?platform=chaturbate&streamer=ellinrose HTTP/1.1" 200 -
+2025-03-27 05:54:07,657 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:07] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:54:07,680 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:07] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:54:07,687 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:07] "GET /api/dashboard HTTP/1.1" 200 -
+2025-03-27 05:54:08,003 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:08] "GET /api/streams?platform=chaturbate&streamer=ellinrose HTTP/1.1" 200 -
+2025-03-27 05:54:08,005 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:08] "GET /api/streams?platform=chaturbate&streamer=littlee33 HTTP/1.1" 200 -
+2025-03-27 05:54:08,157 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:08] "GET /api/streams?platform=chaturbate&streamer=x_lily_x HTTP/1.1" 200 -
+2025-03-27 05:54:08,165 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:08] "GET /api/streams?platform=chaturbate&streamer=maudcouncil HTTP/1.1" 200 -
+2025-03-27 05:54:08,169 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:08] "GET /api/streams?platform=chaturbate&streamer=ellinrose HTTP/1.1" 200 -
+2025-03-27 05:54:08,368 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:08] "GET /api/streams?platform=chaturbate&streamer=littlee33 HTTP/1.1" 200 -
+2025-03-27 05:54:08,372 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:08] "GET /api/streams?platform=stripchat&streamer=your_paris HTTP/1.1" 200 -
+2025-03-27 05:54:08,384 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:08] "GET /api/streams?platform=chaturbate&streamer=maudcouncil HTTP/1.1" 200 -
+2025-03-27 05:54:08,404 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:08] "GET /api/streams?platform=chaturbate&streamer=x_lily_x HTTP/1.1" 200 -
+2025-03-27 05:54:08,417 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:08] "GET /api/streams?platform=stripchat&streamer=your_paris HTTP/1.1" 200 -
+2025-03-27 05:54:10,801 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:10] "[33mGET /socket.io/?EIO=4&transport=polling&t=vpkrne3m HTTP/1.1[0m" 404 -
+2025-03-27 05:54:16,816 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:16] "[33mGET /socket.io/?EIO=4&transport=polling&t=vppexft7 HTTP/1.1[0m" 404 -
+2025-03-27 05:54:20,015 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:20] "[31m[1mPOST /api/trigger-detection HTTP/1.1[0m" 400 -
+2025-03-27 05:54:22,035 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:22] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:54:22,074 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:22] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:54:22,090 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:22] "GET /api/streams?platform=stripchat HTTP/1.1" 200 -
+2025-03-27 05:54:22,154 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:22] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:54:22,192 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:22] "GET /api/streams?platform=stripchat HTTP/1.1" 200 -
+2025-03-27 05:54:22,193 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:22] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:54:22,194 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:22] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:54:22,225 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:22] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:54:22,833 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:22] "[33mGET /socket.io/?EIO=4&transport=polling&t=vpu1z8b8 HTTP/1.1[0m" 404 -
+2025-03-27 05:54:25,480 - root - INFO - Stream Job 8712526b-71bc-4d00-bd07-7e3570cde7e3 progress: 5% - Initializing scraping... (Elapsed: 0.0s, Est: 0.0s)
+2025-03-27 05:54:25,482 - root - INFO - Stream Job 8712526b-71bc-4d00-bd07-7e3570cde7e3 progress: 9.5% - Fetching Chaturbate page (Elapsed: 0.0s, Est: 0.0s)
+2025-03-27 05:54:25,487 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:25] "[35m[1mPOST /api/streams/interactive HTTP/1.1[0m" 202 -
+2025-03-27 05:54:25,522 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:25] "GET /api/streams/interactive/sse?job_id=8712526b-71bc-4d00-bd07-7e3570cde7e3 HTTP/1.1" 200 -
+2025-03-27 05:54:28,851 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:28] "[33mGET /socket.io/?EIO=4&transport=polling&t=vpyp6fzo HTTP/1.1[0m" 404 -
+2025-03-27 05:54:29,451 - undetected_chromedriver.patcher - INFO - patching driver executable /home/kashim/.local/share/undetected_chromedriver/undetected_chromedriver
+2025-03-27 05:54:34,868 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:34] "[33mGET /socket.io/?EIO=4&transport=polling&t=vq3cbtrt HTTP/1.1[0m" 404 -
+2025-03-27 05:54:41,095 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:41] "[33mGET /socket.io/?EIO=4&transport=polling&t=vq8535em HTTP/1.1[0m" 404 -
+2025-03-27 05:54:47,107 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:47] "[33mGET /socket.io/?EIO=4&transport=polling&t=vqcscv81 HTTP/1.1[0m" 404 -
+2025-03-27 05:54:53,149 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:53] "[33mGET /socket.io/?EIO=4&transport=polling&t=vqhfky6a HTTP/1.1[0m" 404 -
+2025-03-27 05:54:59,161 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:54:59] "[33mGET /socket.io/?EIO=4&transport=polling&t=vqm34lk7 HTTP/1.1[0m" 404 -
+2025-03-27 05:55:05,177 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:55:05] "[33mGET /socket.io/?EIO=4&transport=polling&t=vqqq9yfm HTTP/1.1[0m" 404 -
+2025-03-27 05:55:07,599 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:55:07] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:55:11,195 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:55:11] "[33mGET /socket.io/?EIO=4&transport=polling&t=vqvdcto7 HTTP/1.1[0m" 404 -
+2025-03-27 05:55:12,144 - root - INFO - Opening URL: https://chaturbate.com/mckenziefoster/
+2025-03-27 05:55:17,213 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:55:17] "[33mGET /socket.io/?EIO=4&transport=polling&t=vr00ln60 HTTP/1.1[0m" 404 -
+2025-03-27 05:55:23,234 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:55:23] "[33mGET /socket.io/?EIO=4&transport=polling&t=vr4novxu HTTP/1.1[0m" 404 -
+2025-03-27 05:55:29,249 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:55:29] "[33mGET /socket.io/?EIO=4&transport=polling&t=vr9b1gfr HTTP/1.1[0m" 404 -
+2025-03-27 05:55:35,266 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:55:35] "[33mGET /socket.io/?EIO=4&transport=polling&t=vrdxxz3b HTTP/1.1[0m" 404 -
+2025-03-27 05:55:41,278 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:55:41] "[33mGET /socket.io/?EIO=4&transport=polling&t=vril5neu HTTP/1.1[0m" 404 -
+2025-03-27 05:55:41,370 - root - ERROR - Error fetching M3U8 URL: 'Chrome' object has no attribute 'wait_for_request'
+2025-03-27 05:55:41,370 - root - ERROR - Failed to fetch m3u8 URL for Chaturbate stream.
+2025-03-27 05:55:41,371 - root - INFO - Stream Job 8712526b-71bc-4d00-bd07-7e3570cde7e3 progress: 50.0% - Error: Failed to fetch m3u8 URL (Elapsed: 75.9s, Est: 75.9s)
+2025-03-27 05:55:41,371 - root - INFO - Stream Job 8712526b-71bc-4d00-bd07-7e3570cde7e3 progress: 100% - Scraping failed (Elapsed: 75.9s, Est: 0.0s)
+2025-03-27 05:55:41,756 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:55:41] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:55:47,290 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:55:47] "[33mGET /socket.io/?EIO=4&transport=polling&t=vrn82sgk HTTP/1.1[0m" 404 -
+2025-03-27 05:55:53,423 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:55:53] "[33mGET /socket.io/?EIO=4&transport=polling&t=vrryawu3 HTTP/1.1[0m" 404 -
+2025-03-27 05:55:56,925 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:55:56] "[33mPOST /api/stop-detection HTTP/1.1[0m" 404 -
+2025-03-27 05:55:59,439 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:55:59] "[33mGET /socket.io/?EIO=4&transport=polling&t=vrwligxo HTTP/1.1[0m" 404 -
+2025-03-27 05:56:05,449 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:56:05] "[33mGET /socket.io/?EIO=4&transport=polling&t=vs18k11n HTTP/1.1[0m" 404 -
+2025-03-27 05:56:07,627 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:56:07] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:56:07,715 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:56:07] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:56:11,466 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:56:11] "[33mGET /socket.io/?EIO=4&transport=polling&t=vs5vnrs5 HTTP/1.1[0m" 404 -
+2025-03-27 05:56:17,485 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:56:17] "[33mGET /socket.io/?EIO=4&transport=polling&t=vsaiqmv4 HTTP/1.1[0m" 404 -
+2025-03-27 05:56:23,499 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:56:23] "[33mGET /socket.io/?EIO=4&transport=polling&t=vsf5yjw0 HTTP/1.1[0m" 404 -
+2025-03-27 05:56:29,512 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:56:29] "[33mGET /socket.io/?EIO=4&transport=polling&t=vsjsxarg HTTP/1.1[0m" 404 -
+2025-03-27 05:56:35,523 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:56:35] "[33mGET /socket.io/?EIO=4&transport=polling&t=vsofvws2 HTTP/1.1[0m" 404 -
+2025-03-27 05:56:41,545 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:56:41] "[33mGET /socket.io/?EIO=4&transport=polling&t=vst2x7dz HTTP/1.1[0m" 404 -
+2025-03-27 05:56:47,561 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:56:47] "[33mGET /socket.io/?EIO=4&transport=polling&t=vsxq89bx HTTP/1.1[0m" 404 -
+2025-03-27 05:56:53,629 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:56:53] "[33mGET /socket.io/?EIO=4&transport=polling&t=vt2deutd HTTP/1.1[0m" 404 -
+2025-03-27 05:56:59,648 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:56:59] "[33mGET /socket.io/?EIO=4&transport=polling&t=vt722xrg HTTP/1.1[0m" 404 -
+2025-03-27 05:57:05,660 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:57:05] "[33mGET /socket.io/?EIO=4&transport=polling&t=vtbp1sk6 HTTP/1.1[0m" 404 -
+2025-03-27 05:57:07,651 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:57:07] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:57:07,713 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:57:07] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:57:11,677 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:57:11] "[33mGET /socket.io/?EIO=4&transport=polling&t=vtgc5pj6 HTTP/1.1[0m" 404 -
+2025-03-27 05:57:17,691 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:57:17] "[33mGET /socket.io/?EIO=4&transport=polling&t=vtkz8ypa HTTP/1.1[0m" 404 -
+2025-03-27 05:57:23,704 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:57:23] "[33mGET /socket.io/?EIO=4&transport=polling&t=vtpm9gax HTTP/1.1[0m" 404 -
+2025-03-27 05:57:29,719 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:57:29] "[33mGET /socket.io/?EIO=4&transport=polling&t=vtu9b5x1 HTTP/1.1[0m" 404 -
+2025-03-27 05:57:35,741 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:57:35] "[33mGET /socket.io/?EIO=4&transport=polling&t=vtywhet8 HTTP/1.1[0m" 404 -
+2025-03-27 05:57:41,760 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:57:41] "[33mGET /socket.io/?EIO=4&transport=polling&t=vu3jrqu3 HTTP/1.1[0m" 404 -
+2025-03-27 05:57:47,771 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:57:47] "[33mGET /socket.io/?EIO=4&transport=polling&t=vu86scl6 HTTP/1.1[0m" 404 -
+2025-03-27 05:57:53,785 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:57:53] "[33mGET /socket.io/?EIO=4&transport=polling&t=vucttgfl HTTP/1.1[0m" 404 -
+2025-03-27 05:57:59,808 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:57:59] "[33mGET /socket.io/?EIO=4&transport=polling&t=vuhh0z9c HTTP/1.1[0m" 404 -
+2025-03-27 05:58:05,821 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:58:05] "[33mGET /socket.io/?EIO=4&transport=polling&t=vum475hu HTTP/1.1[0m" 404 -
+2025-03-27 05:58:06,344 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:58:06] "[31m[1mPOST /api/trigger-detection HTTP/1.1[0m" 400 -
+2025-03-27 05:58:06,908 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:58:06] "GET /api/objects HTTP/1.1" 200 -
+2025-03-27 05:58:06,916 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:58:06] "GET /api/telegram_recipients HTTP/1.1" 200 -
+2025-03-27 05:58:06,928 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:58:06] "GET /api/keywords HTTP/1.1" 200 -
+2025-03-27 05:58:06,937 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:58:06] "GET /api/keywords HTTP/1.1" 200 -
+2025-03-27 05:58:06,947 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:58:06] "GET /api/objects HTTP/1.1" 200 -
+2025-03-27 05:58:06,953 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:58:06] "GET /api/telegram_recipients HTTP/1.1" 200 -
+2025-03-27 05:58:07,751 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:58:07] "GET /api/streams?platform=stripchat HTTP/1.1" 200 -
+2025-03-27 05:58:07,756 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:58:07] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:58:07,778 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:58:07] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:58:07,798 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:58:07] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:58:07,925 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:58:07] "GET /api/streams?platform=chaturbate HTTP/1.1" 200 -
+2025-03-27 05:58:07,948 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:58:07] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:58:07,951 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:58:07] "GET /api/streams?platform=stripchat HTTP/1.1" 200 -
+2025-03-27 05:58:07,983 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:58:07] "GET /api/agents HTTP/1.1" 200 -
+2025-03-27 05:58:08,005 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:58:08] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:58:11,486 - root - INFO - Stream Job 73d8abc6-bf21-4fda-9b56-deac11dd8796 progress: 5% - Initializing scraping... (Elapsed: 0.0s, Est: 0.0s)
+2025-03-27 05:58:11,486 - root - INFO - Stream Job 73d8abc6-bf21-4fda-9b56-deac11dd8796 progress: 9.5% - Fetching Stripchat page (Elapsed: 0.0s, Est: 0.0s)
+2025-03-27 05:58:11,495 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:58:11] "[35m[1mPOST /api/streams/interactive HTTP/1.1[0m" 202 -
+2025-03-27 05:58:11,517 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:58:11] "GET /api/streams/interactive/sse?job_id=73d8abc6-bf21-4fda-9b56-deac11dd8796 HTTP/1.1" 200 -
+2025-03-27 05:58:11,834 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:58:11] "[33mGET /socket.io/?EIO=4&transport=polling&t=vuqr63mb HTTP/1.1[0m" 404 -
+2025-03-27 05:58:14,868 - undetected_chromedriver.patcher - INFO - patching driver executable /home/kashim/.local/share/undetected_chromedriver/undetected_chromedriver
+2025-03-27 05:58:17,849 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:58:17] "[33mGET /socket.io/?EIO=4&transport=polling&t=vuve8kig HTTP/1.1[0m" 404 -
+2025-03-27 05:58:18,380 - root - INFO - Opening URL: https://stripchat.com/caseykey
+2025-03-27 05:58:23,863 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:58:23] "[33mGET /socket.io/?EIO=4&transport=polling&t=vv01a6hq HTTP/1.1[0m" 404 -
+2025-03-27 05:58:30,102 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:58:30] "[33mGET /socket.io/?EIO=4&transport=polling&t=vv4ulsem HTTP/1.1[0m" 404 -
+2025-03-27 05:58:31,418 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:58:31] "[33mPOST /api/stop-detection HTTP/1.1[0m" 404 -
+2025-03-27 05:58:32,218 - root - ERROR - Error fetching M3U8 URL: 'Chrome' object has no attribute 'wait_for_request'
+2025-03-27 05:58:32,230 - root - ERROR - Failed to fetch m3u8 URL for Stripchat stream.
+2025-03-27 05:58:32,238 - root - INFO - Stream Job 73d8abc6-bf21-4fda-9b56-deac11dd8796 progress: 50.0% - Error: Failed to fetch m3u8 URL (Elapsed: 20.8s, Est: 20.8s)
+2025-03-27 05:58:32,239 - root - INFO - Stream Job 73d8abc6-bf21-4fda-9b56-deac11dd8796 progress: 100% - Scraping failed (Elapsed: 20.8s, Est: 0.0s)
+2025-03-27 05:58:32,687 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:58:32] "GET /api/streams?platform=stripchat HTTP/1.1" 200 -
+2025-03-27 05:58:36,130 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:58:36] "[33mGET /socket.io/?EIO=4&transport=polling&t=vv9ho47v HTTP/1.1[0m" 404 -
+2025-03-27 05:58:42,144 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:58:42] "[33mGET /socket.io/?EIO=4&transport=polling&t=vve55wbh HTTP/1.1[0m" 404 -
+2025-03-27 05:58:48,160 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:58:48] "[33mGET /socket.io/?EIO=4&transport=polling&t=vvis7rc2 HTTP/1.1[0m" 404 -
+2025-03-27 05:58:54,178 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:58:54] "[33mGET /socket.io/?EIO=4&transport=polling&t=vvnffjsj HTTP/1.1[0m" 404 -
+2025-03-27 05:59:00,192 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:59:00] "[33mGET /socket.io/?EIO=4&transport=polling&t=vvs2jmix HTTP/1.1[0m" 404 -
+2025-03-27 05:59:06,203 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:59:06] "[33mGET /socket.io/?EIO=4&transport=polling&t=vvwpiv1i HTTP/1.1[0m" 404 -
+2025-03-27 05:59:07,613 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:59:07] "GET /api/notifications HTTP/1.1" 200 -
+2025-03-27 05:59:07,660 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:59:07] "GET /api/streams?platform=stripchat HTTP/1.1" 200 -
+2025-03-27 05:59:12,219 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:59:12] "[33mGET /socket.io/?EIO=4&transport=polling&t=vw1cfc91 HTTP/1.1[0m" 404 -
+2025-03-27 05:59:18,236 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:59:18] "[33mGET /socket.io/?EIO=4&transport=polling&t=vw5zn9x4 HTTP/1.1[0m" 404 -
+2025-03-27 05:59:24,246 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:59:24] "[33mGET /socket.io/?EIO=4&transport=polling&t=vwamp8m1 HTTP/1.1[0m" 404 -
+2025-03-27 05:59:30,259 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:59:30] "[33mGET /socket.io/?EIO=4&transport=polling&t=vwf9myst HTTP/1.1[0m" 404 -
+2025-03-27 05:59:36,275 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:59:36] "[33mGET /socket.io/?EIO=4&transport=polling&t=vwjwqx90 HTTP/1.1[0m" 404 -
+2025-03-27 05:59:42,289 - werkzeug - INFO - 127.0.0.1 - - [27/Mar/2025 05:59:42] "[33mGET /socket.io/?EIO=4&transport=polling&t=vwojuue2 HTTP/1.1[0m" 404 -
