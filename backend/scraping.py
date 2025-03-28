@@ -36,7 +36,7 @@ if 'blinker._saferef' not in sys.modules:
     saferef.SafeRef = SafeRef
     sys.modules['blinker._saferef'] = saferef
 # --- End of Monkey Patch ---
-from requests.exceptions import RequestException
+from requests.exceptions import RequestException, SSLError
 from urllib.parse import urlparse
 from concurrent.futures import ThreadPoolExecutor
 from seleniumwire import webdriver
@@ -245,6 +245,8 @@ def get_hls_url(room_slug: str, max_attempts: int = 15) -> dict:
     Send a POST request to Chaturbate's endpoint to fetch the HLS URL for a given room.
     Tries multiple proxies from the free proxy list if necessary.
     
+    Enhanced logging is added to capture raw responses and diagnose errors.
+    
     Args:
         room_slug (str): The room slug to query.
         max_attempts (int): Maximum number of attempts with different proxies.
@@ -314,7 +316,7 @@ def get_hls_url(room_slug: str, max_attempts: int = 15) -> dict:
     while attempts < max_attempts:
         proxy_dict = get_random_proxy()
         try:
-            logging.info("Attempt %s: Using proxy %s", attempts+1, proxy_dict['http'])
+            logging.info("Attempt %s: Using proxy %s", attempts + 1, proxy_dict['http'])
             response = requests.post(
                 url,
                 headers=headers,
@@ -323,16 +325,43 @@ def get_hls_url(room_slug: str, max_attempts: int = 15) -> dict:
                 timeout=10,
                 verify=False  # Disable SSL verification due to proxy issues
             )
-            response.raise_for_status()  # Raise error for bad HTTP status codes
+            response.raise_for_status()  # Raise error for non-200 HTTP status codes
             logging.info("Request successful using proxy %s", proxy_dict['http'])
-            return response.json()
-        except RequestException as e:
+            try:
+                result = response.json()
+            except ValueError as json_err:
+                # Log the raw response to help diagnose the issue
+                logging.error("JSON decoding failed with proxy %s: %s", proxy_dict['http'], json_err)
+                logging.debug("Raw response content: %s", response.text)
+                attempts += 1
+                time.sleep(1)
+                continue
+
+            if result:
+                hls_url = result.get("hls_url")
+                if hls_url:
+                    logging.info("HLS URL found: %s", hls_url)
+                    return result
+                else:
+                    error_msg = "HLS URL not found in response"
+                    logging.error(error_msg)
+                    logging.debug("Response content: %s", result)
+                    attempts += 1
+                    time.sleep(1)
+                    continue
+            else:
+                logging.error("Empty JSON response received.")
+                attempts += 1
+                time.sleep(1)
+                continue
+        except (RequestException, SSLError) as e:
             logging.error("Request failed with proxy %s: %s", proxy_dict['http'], e)
             attempts += 1
-            time.sleep(1)  # Brief pause before retrying
-        except ValueError as e:
-            logging.error("JSON decoding failed: %s", e)
-            return None
+            time.sleep(1)
+        except Exception as e:
+            logging.error("Unexpected error with proxy %s: %s", proxy_dict['http'], e)
+            attempts += 1
+            time.sleep(1)
 
     logging.error("Exceeded maximum proxy attempts.")
     return None
