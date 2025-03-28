@@ -7,6 +7,7 @@ import re
 import logging
 import uuid
 import time
+
 # --- Monkey Patch for blinker._saferef ---
 if 'blinker._saferef' not in sys.modules:
     saferef = types.ModuleType('blinker._saferef')
@@ -25,6 +26,7 @@ if 'blinker._saferef' not in sys.modules:
     saferef.SafeRef = SafeRef
     sys.modules['blinker._saferef'] = saferef
 # --- End of Monkey Patch ---
+
 from concurrent.futures import ThreadPoolExecutor
 from seleniumwire import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -120,16 +122,15 @@ def extract_m3u8_urls(html_content):
     pattern = r'https?://[^\s"\']+\.m3u8'
     urls = re.findall(pattern, html_content)
     return urls
-
 # --- End of New Scraper Helper Functions ---
 
-# --- Updated Chaturbate Scraping Function ---
+# --- Updated Chaturbate Scraping Function (No AJAX) ---
 def scrape_chaturbate_data(url, progress_callback=None):
     """
-    Scrape Chaturbate data using the new AJAX endpoint and update progress.
+    Scrape Chaturbate data by fetching the room URL's HTML and extracting the m3u8 URL.
     
-    This function extracts the room slug from the full URL provided by the user,
-    then sends a POST request to the Chaturbate AJAX endpoint to fetch the HLS m3u8 URL.
+    This function extracts the room slug from the provided URL, fetches the page's HTML content,
+    then looks for m3u8 URLs in the HTML source.
     
     Args:
         url (str): The full Chaturbate room URL (e.g., "https://chaturbate.com/bunnydollstella/").
@@ -147,75 +148,37 @@ def scrape_chaturbate_data(url, progress_callback=None):
         room_slug = url.rstrip("/").split("/")[-1]
         
         if progress_callback:
-            progress_callback(20, "Fetching m3u8 URL via AJAX endpoint")
+            progress_callback(20, "Fetching page content")
+        # Fetch the page's HTML content
+        html_content = fetch_page_content(url)
         
-        # Set up the endpoint and headers as per the traditional approach
-        ajax_url = "https://chaturbate.com/get_edge_hls_url_ajax/"
-        headers = {
-            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0",
-            "Accept": "*/*",
-            "Accept-Language": "en-US,en;q=0.5",
-            "Referer": f"https://chaturbate.com/{room_slug}/",
-            "X-Requested-With": "XMLHttpRequest",
-            "Origin": "https://chaturbate.com",
-            
-        }
-        data = {
-            "room_slug": room_slug,
-            "jpeg": "1",
-            "csrfmiddlewaretoken": "aFzSCjt3Lhxt9YPOkZoFfOWAIoneAOL9"
-        }
-        cookies = {
-            "csrftoken": "aFzSCjt3Lhxt9YPOkZoFfOWAIoneAOL9",
-            
-        }
-        import requests
-        session = requests.Session()
-        session.cookies.update(cookies)
-        response = session.post(ajax_url, data=data, headers=headers)
-        if response.status_code != 200:
-            error_msg = f"HTTP error: {response.status_code}"
+        if progress_callback:
+            progress_callback(50, "Extracting m3u8 URL from page")
+        # Extract m3u8 URLs from the HTML
+        urls = extract_m3u8_urls(html_content)
+        
+        if not urls:
+            error_msg = "No m3u8 URL found in page content"
             logging.error(error_msg)
             if progress_callback:
                 progress_callback(100, f"Error: {error_msg}")
             return None
         
-        try:
-            result = response.json()
-        except ValueError:
-            error_msg = "Failed to decode JSON response"
-            logging.error(error_msg)
-            if progress_callback:
-                progress_callback(100, f"Error: {error_msg}")
-            return None
-        
-        if result.get("success"):
-            m3u8_url = result.get("url")
-            if not m3u8_url:
-                error_msg = "m3u8 URL missing in response"
-                logging.error(error_msg)
-                if progress_callback:
-                    progress_callback(100, f"Error: {error_msg}")
-                return None
-            if progress_callback:
-                progress_callback(100, "Scraping complete")
-            return {
-                "streamer_username": room_slug,
-                "chaturbate_m3u8_url": m3u8_url,
-            }
-        else:
-            error_msg = f"Request was not successful: {result}"
-            logging.error(error_msg)
-            if progress_callback:
-                progress_callback(100, f"Error: {error_msg}")
-            return None
+        # Use the first found m3u8 URL
+        m3u8_url = urls[0]
+        if progress_callback:
+            progress_callback(100, "Scraping complete")
+        return {
+            "streamer_username": room_slug,
+            "chaturbate_m3u8_url": m3u8_url,
+        }
     except Exception as e:
         logging.error("Error scraping Chaturbate URL %s: %s", url, e)
         if progress_callback:
             progress_callback(100, f"Error: {e}")
         return None
 
-        # --- Existing Functions Remain Unchanged ---
+# --- Existing Functions Remain Unchanged ---
 def fetch_m3u8_from_page(url, timeout=90):
     """Fetch the M3U8 URL from the given page using Selenium."""
     chrome_options = Options()
@@ -367,10 +330,11 @@ def fetch_chaturbate_chat_history(room_slug):
         "X-Requested-With": "XMLHttpRequest",
         "Referer": f"https://chaturbate.com/{room_slug}/",
         "Origin": "https://chaturbate.com",
-        "Cookie": 'csrftoken=vfO2sk8hUsSXVILMJwtcyGqhPy6WqwhH; stcki="Eg6Gdq=1\054kHDa2i=1"'
+        "Cookie": 'csrftoken=vfO2sk8hUsSXVILMJwtcyGqhPy6WqwhH; stcki="Eg6Gdq=1,kHDa2i=1"'
     }
     
     try:
+        import requests
         response = requests.post(url, headers=headers)
         response.raise_for_status()
         return response.json().get("0", {}).values()
@@ -378,12 +342,11 @@ def fetch_chaturbate_chat_history(room_slug):
         logging.error(f"Chat history fetch error: {str(e)}")
         return []
 
-# --- New Function: Refresh Chaturbate Stream ---
 def refresh_chaturbate_stream(room_slug):
     """
     Refresh the m3u8 URL for a Chaturbate stream based on the given room slug.
-    This function sends a POST request to the Chaturbate AJAX endpoint to fetch the latest HLS m3u8 URL,
-    and if a corresponding ChaturbateStream exists in the database, it updates its URL.
+    This function fetches the room page, extracts the m3u8 URL, and updates the corresponding
+    ChaturbateStream in the database.
     
     Args:
         room_slug (str): The room slug (streamer username).
@@ -391,55 +354,19 @@ def refresh_chaturbate_stream(room_slug):
     Returns:
         str or None: The new m3u8 URL if successful, or None if an error occurred.
     """
-    import requests
-    ajax_url = "https://chaturbate.com/get_edge_hls_url_ajax/"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0",
-        "Accept": "*/*",
-        "Accept-Language": "en-US,en;q=0.5",
-        "Referer": f"https://chaturbate.com/{room_slug}/",
-        "X-Requested-With": "XMLHttpRequest",
-        "Origin": "https://chaturbate.com",
-    }
-    data = {
-        "room_slug": room_slug,
-        "jpeg": "1",
-        "csrfmiddlewaretoken": "vfO2sk8hUsSXVILMJwtcyGqhPy6WqwhH"
-    }
-    cookies = {
-        "csrftoken": "vfO2sk8hUsSXVILMJwtcyGqhPy6WqwhH"
-    }
-    session_req = requests.Session()
-    session_req.cookies.update(cookies)
-    
+    url = f"https://chaturbate.com/{room_slug}/"
     try:
-        response = session_req.post(ajax_url, data=data, headers=headers, timeout=10)
-        logging.info("POST response status: %s", response.status_code)
+        html_content = fetch_page_content(url)
     except Exception as e:
-        logging.error("Error during the POST request: %s", e)
+        logging.error("Error fetching page content for refresh: %s", e)
         return None
     
-    if response.status_code != 200:
-        logging.error("HTTP error: %s", response.status_code)
-        logging.error("Response text: %s", response.text)
+    urls = extract_m3u8_urls(html_content)
+    if not urls:
+        logging.error("No m3u8 URL found during refresh")
         return None
     
-    try:
-        result = response.json()
-        logging.info("Response JSON: %s", result)
-    except ValueError:
-        logging.error("Failed to decode JSON response: %s", response.text)
-        return None
-    
-    if result.get("success"):
-        new_url = result.get("url")
-        if not new_url:
-            logging.error("m3u8 URL missing in response")
-            return None
-    else:
-        logging.error("Request was not successful: %s", result)
-        return None
-    
+    new_url = urls[0]
     # Update the corresponding ChaturbateStream in the database.
     stream = ChaturbateStream.query.filter_by(streamer_username=room_slug).first()
     if stream:
@@ -455,6 +382,3 @@ def refresh_chaturbate_stream(room_slug):
     else:
         logging.error("No Chaturbate stream found for room slug: %s", room_slug)
         return None
-
-
-        
