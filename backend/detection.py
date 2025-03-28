@@ -348,7 +348,7 @@ def process_combined_detection(stream_url, cancel_event):
                                     audio_input = whisper.pad_or_trim(audio_float)
                                     # Improved Whisper decoding config:
                                     # Using beam search with best_of sampling and a fixed temperature to enhance transcription quality.
-                                    mel = whisper.log_mel_spectrogram(audio_input, n_mels=128).to(whisper_model.device)
+                                    mel = whisper.log_mel_spectrogram(audio_input, n_mels=80).to(whisper_model.device)
                                     options = whisper.DecodingOptions(fp16=False, beam_size=5, temperature=0.0)
                                     result = whisper.decode(whisper_model, mel, options)
                                     text = result.text.strip().lower()
