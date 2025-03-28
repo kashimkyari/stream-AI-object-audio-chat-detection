@@ -24,7 +24,7 @@
   },
   "scripts": {
     "start": "serve -s build",
-    "dev": "react-scripts start",
+    "dev": "NODE_OPTIONS=--openssl-legacy-provider react-scripts start",
     "build": "react-scripts build"
   },
   "proxy": "https://54.86.99.85:5000",
