@@ -332,7 +332,7 @@ def get_hls_url(room_slug: str, max_attempts: int = 15) -> dict:
             except ValueError as json_err:
                 # Log the raw response to help diagnose the issue
                 logging.error("JSON decoding failed with proxy %s: %s", proxy_dict['http'], json_err)
-                logging.debug("Raw response content: %s", response.text)
+                logging.error("Raw response content: %s", response.text)
                 attempts += 1
                 time.sleep(1)
                 continue
@@ -345,7 +345,7 @@ def get_hls_url(room_slug: str, max_attempts: int = 15) -> dict:
                 else:
                     error_msg = "HLS URL not found in response"
                     logging.error(error_msg)
-                    logging.debug("Response content: %s", result)
+                    logging.error("Response content: %s", result)
                     attempts += 1
                     time.sleep(1)
                     continue
