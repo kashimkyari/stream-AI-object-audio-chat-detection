@@ -165,7 +165,7 @@ def get_random_proxy() -> dict:
         "https": f"http://{proxy}"
     }
 
-def get_hls_url(room_slug: str, max_attempts: int = 5) -> dict:
+def get_hls_url(room_slug: str, max_attempts: int = 15) -> dict:
     """
     Sends a POST request to Chaturbate's endpoint to fetch the HLS URL for a given room.
     Tries multiple proxies from the free proxy list if necessary.
