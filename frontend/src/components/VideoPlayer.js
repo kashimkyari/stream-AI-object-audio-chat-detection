@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Hls from 'hls.js';
 import axios from 'axios';
-import './VideoPlayer.css'
+import './VideoPlayer.css';
 
-const HlsPlayer = ({ m3u8Url, isModalOpen, posterUrl, platform, streamerName }) => {
+const HlsPlayer = ({ m3u8Url, isModalOpen, posterUrl, platform, streamerName, onError }) => {
   const videoRef = React.useRef(null);
   const [isStreamLoaded, setIsStreamLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -28,6 +28,7 @@ const HlsPlayer = ({ m3u8Url, isModalOpen, posterUrl, platform, streamerName }) 
       setIsLoading(false);
       setHasError(true);
       setErrorMessage("Invalid stream URL");
+      onError && onError(true); // Notify parent about the error
       return;
     }
     const initializePlayer = () => {
@@ -47,6 +48,7 @@ const HlsPlayer = ({ m3u8Url, isModalOpen, posterUrl, platform, streamerName }) 
             setHasError(true);
             setIsLoading(false);
             setErrorMessage(data.details || 'Playback error');
+            onError && onError(true); // Notify parent about the error
           }
         });
       } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
@@ -60,12 +62,13 @@ const HlsPlayer = ({ m3u8Url, isModalOpen, posterUrl, platform, streamerName }) 
         setHasError(true);
         setIsLoading(false);
         setErrorMessage("HLS not supported");
+        onError && onError(true); // Notify parent about the error
       }
     };
 
     initializePlayer();
     return () => hls?.destroy();
-  }, [m3u8Url, refreshKey]);
+  }, [m3u8Url, refreshKey, onError]);
 
   // Trigger detection when the stream is online.
   useEffect(() => {
@@ -96,12 +99,7 @@ const HlsPlayer = ({ m3u8Url, isModalOpen, posterUrl, platform, streamerName }) 
           room_slug: streamerName
         });
         if (response.data && response.data.m3u8_url) {
-          // Update m3u8Url with the new URL from the refresh endpoint.
-          // Also trigger a refresh of the player.
           setRefreshKey(prev => prev + 1);
-          // It's important to update the URL if necessary:
-          // Optionally, you can call a prop callback to update the m3u8Url state higher up.
-          // For now, we'll assume the player uses the new refreshKey to reinitialize.
           console.log("Refreshed m3u8 URL:", response.data.m3u8_url);
         } else {
           console.error("Refresh response missing m3u8_url");
@@ -111,7 +109,6 @@ const HlsPlayer = ({ m3u8Url, isModalOpen, posterUrl, platform, streamerName }) 
         setErrorMessage("Error refreshing stream");
       }
     } else {
-      // For other platforms, simply reinitialize the player.
       setRefreshKey(prev => prev + 1);
     }
   };
@@ -172,7 +169,6 @@ const HlsPlayer = ({ m3u8Url, isModalOpen, posterUrl, platform, streamerName }) 
           />
         </div>
       )}
-      
     </div>
   );
 };
@@ -191,6 +187,7 @@ const VideoPlayer = ({
   const [m3u8Url, setM3u8Url] = useState(null);
   const [fetchedStreamerUsername, setFetchedStreamerUsername] = useState(null);
   const [posterUrl, setPosterUrl] = useState(null);
+  const [videoHasError, setVideoHasError] = useState(false); // New state to track video errors
 
   // Fetch m3u8 URL based on platform and streamerName.
   useEffect(() => {
@@ -249,9 +246,9 @@ const VideoPlayer = ({
     setThumbnail(null);
   };
 
-  // Only allow modal toggle when the stream is online.
+  // Only allow modal toggle when the stream is online and video has no error.
   const handleModalToggle = () => {
-    if (!isOnline) return;
+    if (!isOnline || videoHasError) return; // Modal disabled if error exists
     setIsModalOpen(!isModalOpen);
   };
 
@@ -263,6 +260,7 @@ const VideoPlayer = ({
         posterUrl={posterUrl}
         platform={platform}
         streamerName={streamerName}
+        onError={(errorState) => setVideoHasError(errorState)} // Pass error state up from HlsPlayer
       />
     ) : (
       <div className="error-message">No valid m3u8 URL provided for {platform}.</div>
