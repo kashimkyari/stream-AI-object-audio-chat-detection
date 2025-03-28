@@ -84,30 +84,64 @@ def update_stream_job_progress(job_id, percent, message):
                  stream_creation_jobs[job_id]['estimated_time'])
 
 # --- New Scraper Helper Functions ---
-def fetch_page_content(url):
+def fetch_page_content(url, use_selenium=False):
     """
-    Fetch the HTML content of the provided URL using a standard User-Agent header.
+    Fetch the HTML content of the provided URL.
+    Uses a robust set of headers to mimic a real browser.
     
     Args:
         url (str): The URL of the webpage to scrape.
-    
+        use_selenium (bool): If True, uses Selenium to fetch the page.
+        
     Returns:
         str: The HTML content of the webpage.
-    
+        
     Raises:
-        requests.HTTPError: If the request to the webpage fails.
+        Exception: If the request fails.
     """
-    import requests
-    headers = {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/90.0.4430.93 Safari/537.36"
-        )
-    }
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
-    return response.text
+    if use_selenium:
+        # Fallback: Use Selenium to fetch the page if necessary.
+        from seleniumwire import webdriver
+        from selenium.webdriver.chrome.options import Options
+        import tempfile
+        chrome_options = Options()
+        chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--ignore-certificate-errors")
+        unique_user_data_dir = tempfile.mkdtemp()
+        chrome_options.add_argument(f"--user-data-dir={unique_user_data_dir}")
+        driver = webdriver.Chrome(options=chrome_options)
+        try:
+            driver.get(url)
+            # Allow time for the page to load.
+            time.sleep(5)
+            return driver.page_source
+        finally:
+            driver.quit()
+    else:
+        import requests
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:112.0) "
+                "Gecko/20100101 Firefox/112.0"
+            ),
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Referer": "https://chaturbate.com/",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1",
+        }
+        session = requests.Session()
+        try:
+            response = session.get(url, headers=headers, timeout=15)
+            response.raise_for_status()
+            return response.text
+        except Exception as e:
+            logging.error("Direct request failed: %s. Trying Selenium...", e)
+            # Fallback to Selenium if direct request fails.
+            return fetch_page_content(url, use_selenium=True)
+
 
 def extract_m3u8_urls(html_content):
     """
