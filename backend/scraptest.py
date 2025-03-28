@@ -7,6 +7,7 @@ It prints the first found m3u8 URL (if any) from the intercepted network request
 
 import logging
 import time
+import sys
 # --- Monkey Patch for blinker._saferef ---
 if 'blinker._saferef' not in sys.modules:
     saferef = types.ModuleType('blinker._saferef')
