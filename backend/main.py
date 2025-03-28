@@ -8,25 +8,6 @@ from routes import *
 from cleanup import start_chat_cleanup_thread, start_detection_cleanup_thread
 from monitoring import start_notification_monitor
 from flask_cors import CORS
-import ssl
-
-# Replace the SSL context loading with this:
-ssl_cert = "/etc/letsencrypt/live/stream-monitor.duckdns.org/fullchain.pem"
-ssl_key = "/etc/letsencrypt/live/stream-monitor.duckdns.org/privkey.pem"
-
-# Create an SSL context manually
-if os.path.exists(ssl_cert) and os.path.exists(ssl_key):
-    try:
-        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-        ssl_context.load_cert_chain(ssl_cert, ssl_key)
-        logger.info("SSL context created successfully")
-    except Exception as e:
-        logger.error(f"Error creating SSL context: {e}")
-        ssl_context = None
-else:
-    logger.warning("SSL certificate files not found")
-    ssl_context = None
-
 
 # Enable CORS with credentials support
 CORS(app, supports_credentials=True)
@@ -125,6 +106,8 @@ if __name__ == "__main__":
     # Optional SSL configuration:
     # If environment variables SSL_CERT_PATH and SSL_KEY_PATH are set,
     # Flask will run with HTTPS.
+    ssl_cert = "/etc/letsencrypt/live/stream-monitor.duckdns.org/fullchain.pem"
+    ssl_key = "/etc/letsencrypt/live/stream-monitor.duckdns.org/privkey.pem"
     ssl_context = (ssl_cert, ssl_key) if ssl_cert and ssl_key else None
     if ssl_context:
         logger.info("Starting app with SSL context.")
