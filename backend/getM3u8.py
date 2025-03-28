@@ -1,24 +1,26 @@
 #!/usr/bin/env python3
 """
-chaturbate_scraper.py
+chaturbate_scraper_selenium.py
 
 Usage:
-    python chaturbate_scraper.py https://chaturbate.com/roomslug/
+    python chaturbate_scraper_selenium.py https://chaturbate.com/roomslug/
 
-This script retrieves the HLS URL for a given Chaturbate room.
-It first fetches the room page to establish a session, obtain a dynamic CSRF token,
-and then uses that token in a POST request to the endpoint.
-
-Note: If running on environments with known IP restrictions (e.g., AWS EC2),
-you may need to use a proxy or adjust headers to mimic a real browser.
+This script uses undetected-chromedriver (Selenium) to bypass Cloudflare's JS challenge.
+It loads the room page, extracts necessary cookies and CSRF token,
+and then uses a requests session to send the POST request to obtain the HLS URL.
 """
 
 import sys
+import time
 import logging
 import requests
 from requests.exceptions import RequestException
 from urllib.parse import urlparse
-from bs4 import BeautifulSoup  # Requires: pip install beautifulsoup4
+from bs4 import BeautifulSoup  # pip install beautifulsoup4
+
+# Import undetected_chromedriver (pip install undetected-chromedriver)
+import undetected_chromedriver as uc
+from selenium.webdriver.common.by import By
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -44,86 +46,75 @@ def extract_room_slug(url: str) -> str:
     return path_parts[0]
 
 
-def fetch_room_page(session: requests.Session, room_url: str) -> requests.Response:
+def get_page_with_selenium(room_url: str) -> (str, dict):
     """
-    Attempts to GET the room page using primary headers. If it fails with 403,
-    it retries using a fallback header set to mimic a different browser.
+    Uses undetected-chromedriver to load the page and bypass Cloudflare's challenge.
     
     Args:
-        session (requests.Session): The session object.
         room_url (str): The URL of the room.
-        
+    
     Returns:
-        requests.Response: The response object.
+        tuple: (page HTML, cookies as a dict)
     
     Raises:
-        Exception: If both attempts fail.
+        Exception: If the page cannot be loaded.
     """
+    logging.info(f"Launching headless browser for {room_url}")
+    options = uc.ChromeOptions()
+    options.headless = True
+    # Options to help mimic a real browser:
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    
+    driver = uc.Chrome(options=options)
+    
     try:
-        logging.info(f"Fetching room page with primary headers: {room_url}")
-        response = session.get(room_url)
-        response.raise_for_status()
-        return response
-    except RequestException as e:
-        logging.warning(f"Primary GET failed: {e}. Trying fallback headers.")
-        # Fallback headers to mimic a different browser environment
-        fallback_headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
-                          'AppleWebKit/537.36 (KHTML, like Gecko) '
-                          'Chrome/112.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'Connection': 'keep-alive',
-            'Upgrade-Insecure-Requests': '1'
-        }
-        try:
-            response = session.get(room_url, headers=fallback_headers)
-            response.raise_for_status()
-            return response
-        except RequestException as e2:
-            logging.error(f"Fallback GET request failed: {e2}")
-            raise Exception("Failed to fetch room page with both primary and fallback headers.")
+        driver.get(room_url)
+        # Wait for Cloudflare challenge to complete and the page to load.
+        time.sleep(10)  # Adjust if needed (challenge page may take a few seconds)
+        
+        # Optionally, check for an element that confirms the page is fully loaded.
+        # For example, wait until the body tag is present:
+        driver.find_element(By.TAG_NAME, "body")
+        
+        html = driver.page_source
+        # Get cookies from Selenium and convert them into a dict for requests.
+        selenium_cookies = driver.get_cookies()
+        cookies = {cookie['name']: cookie['value'] for cookie in selenium_cookies}
+        logging.info("Page loaded and cookies obtained.")
+        return html, cookies
+    finally:
+        driver.quit()
 
 
-def get_csrf_token(session: requests.Session, room_url: str) -> str:
+def get_csrf_token_from_html(html: str) -> str:
     """
-    Fetches the room page to allow the session to capture cookies and extract the CSRF token.
+    Extract CSRF token from the HTML content.
     
     Args:
-        session (requests.Session): The session object.
-        room_url (str): The URL of the room.
+        html (str): HTML content of the page.
     
     Returns:
-        str: The CSRF token.
+        str: CSRF token.
     
     Raises:
-        Exception: If the token cannot be found.
+        Exception: If token is not found.
     """
-    response = fetch_room_page(session, room_url)
-    
-    # Try to obtain CSRF token from cookies first
-    csrf_token = session.cookies.get('csrftoken')
-    if csrf_token:
-        logging.info("CSRF token found in cookies.")
-        return csrf_token
-
-    # Parse HTML for CSRF token (commonly in a hidden input field)
-    soup = BeautifulSoup(response.text, 'html.parser')
+    soup = BeautifulSoup(html, 'html.parser')
     token_input = soup.find('input', attrs={'name': 'csrfmiddlewaretoken'})
     if token_input and token_input.has_attr('value'):
         csrf_token = token_input['value']
         logging.info("CSRF token extracted from HTML input.")
         return csrf_token
 
-    # Fallback: search for a meta tag
+    # Fallback: check meta tag
     meta_token = soup.find('meta', attrs={'name': 'csrf-token'})
     if meta_token and meta_token.has_attr('content'):
         csrf_token = meta_token['content']
         logging.info("CSRF token extracted from meta tag.")
         return csrf_token
 
-    logging.error("CSRF token not found in cookies or HTML.")
-    raise Exception("CSRF token not found.")
+    raise Exception("CSRF token not found in page HTML.")
 
 
 def get_hls_url(session: requests.Session, room_slug: str, csrf_token: str) -> dict:
@@ -131,9 +122,9 @@ def get_hls_url(session: requests.Session, room_slug: str, csrf_token: str) -> d
     Sends a POST request to Chaturbate's endpoint to fetch the HLS URL for the given room.
     
     Args:
-        session (requests.Session): The session with proper cookies.
+        session (requests.Session): Session with proper cookies.
         room_slug (str): The room slug.
-        csrf_token (str): The dynamic CSRF token obtained from the room page.
+        csrf_token (str): The dynamic CSRF token.
     
     Returns:
         dict: JSON response from the endpoint if successful.
@@ -141,12 +132,10 @@ def get_hls_url(session: requests.Session, room_slug: str, csrf_token: str) -> d
     """
     post_url = 'https://chaturbate.com/get_edge_hls_url_ajax/'
 
-    # Dynamic headers; cookies are managed by the session.
     headers = {
         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0',
         'Accept': '*/*',
         'Accept-Language': 'en-US,en;q=0.5',
-        'Accept-Encoding': 'gzip, deflate, br, zstd',
         'Referer': f'https://chaturbate.com/{room_slug}/',
         'X-NewRelic-ID': 'VQIGWV9aDxACUFNVDgMEUw==',
         'newrelic': 'eyJ2IjpbMCwxXSwiZCI6eyJ0eSI6IkJyb3dzZXIiLCJhYyI6IjE0MTg5OTciLCJhcCI6IjI0NTA2NzUwIiwiaWQiOiI3ZWJkMTk3MDQxMTUwOGY5IiwidHIiOiJiYzU3ZDE4Y2RiN2U0ZjVjMjgzMmUxYTdmZTA1ODcyYSJ9fQ==',
@@ -159,7 +148,6 @@ def get_hls_url(session: requests.Session, room_slug: str, csrf_token: str) -> d
     }
 
     boundary = "----geckoformboundary6a610b256c356f4fb7599aaf07b1de15"
-    
     payload = (
         f'--{boundary}\r\n'
         'Content-Disposition: form-data; name="room_slug"\r\n\r\n'
@@ -181,7 +169,7 @@ def get_hls_url(session: requests.Session, room_slug: str, csrf_token: str) -> d
 
     try:
         logging.info("Sending POST request to fetch HLS URL.")
-        response = session.post(post_url, headers=headers, data=payload.encode('utf-8'))
+        response = session.post(post_url, headers=headers, data=payload.encode('utf-8'), timeout=10)
         response.raise_for_status()
         logging.info("POST request successful.")
         return response.json()
@@ -198,7 +186,7 @@ def main():
     Main entry point for the script. Expects a URL as a command-line argument.
     """
     if len(sys.argv) != 2:
-        print("Usage: python chaturbate_scraper.py https://chaturbate.com/roomslug/")
+        print("Usage: python chaturbate_scraper_selenium.py https://chaturbate.com/roomslug/")
         sys.exit(1)
 
     input_url = sys.argv[1]
@@ -211,15 +199,17 @@ def main():
         logging.error(f"Error extracting room slug: {e}")
         sys.exit(1)
 
-    # Use a session to maintain cookies and headers.
-    session = requests.Session()
-
     try:
-        csrf_token = get_csrf_token(session, room_url)
-        logging.info(f"Obtained CSRF token: {csrf_token}")
+        # Use Selenium to bypass Cloudflare challenge and get page HTML and cookies.
+        html, selenium_cookies = get_page_with_selenium(room_url)
+        csrf_token = get_csrf_token_from_html(html)
     except Exception as e:
-        logging.error(f"Could not obtain CSRF token: {e}")
+        logging.error(f"Error obtaining CSRF token and page content: {e}")
         sys.exit(1)
+
+    # Create a requests session and update its cookies from Selenium.
+    session = requests.Session()
+    session.cookies.update(selenium_cookies)
 
     result = get_hls_url(session, room_slug, csrf_token)
     if result:
