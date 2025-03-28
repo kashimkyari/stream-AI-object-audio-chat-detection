@@ -222,12 +222,7 @@ function AppContent() {
       try {
         const res = await axios.get('/api/notifications', { timeout: 10000 });
         let notifications = res.data;
-        if (user && user.role === 'agent') {
-          // For agents, filter notifications by assigned_agent
-          notifications = notifications.filter(n =>
-            (n.assigned_agent || "").toLowerCase() === user.username.toLowerCase()
-          );
-        }
+        // Agents now see all alerts instead of filtering by assigned_agent.
         const unread = notifications.filter(n => !n.read);
         const sortedUnread = unread.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
         setUnreadCount(sortedUnread.length);

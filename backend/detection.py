@@ -34,9 +34,12 @@ _yolo_lock = threading.Lock()
 stream_info = {}
 last_video_alerted_objects = {}  # Key: stream_url, Value: set of detected object classes
 
-# New global for audio alert deduplication with cooldown period.
+# Global for audio alert deduplication with cooldown period.
 last_audio_alerted_transcript = {}  # Key: stream_url, Value: (transcript, timestamp)
 ALERT_COOLDOWN_SECONDS = 60  # Cooldown period in seconds for audio alerts
+
+# New global for per-stream rate limiting of audio alerts.
+audio_alert_timestamps = {}  # Key: stream_url, Value: list of datetime objects for recent alerts
 
 def extract_stream_info_from_db(stream_url):
     with app.app_context():
@@ -365,8 +368,8 @@ def process_combined_detection(stream_url, cancel_event):
                                         audio_buffer = b""
                                         continue
 
-                                    # Duplicate alert check with cooldown for audio detections.
                                     current_time = datetime.utcnow()
+                                    # Check for duplicate alerts using previous transcript and cooldown.
                                     if stream_url in last_audio_alerted_transcript:
                                         last_text, last_time = last_audio_alerted_transcript[stream_url]
                                         if text == last_text and (current_time - last_time).total_seconds() < ALERT_COOLDOWN_SECONDS:
@@ -374,6 +377,21 @@ def process_combined_detection(stream_url, cancel_event):
                                             audio_buffer = b""
                                             continue
                                     last_audio_alerted_transcript[stream_url] = (text, current_time)
+
+                                    # New rate limiting: allow only one audio alert per cooldown period per stream.
+                                    if stream_url not in audio_alert_timestamps:
+                                        audio_alert_timestamps[stream_url] = []
+                                    # Remove outdated timestamps.
+                                    audio_alert_timestamps[stream_url] = [
+                                        t for t in audio_alert_timestamps[stream_url]
+                                        if (current_time - t).total_seconds() < ALERT_COOLDOWN_SECONDS
+                                    ]
+                                    if len(audio_alert_timestamps[stream_url]) >= 1:
+                                        logging.info("Rate limit reached for audio alerts on %s; skipping alert.", stream_url)
+                                        audio_buffer = b""
+                                        continue
+                                    # Record the new alert timestamp.
+                                    audio_alert_timestamps[stream_url].append(current_time)
 
                                     # Perform sentiment analysis on the transcription.
                                     sentiment = sentiment_analyzer.polarity_scores(text)
@@ -426,7 +444,7 @@ def check_stream_online(m3u8_url, timeout=10):
         response = requests.get(m3u8_url, timeout=timeout)
         return response.status_code == 200
     except Exception as e:
-        logging.error("Stream check failed for %s: %s", m3u8_url, e)
+        logging.error("Stream check failed for %s: %s", m3u_url, e)
         return False
 
 def parse_chat_messages(html_content, platform):

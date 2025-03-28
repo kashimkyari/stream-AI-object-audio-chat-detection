@@ -845,7 +845,7 @@ def mark_notification_read(notification_id):
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/notifications/<int:notification_id>", methods=["DELETE"])
-@login_required()
+@login_required(role="admin")
 def delete_notification(notification_id):
     try:
         notification = DetectionLog.query.get(notification_id)
