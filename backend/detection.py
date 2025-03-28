@@ -61,7 +61,7 @@ def load_yolov8_model():
     with _yolo_lock:
         if _yolo_model is None:
             try:
-                _yolo_model = YOLO("yolo11n.pt")
+                _yolo_model = YOLO("yolov11x.pt", verbose=False)
                 _yolo_model.verbose = False
                 logging.info("YOLO11 model loaded successfully.")
             except Exception as e:
