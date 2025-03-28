@@ -36,7 +36,11 @@ last_video_alerted_objects = {}  # Key: stream_url, Value: set of detected objec
 # Dictionary to track last audio detection alert time per stream
 last_audio_detection_time = {}  # Key: stream_url, Value: datetime
 
-EXPECTED_AUDIO_LENGTH = 16000 * 5  # 5 seconds at 16kHz
+# --- Configuration for audio processing ---
+TARGET_AUDIO_SECONDS = 10  # Change to 30 for 30-second chunks if desired.
+SAMPLE_RATE = 16000
+EXPECTED_AUDIO_LENGTH = SAMPLE_RATE * TARGET_AUDIO_SECONDS
+required_audio_bytes = EXPECTED_AUDIO_LENGTH * 2  # 16-bit audio
 
 def extract_stream_info_from_db(stream_url):
     with app.app_context():
@@ -263,8 +267,7 @@ def process_combined_detection(stream_url, cancel_event):
     """
     Use a single PyAV container to process both video and audio detection.
     Video frames are processed immediately for object detection.
-    Audio packets are accumulated in a buffer and processed in 5-second chunks for faster transcription.
-    If the connection is lost or an error occurs during packet pull/decoding, attempt to reconnect.
+    Audio packets are accumulated and then processed in chunks for transcription.
     """
     platform_name, streamer_name = extract_stream_info_from_db(stream_url)
     if not platform_name or not streamer_name:
@@ -293,7 +296,7 @@ def process_combined_detection(stream_url, cancel_event):
             return
 
         logging.info("Combined detection started for %s", stream_url)
-        required_audio_bytes = EXPECTED_AUDIO_LENGTH * 2  # 16-bit audio
+        # For audio, we now require a chunk corresponding to TARGET_AUDIO_SECONDS seconds.
         audio_buffer = b""
 
         try:
@@ -327,24 +330,25 @@ def process_combined_detection(stream_url, cancel_event):
                                 logging.error("Error converting audio frame: %s", e)
                                 continue
 
+                            # Once we have enough bytes for TARGET_AUDIO_SECONDS seconds:
                             if len(audio_buffer) >= required_audio_bytes:
                                 try:
                                     # Convert audio to float32 and normalize
                                     audio_int16 = np.frombuffer(audio_buffer, dtype=np.int16)
                                     audio_float = audio_int16.astype(np.float32) / 32768.0
 
-                                    # Resample to 16kHz if needed
+                                    # Resample to 16kHz if needed.
                                     if audio_float.shape[0] != EXPECTED_AUDIO_LENGTH:
                                         audio_float = signal.resample(audio_float, EXPECTED_AUDIO_LENGTH)
 
-                                    # Verify correct audio length; if not, skip transcription.
-                                    if audio_float.shape[0] != EXPECTED_AUDIO_LENGTH:
-                                        logging.error("Audio chunk length is %d, expected %d. Skipping transcription.", 
-                                                      audio_float.shape[0], EXPECTED_AUDIO_LENGTH)
-                                        audio_buffer = b""
-                                        continue
+                                    # Pad with zeros if too short; or truncate if too long.
+                                    if audio_float.shape[0] < EXPECTED_AUDIO_LENGTH:
+                                        pad_length = EXPECTED_AUDIO_LENGTH - audio_float.shape[0]
+                                        audio_float = np.pad(audio_float, (0, pad_length), mode='constant')
+                                    elif audio_float.shape[0] > EXPECTED_AUDIO_LENGTH:
+                                        audio_float = audio_float[:EXPECTED_AUDIO_LENGTH]
 
-                                    # Use the raw audio chunk directly without padding or trimming.
+                                    # Compute mel spectrogram with 128 mels.
                                     mel = whisper.log_mel_spectrogram(audio_float, n_mels=128).to(whisper_model.device)
                                     # Force English transcription.
                                     options = whisper.DecodingOptions(fp16=False, language="en")
@@ -359,18 +363,15 @@ def process_combined_detection(stream_url, cancel_event):
                                         if detected:
                                             logging.info("Combined flagged audio keywords detected: %s", detected)
                                             now = datetime.utcnow()
-                                            # Check if an audio alert was sent in the last 5 minutes.
                                             last_alert = last_audio_detection_time.get(stream_url)
                                             if last_alert and (now - last_alert) < timedelta(minutes=5):
                                                 logging.info("Skipping audio alert for %s to avoid spamming.", stream_url)
                                             else:
                                                 last_audio_detection_time[stream_url] = now
-                                                # Create a full sentence notification message.
                                                 notification_message = (
                                                     f"Audio Alert: Detected flagged keyword(s) {', '.join(detected)} "
                                                     f"in the transcription: \"{text}\"."
                                                 )
-                                                # Update recent visual detection log if available; otherwise, log new audio detection.
                                                 if not update_latest_visual_log_with_audio(stream_url, text, detected):
                                                     with app.app_context():
                                                         log_entry = DetectionLog(
