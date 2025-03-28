@@ -121,7 +121,7 @@ def extract_room_slug(url: str) -> str:
     return path_parts[0]
 
 
-# Global list of free proxies (IP:port) updated at 2025-03-28 21:42:02 UTC.
+# --- Updated Proxy List from free-proxy-list.net (Updated at 2025-03-28 21:42:02 UTC) ---
 PROXY_LIST = [
     "43.153.16.223:13001",
     "170.106.100.130:13001",
@@ -225,6 +225,7 @@ PROXY_LIST = [
     "18.138.241.49:20202",
 ]
 
+
 def get_random_proxy() -> dict:
     """
     Select a random proxy from the proxy list.
@@ -245,6 +246,7 @@ def get_hls_url(room_slug: str, max_attempts: int = 15) -> dict:
     Tries multiple proxies from the free proxy list if necessary.
     
     Enhanced logging is added to capture raw responses and diagnose errors.
+    If the response does not contain 'hls_url' but does contain 'url', it is used as the HLS URL.
     
     Args:
         room_slug (str): The room slug to query.
@@ -252,7 +254,7 @@ def get_hls_url(room_slug: str, max_attempts: int = 15) -> dict:
     
     Returns:
         dict: JSON response from the endpoint if successful.
-              Expected to contain the key 'hls_url'.
+              Expected to contain the HLS URL under 'hls_url' or 'url'.
         None: If all attempts fail.
     """
     url = 'https://chaturbate.com/get_edge_hls_url_ajax/'
@@ -337,9 +339,12 @@ def get_hls_url(room_slug: str, max_attempts: int = 15) -> dict:
                 continue
 
             if result:
-                hls_url = result.get("hls_url")
+                # Use 'hls_url' if available; otherwise, check for 'url'
+                hls_url = result.get("hls_url") or result.get("url")
                 if hls_url:
                     logging.info("HLS URL found: %s", hls_url)
+                    # Ensure the result dict contains 'hls_url'
+                    result["hls_url"] = hls_url
                     return result
                 else:
                     error_msg = "HLS URL not found in response"
