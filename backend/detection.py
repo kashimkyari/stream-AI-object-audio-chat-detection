@@ -338,7 +338,8 @@ def process_combined_detection(stream_url, cancel_event):
 
                                     # Pad or trim to exact 5 seconds
                                     audio_input = whisper.pad_or_trim(audio_float)
-                                    mel = whisper.log_mel_spectrogram(audio_input).to(whisper_model.device)
+                                    # Critical Change: Specify n_mels=128 to match model expectation.
+                                    mel = whisper.log_mel_spectrogram(audio_input, n_mels=128).to(whisper_model.device)
                                     options = whisper.DecodingOptions(fp16=False)
                                     result = whisper.decode(whisper_model, mel, options)
                                     text = result.text.strip().lower()
