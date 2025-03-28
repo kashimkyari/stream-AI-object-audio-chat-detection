@@ -225,7 +225,6 @@ PROXY_LIST = [
     "18.138.241.49:20202",
 ]
 
-
 def get_random_proxy() -> dict:
     """
     Select a random proxy from the proxy list.
