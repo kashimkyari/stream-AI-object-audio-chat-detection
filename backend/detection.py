@@ -617,15 +617,14 @@ def monitor_inactivity():
 
 def start_detection_on_dashboard_load():
     """
-    On the first dashboard load, start detection for all active streams
-    and the inactivity monitor.
+    On the first serving, start detection for all active streams and the inactivity monitor.
     """
     start_detection_for_streams()
     threading.Thread(target=monitor_inactivity, daemon=True).start()
     logging.info("Inactivity monitor started.")
 
-# Register the function using the app.before_first_request() method.
-app.before_first_request(start_detection_on_dashboard_load)
+# Register the function using the before_serving hook.
+app.before_serving(start_detection_on_dashboard_load)
 
 
 
