@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 // Directly import components (no lazy loading for speed)
@@ -14,6 +14,7 @@ function AppContent() {
   const [initialRedirectDone, setInitialRedirectDone] = useState(false); // Delay before redirect on first login
   const [activeTab, setActiveTab] = useState(null);
   const [dashboardData, setDashboardData] = useState({ streams: [] });
+  const [activeStreams, setActiveStreams] = useState([]); // Active streams from API/DB
   const [isMobile, setIsMobile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -56,7 +57,6 @@ function AppContent() {
           // For logged-in users, wait briefly before marking initial redirect as done.
           setTimeout(() => setInitialRedirectDone(true), 1000);
         } else {
-          // If not logged in, mark initial redirect as done to allow login screen to show.
           setInitialRedirectDone(true);
         }
       } catch (error) {
@@ -69,52 +69,31 @@ function AppContent() {
     checkSession();
   }, []);
 
-  const handleLogin = (loggedInUser) => {
-    setUser(loggedInUser);
-    if (loggedInUser.role === 'admin') {
-      setActiveTab('dashboard');
-      axios.get('/api/dashboard').then(res => setDashboardData(res.data));
-    } else if (loggedInUser.role === 'agent') {
-      setActiveTab('agentdashboard');
-    }
-    console.log("Login successful");
-    setInitialRedirectDone(true);
-  };
+  // Fetch active streams from the API/DB.
+  useEffect(() => {
+    if (!user) return;
+    const fetchActiveStreams = async () => {
+      try {
+        const res = await axios.get('/api/active-streams');
+        setActiveStreams(res.data);
+      } catch (err) {
+        console.error('Error fetching active streams:', err);
+      }
+    };
+    fetchActiveStreams();
+  }, [user]);
 
-  const handleLogout = async () => {
-    try {
-      await axios.post('/api/logout');
-      setUser(null);
-      setMenuOpen(false);
-      console.log("Logged out successfully");
-      setActiveTab(null);
-    } catch (err) {
-      console.error("Logout error", err);
-      console.log("Logout failed");
-    }
-  };
+  // Determine platform and streamer name based on role.
+  const platform =
+    user?.role === 'agent'
+      ? user.assignedStreamPlatform || ''
+      : activeStreams[0]?.platform || 'chaturbate';
+  const streamerName =
+    user?.role === 'agent'
+      ? user.assignedStreamStreamerName || ''
+      : activeStreams[0]?.streamer_username || '';
 
-  const handleTabClick = (tab) => {
-    setActiveTab(tab);
-    if (isMobile) setMenuOpen(false);
-  };
-
-  const toggleMenu = () => {
-    setMenuOpen(!menuOpen);
-  };
-
-  // Example function to handle successful agent creation
-  const handleAgentCreated = (newAgent) => {
-    console.log("Agent created successfully");
-  };
-
-  // -------------
-  // Fetch m3u8 URL using provided snippet.
-  const platform = user?.role === 'agent' ? user.assignedStreamPlatform || '' : 'chaturbate';
-  const streamerName = user?.role === 'agent'
-    ? user.assignedStreamStreamerName || ''
-    : dashboardData.streams[0]?.streamer_username || '';
-
+  // Fetch m3u8 URL using the active stream info.
   useEffect(() => {
     if (!platform || !streamerName) {
       setLoading(false);
@@ -169,53 +148,45 @@ function AppContent() {
     }
   }, [platform, streamerName]);
 
-  // -------------
-  // Use Page Visibility API to trigger/stop detection
-  useEffect(() => {
-    const triggerDetection = () => {
-      if (m3u8Url) {
-        axios.post('/api/trigger-detection', {
-          stream_url: m3u8Url,
-          timestamp: new Date().toISOString(),
-          platform: platform,
-          streamer_name: streamerName
-        })
-        .then(res => console.log("Detection started:", res.data))
-        .catch(err => console.error("Error triggering detection:", err));
-      }
-    };
-
-    const stopDetection = () => {
-      if (m3u8Url) {
-        axios.post('/api/stop-detection', { stream_url: m3u8Url })
-          .then(res => console.log("Detection stopped:", res.data))
-          .catch(err => console.error("Error stopping detection:", err));
-      }
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        stopDetection();
-      } else if (document.visibilityState === 'visible') {
-        triggerDetection();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    if (m3u8Url && document.visibilityState === 'visible') {
-      triggerDetection();
+  const handleLogin = (loggedInUser) => {
+    setUser(loggedInUser);
+    if (loggedInUser.role === 'admin') {
+      setActiveTab('dashboard');
+      axios.get('/api/dashboard').then(res => setDashboardData(res.data));
+    } else if (loggedInUser.role === 'agent') {
+      setActiveTab('agentdashboard');
     }
+    console.log("Login successful");
+    setInitialRedirectDone(true);
+  };
 
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      if (m3u8Url) {
-        stopDetection();
-      }
-    };
-  }, [m3u8Url, platform, streamerName]);
+  const handleLogout = async () => {
+    try {
+      await axios.post('/api/logout');
+      setUser(null);
+      setMenuOpen(false);
+      console.log("Logged out successfully");
+      setActiveTab(null);
+    } catch (err) {
+      console.error("Logout error", err);
+      console.log("Logout failed");
+    }
+  };
 
-  // -------------
+  const handleTabClick = (tab) => {
+    setActiveTab(tab);
+    if (isMobile) setMenuOpen(false);
+  };
+
+  const toggleMenu = () => {
+    setMenuOpen(!menuOpen);
+  };
+
+  // Example function to handle successful agent creation
+  const handleAgentCreated = (newAgent) => {
+    console.log("Agent created successfully");
+  };
+
   // Fetch notifications count and list for badge and floating stack.
   useEffect(() => {
     const fetchNotificationsData = async () => {
@@ -588,9 +559,7 @@ function AppContentWrapper() {
 }
 
 function App() {
-  return (
-    <AppContentWrapper />
-  );
+  return <AppContentWrapper />;
 }
 
 export default App;
