@@ -19,6 +19,7 @@ from io import BytesIO
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from scipy import signal
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer  # Added for sentiment analysis
 
 from config import app
 from models import FlaggedObject, Log, ChatKeyword, DetectionLog, Stream, ChaturbateStream, StripchatStream, TelegramRecipient
@@ -32,6 +33,10 @@ _yolo_lock = threading.Lock()
 # Global dictionaries to store stream info and last alerted objects to avoid duplicate alerts.
 stream_info = {}
 last_video_alerted_objects = {}  # Key: stream_url, Value: set of detected object classes
+
+# New global for audio alert deduplication with cooldown period.
+last_audio_alerted_transcript = {}  # Key: stream_url, Value: (transcript, timestamp)
+ALERT_COOLDOWN_SECONDS = 60  # Cooldown period in seconds for audio alerts
 
 def extract_stream_info_from_db(stream_url):
     with app.app_context():
@@ -266,6 +271,9 @@ def process_combined_detection(stream_url, cancel_event):
         logging.error("Stream %s not found. Aborting combined detection.", stream_url)
         return
 
+    # Initialize sentiment analyzer (VADER)
+    sentiment_analyzer = SentimentIntensityAnalyzer()
+
     while not cancel_event.is_set():
         if not check_stream_online(stream_url):
             logging.error("Stream %s appears offline. Aborting combined detection.", stream_url)
@@ -338,37 +346,58 @@ def process_combined_detection(stream_url, cancel_event):
 
                                     # Pad or trim to exact 5 seconds
                                     audio_input = whisper.pad_or_trim(audio_float)
-                                    # Critical Change: Specify n_mels=128 to match model expectation.
+                                    # Critical Change: Force English transcription via language parameter and specify n_mels=128.
                                     mel = whisper.log_mel_spectrogram(audio_input, n_mels=128).to(whisper_model.device)
-                                    options = whisper.DecodingOptions(fp16=False)
+                                    options = whisper.DecodingOptions(fp16=False, language="en")
                                     result = whisper.decode(whisper_model, mel, options)
                                     text = result.text.strip().lower()
                                     logging.info("Combined audio transcription: '%s'", text)
-                                    if text:
-                                        with app.app_context():
-                                            keywords = [kw.keyword.lower() for kw in ChatKeyword.query.all()]
-                                        detected = [kw for kw in keywords if kw in text]
-                                        if detected:
-                                            logging.info("Combined flagged audio keywords detected: %s", detected)
-                                            # If there's a recent visual detection, update it with audio info.
-                                            if not update_latest_visual_log_with_audio(stream_url, text, detected):
-                                                with app.app_context():
-                                                    # Log the audio detection in DetectionLog so it shows up in notifications.
-                                                    log_entry = DetectionLog(
-                                                        room_url=stream_url,
-                                                        event_type='audio_detection',
-                                                        details={
-                                                            'keywords': detected,
-                                                            'transcript': text,
-                                                            'platform': platform_name,
-                                                            'streamer_name': streamer_name,
-                                                            'timestamp': datetime.utcnow().isoformat()
-                                                        },
-                                                        read=False
-                                                    )
-                                                    db.session.add(log_entry)
-                                                    db.session.commit()
-                                                    threading.Thread(target=async_send_notifications, args=(log_entry.id, platform_name, streamer_name)).start()
+                                    
+                                    # Skip empty transcriptions.
+                                    if not text:
+                                        audio_buffer = b""
+                                        continue
+
+                                    # Duplicate alert check with cooldown for audio detections.
+                                    current_time = datetime.utcnow()
+                                    if stream_url in last_audio_alerted_transcript:
+                                        last_text, last_time = last_audio_alerted_transcript[stream_url]
+                                        if text == last_text and (current_time - last_time).total_seconds() < ALERT_COOLDOWN_SECONDS:
+                                            logging.info("Duplicate or cooldown audio alert for %s; skipping alert.", stream_url)
+                                            audio_buffer = b""
+                                            continue
+                                    last_audio_alerted_transcript[stream_url] = (text, current_time)
+
+                                    # Perform sentiment analysis on the transcription.
+                                    sentiment = sentiment_analyzer.polarity_scores(text)
+                                    logging.info("Sentiment analysis for audio: %s", sentiment)
+
+                                    # Process keywords detection.
+                                    with app.app_context():
+                                        keywords = [kw.keyword.lower() for kw in ChatKeyword.query.all()]
+                                    detected = [kw for kw in keywords if kw in text]
+                                    if detected:
+                                        logging.info("Combined flagged audio keywords detected: %s", detected)
+                                        # If there's a recent visual detection, update it with audio info.
+                                        if not update_latest_visual_log_with_audio(stream_url, text, detected):
+                                            with app.app_context():
+                                                # Log the audio detection in DetectionLog so it shows up in notifications.
+                                                log_entry = DetectionLog(
+                                                    room_url=stream_url,
+                                                    event_type='audio_detection',
+                                                    details={
+                                                        'keywords': detected,
+                                                        'transcript': text,
+                                                        'sentiment': sentiment,  # Sentiment analysis result included.
+                                                        'platform': platform_name,
+                                                        'streamer_name': streamer_name,
+                                                        'timestamp': datetime.utcnow().isoformat()
+                                                    },
+                                                    read=False
+                                                )
+                                                db.session.add(log_entry)
+                                                db.session.commit()
+                                                threading.Thread(target=async_send_notifications, args=(log_entry.id, platform_name, streamer_name)).start()
                                 except Exception as e:
                                     logging.error("Combined Whisper transcription error: %s", e)
                                 audio_buffer = b""
@@ -529,8 +558,3 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     
     process_combined_detection(stream_url, cancel_event)
-
-i need only english transcription
-
-
-include sentiment analysis in alert, do not send thesame alert twice to avoid spamming, have a cooldown period
