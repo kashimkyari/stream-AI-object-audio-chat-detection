@@ -6,8 +6,11 @@ Usage:
     python chaturbate_scraper.py https://chaturbate.com/roomslug/
 
 This script retrieves the HLS URL for a given Chaturbate room.
-It first fetches the room page to establish a session and obtain a dynamic CSRF token,
-then uses that token in a POST request to the endpoint.
+It first fetches the room page to establish a session, obtain a dynamic CSRF token,
+and then uses that token in a POST request to the endpoint.
+
+Note: If running on environments with known IP restrictions (e.g., AWS EC2),
+you may need to use a proxy or adjust headers to mimic a real browser.
 """
 
 import sys
@@ -41,9 +44,50 @@ def extract_room_slug(url: str) -> str:
     return path_parts[0]
 
 
+def fetch_room_page(session: requests.Session, room_url: str) -> requests.Response:
+    """
+    Attempts to GET the room page using primary headers. If it fails with 403,
+    it retries using a fallback header set to mimic a different browser.
+    
+    Args:
+        session (requests.Session): The session object.
+        room_url (str): The URL of the room.
+        
+    Returns:
+        requests.Response: The response object.
+    
+    Raises:
+        Exception: If both attempts fail.
+    """
+    try:
+        logging.info(f"Fetching room page with primary headers: {room_url}")
+        response = session.get(room_url)
+        response.raise_for_status()
+        return response
+    except RequestException as e:
+        logging.warning(f"Primary GET failed: {e}. Trying fallback headers.")
+        # Fallback headers to mimic a different browser environment
+        fallback_headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                          'AppleWebKit/537.36 (KHTML, like Gecko) '
+                          'Chrome/112.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1'
+        }
+        try:
+            response = session.get(room_url, headers=fallback_headers)
+            response.raise_for_status()
+            return response
+        except RequestException as e2:
+            logging.error(f"Fallback GET request failed: {e2}")
+            raise Exception("Failed to fetch room page with both primary and fallback headers.")
+
+
 def get_csrf_token(session: requests.Session, room_url: str) -> str:
     """
-    Fetch the room page to allow the session to capture cookies and extract the CSRF token.
+    Fetches the room page to allow the session to capture cookies and extract the CSRF token.
     
     Args:
         session (requests.Session): The session object.
@@ -55,21 +99,15 @@ def get_csrf_token(session: requests.Session, room_url: str) -> str:
     Raises:
         Exception: If the token cannot be found.
     """
-    try:
-        logging.info(f"Fetching room page: {room_url}")
-        response = session.get(room_url)
-        response.raise_for_status()
-    except RequestException as e:
-        logging.error(f"Failed to GET room page: {e}")
-        raise Exception("Failed to fetch room page.")
-
-    # Attempt to get CSRF token from cookies first
+    response = fetch_room_page(session, room_url)
+    
+    # Try to obtain CSRF token from cookies first
     csrf_token = session.cookies.get('csrftoken')
     if csrf_token:
         logging.info("CSRF token found in cookies.")
         return csrf_token
 
-    # If not in cookies, attempt to parse from HTML (e.g., in a meta tag or hidden input)
+    # Parse HTML for CSRF token (commonly in a hidden input field)
     soup = BeautifulSoup(response.text, 'html.parser')
     token_input = soup.find('input', attrs={'name': 'csrfmiddlewaretoken'})
     if token_input and token_input.has_attr('value'):
@@ -77,7 +115,7 @@ def get_csrf_token(session: requests.Session, room_url: str) -> str:
         logging.info("CSRF token extracted from HTML input.")
         return csrf_token
 
-    # Fallback: search for meta tag
+    # Fallback: search for a meta tag
     meta_token = soup.find('meta', attrs={'name': 'csrf-token'})
     if meta_token and meta_token.has_attr('content'):
         csrf_token = meta_token['content']
@@ -103,7 +141,7 @@ def get_hls_url(session: requests.Session, room_slug: str, csrf_token: str) -> d
     """
     post_url = 'https://chaturbate.com/get_edge_hls_url_ajax/'
 
-    # Dynamic headers; note that cookies are handled by the session.
+    # Dynamic headers; cookies are managed by the session.
     headers = {
         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0',
         'Accept': '*/*',
@@ -120,10 +158,8 @@ def get_hls_url(session: requests.Session, room_slug: str, csrf_token: str) -> d
         'Connection': 'keep-alive'
     }
 
-    # Define boundary string (without prefixed dashes).
     boundary = "----geckoformboundary6a610b256c356f4fb7599aaf07b1de15"
     
-    # Construct the multipart/form-data payload dynamically using the room slug and CSRF token.
     payload = (
         f'--{boundary}\r\n'
         'Content-Disposition: form-data; name="room_slug"\r\n\r\n'
@@ -175,7 +211,7 @@ def main():
         logging.error(f"Error extracting room slug: {e}")
         sys.exit(1)
 
-    # Use a session to maintain cookies and headers across requests.
+    # Use a session to maintain cookies and headers.
     session = requests.Session()
 
     try:
