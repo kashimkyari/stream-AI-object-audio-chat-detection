@@ -7,15 +7,22 @@ Usage:
 
 This script sends a POST request to Chaturbate's endpoint to retrieve the HLS URL
 for a given room using free proxies to mask the source IP.
+
+Note: Due to issues with free proxies and SSL verification errors, SSL certificate
+verification is disabled for requests. This is not recommended for production use.
 """
 
 import sys
 import logging
-import requests
 import random
 import time
+import requests
+import urllib3
 from requests.exceptions import RequestException
 from urllib.parse import urlparse
+
+# Disable insecure request warnings due to disabled SSL certificate verification.
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -241,7 +248,8 @@ def get_hls_url(room_slug: str, max_attempts: int = 5) -> dict:
                 headers=headers,
                 data=payload.encode('utf-8'),
                 proxies=proxy_dict,
-                timeout=10  # Timeout in seconds for the request.
+                timeout=10,  # Timeout in seconds for the request.
+                verify=False  # Disable SSL certificate verification due to proxy issues.
             )
             response.raise_for_status()  # Raise an error for bad status codes.
             logging.info("Request successful.")
