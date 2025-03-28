@@ -938,13 +938,3 @@ def forward_notification(notification_id):
     return jsonify({"message": "Notification forwarded"}), 200
 
 
-@app.route("/api/active-streams", methods=["GET"])
-@login_required(role="admin")
-def get_active_streams():
-    try:
-        # Retrieve all streams; adjust filtering here if you want to restrict to only "active" ones.
-        streams = Stream.query.all()
-        return jsonify([stream.serialize() for stream in streams]), 200
-    except Exception as e:
-        app.logger.error("Error fetching active streams: %s", e)
-        return jsonify({"message": "Error fetching active streams", "error": str(e)}), 500

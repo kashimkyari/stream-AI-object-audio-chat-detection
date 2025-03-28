@@ -19,7 +19,7 @@ from io import BytesIO
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from scipy import signal
-from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer  # For sentiment analysis
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer  # Added for sentiment analysis
 
 from config import app
 from models import FlaggedObject, Log, ChatKeyword, DetectionLog, Stream, ChaturbateStream, StripchatStream, TelegramRecipient
@@ -34,17 +34,9 @@ _yolo_lock = threading.Lock()
 stream_info = {}
 last_video_alerted_objects = {}  # Key: stream_url, Value: set of detected object classes
 
-# Global for audio alert deduplication with cooldown period.
+# New global for audio alert deduplication with cooldown period.
 last_audio_alerted_transcript = {}  # Key: stream_url, Value: (transcript, timestamp)
 ALERT_COOLDOWN_SECONDS = 60  # Cooldown period in seconds for audio alerts
-
-# --- Detection Thread Management ---
-# Maintain detection threads and their cancel events per stream URL.
-detection_threads = {}   # key: stream_url, value: threading.Thread
-cancel_events = {}       # key: stream_url, value: threading.Event
-
-# Global to track the last app activity
-last_activity_time = datetime.utcnow()
 
 def extract_stream_info_from_db(stream_url):
     with app.app_context():
@@ -308,7 +300,7 @@ def process_combined_detection(stream_url, cancel_event):
         audio_buffer = b""
 
         try:
-            whisper_model = load_model("large-v3")
+            whisper_model = load_model("medium.en")
             logging.info("Whisper model loaded for combined detection.")
         except Exception as e:
             logging.error("Error loading Whisper model: %s", e)
@@ -355,9 +347,9 @@ def process_combined_detection(stream_url, cancel_event):
                                     # Pad or trim to exact 5 seconds
                                     audio_input = whisper.pad_or_trim(audio_float)
                                     # Improved Whisper decoding config:
-                                    # Using beam search with a beam size of 5 and a fixed temperature for deterministic transcription.
+                                    # Using beam search with best_of sampling and a fixed temperature to enhance transcription quality.
                                     mel = whisper.log_mel_spectrogram(audio_input, n_mels=128).to(whisper_model.device)
-                                    options = whisper.DecodingOptions(fp16=False, language="en", beam_size=5, temperature=0.0)
+                                    options = whisper.DecodingOptions(fp16=False, language="en", beam_size=5, best_of=5, temperature=0.0)
                                     result = whisper.decode(whisper_model, mel, options)
                                     text = result.text.strip().lower()
                                     logging.info("Combined audio transcription: '%s'", text)
@@ -397,7 +389,7 @@ def process_combined_detection(stream_url, cancel_event):
                                                     details={
                                                         'keywords': detected,
                                                         'transcript': text,
-                                                        'sentiment': sentiment,
+                                                        'sentiment': sentiment,  # Sentiment analysis result included.
                                                         'platform': platform_name,
                                                         'streamer_name': streamer_name,
                                                         'timestamp': datetime.utcnow().isoformat()
@@ -556,84 +548,14 @@ def chat_detection_loop(stream_url, cancel_event, interval=60):
         detect_chat_stream(stream_url, cancel_event)
         time.sleep(interval)
 
-# --- Auto-Run and Inactivity Monitor Functions ---
-
-def update_activity():
-    """
-    Update the global last_activity_time to the current time.
-    """
-    global last_activity_time
-    last_activity_time = datetime.utcnow()
-
-def get_active_stream_urls():
-    """
-    Retrieve all active stream URLs from the database/API.
-    """
-    with app.app_context():
-        streams = Stream.query.all()
-        return [stream.room_url for stream in streams]
-
-def start_detection_for_streams():
-    """
-    Start a detection thread for each active stream URL from the database.
-    """
-    global detection_threads, cancel_events
-    active_urls = get_active_stream_urls()
-    for url in active_urls:
-        if url not in detection_threads or not detection_threads[url].is_alive():
-            cancel_event = threading.Event()
-            thread = threading.Thread(target=process_combined_detection, args=(url, cancel_event))
-            thread.daemon = True
-            detection_threads[url] = thread
-            cancel_events[url] = cancel_event
-            thread.start()
-            logging.info("Started detection thread for stream: %s", url)
-
-def stop_all_detections():
-    """
-    Signal all detection threads to stop.
-    """
-    global cancel_events
-    for url, event in cancel_events.items():
-        if not event.is_set():
-            event.set()
-            logging.info("Detection stopped for stream: %s", url)
-
-def monitor_inactivity():
-    """
-    Monitor app activity and stop all detection if no activity is detected for 5 minutes.
-    Restart detection if activity resumes.
-    """
-    while True:
-        time.sleep(30)  # Check every 30 seconds
-        if (datetime.utcnow() - last_activity_time) > timedelta(minutes=5):
-            stop_all_detections()
-            logging.info("No activity detected for 5 minutes. All detections stopped.")
-        else:
-            # Restart detection if not running
-            start_detection_for_streams()
-
-# --- Flask App Hooks to Auto-Run and Update Activity ---
-
-def start_detection_on_dashboard_load():
-    """
-    On the first startup, start detection for all active streams and the inactivity monitor.
-    """
-    start_detection_for_streams()
-    threading.Thread(target=monitor_inactivity, daemon=True).start()
-    logging.info("Inactivity monitor started.")
-
-# Conditionally register the startup hook.
-# if hasattr(app, 'before_serving'):
-#     app.before_serving(start_detection_on_dashboard_load)
-# else:
-#     app.before_first_request(start_detection_on_dashboard_load)
-
-
-
-def update_last_activity():
-    """
-    Update the last activity timestamp on every request.
-    """
-    update_activity()
-# app.before_request(update_last_activity)
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv) < 2:
+        print("Usage: python detection.py <stream_url>")
+        sys.exit(1)
+    
+    stream_url = sys.argv[1]
+    cancel_event = threading.Event()
+    logging.basicConfig(level=logging.INFO)
+    
+    process_combined_detection(stream_url, cancel_event)
