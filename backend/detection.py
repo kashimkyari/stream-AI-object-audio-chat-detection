@@ -33,6 +33,7 @@ _yolo_lock = threading.Lock()
 stream_info = {}
 last_video_alerted_objects = {}  # Key: stream_url, Value: set of detected object classes
 
+
 def extract_stream_info_from_db(stream_url):
     with app.app_context():
         chaturbate_stream = ChaturbateStream.query.filter_by(chaturbate_m3u8_url=stream_url).first()
@@ -254,136 +255,140 @@ def update_latest_visual_log_with_audio(stream_url, transcript, detected_keyword
             return True
     return False
 
-def process_combined_detection(stream_url, cancel_event):
-    """
-    Use a single PyAV container to process both video and audio detection.
-    Video frames are processed immediately for object detection.
-    Audio packets are accumulated in a buffer and processed in 5-second chunks for faster transcription.
-    If the connection is lost or an error occurs during packet pull/decoding, attempt to reconnect.
-    """
-    platform_name, streamer_name = extract_stream_info_from_db(stream_url)
-    if not platform_name or not streamer_name:
-        logging.error("Stream %s not found. Aborting combined detection.", stream_url)
-        return
-
-    while not cancel_event.is_set():
-        if not check_stream_online(stream_url):
-            logging.error("Stream %s appears offline. Aborting combined detection.", stream_url)
+    def process_combined_detection(stream_url, cancel_event):
+        """
+        Use a single PyAV container to process both video and audio detection.
+        Video frames are processed immediately for object detection.
+        Audio packets are accumulated in a buffer and processed in 5-second chunks for faster transcription.
+        If the connection is lost or an error occurs during packet pull/decoding, attempt to reconnect.
+        """
+        platform_name, streamer_name = extract_stream_info_from_db(stream_url)
+        if not platform_name or not streamer_name:
+            logging.error("Stream %s not found. Aborting combined detection.", stream_url)
             return
 
-        try:
-            container = av.open(stream_url)
-            logging.info("Connected to stream %s", stream_url)
-        except Exception as e:
-            logging.error("Failed to open stream %s: %s", stream_url, e)
-            time.sleep(5)
-            continue
+        while not cancel_event.is_set():
+            if not check_stream_online(stream_url):
+                logging.error("Stream %s appears offline. Aborting combined detection.", stream_url)
+                return
 
-        video_stream = next((s for s in container.streams if s.type == 'video'), None)
-        audio_stream = next((s for s in container.streams if s.type == 'audio'), None)
+            try:
+                container = av.open(stream_url)
+                logging.info("Connected to stream %s", stream_url)
+            except Exception as e:
+                logging.error("Failed to open stream %s: %s", stream_url, e)
+                time.sleep(5)
+                continue
 
-        if not video_stream:
-            logging.error("No video stream in %s", stream_url)
-            container.close()
-            return
+            video_stream = next((s for s in container.streams if s.type == 'video'), None)
+            audio_stream = next((s for s in container.streams if s.type == 'audio'), None)
 
-        logging.info("Combined detection started for %s", stream_url)
-        required_audio_bytes = 16000 * 2 * 5  # 5 seconds of audio (mono, 16-bit, 16kHz)
-        audio_buffer = b""
+            if not video_stream:
+                logging.error("No video stream in %s", stream_url)
+                container.close()
+                return
 
-        try:
-            whisper_model = load_model("large-v3")
-            logging.info("Whisper model loaded for combined detection.")
-        except Exception as e:
-            logging.error("Error loading Whisper model: %s", e)
-            whisper_model = None
+            logging.info("Combined detection started for %s", stream_url)
+            required_audio_bytes = 16000 * 2 * 5  # 5 seconds of audio (mono, 16-bit, 16kHz)
+            audio_buffer = b""
 
-        try:
-            for packet in container.demux(video_stream, audio_stream):
-                if cancel_event.is_set():
-                    logging.info("Combined detection stopped for %s", stream_url)
-                    break
-                try:
-                    for frame in packet.decode():
-                        if cancel_event.is_set():
-                            logging.info("Combined detection stopped for %s", stream_url)
-                            break
-                        if frame.__class__.__name__ == "VideoFrame":
-                            img = frame.to_ndarray(format='bgr24')
-                            detections = detect_frame_yolov8(img)
-                            if detections:
-                                annotated = annotate_frame(img, detections)
-                                log_detection(detections, stream_url, annotated, platform_name, streamer_name)
-                        elif frame.__class__.__name__ == "AudioFrame" and whisper_model is not None:
-                            try:
-                                audio_data = frame.to_ndarray().tobytes()
-                                audio_buffer += audio_data
-                            except Exception as e:
-                                logging.error("Error converting audio frame: %s", e)
-                                continue
+            try:
+                whisper_model = load_model("large-v3")
+                logging.info("Whisper model loaded for combined detection.")
+            except Exception as e:
+                logging.error("Error loading Whisper model: %s", e)
+                whisper_model = None
 
-                            if len(audio_buffer) >= required_audio_bytes:
+            try:
+                for packet in container.demux(video_stream, audio_stream):
+                    if cancel_event.is_set():
+                        logging.info("Combined detection stopped for %s", stream_url)
+                        break
+                    try:
+                        for frame in packet.decode():
+                            if cancel_event.is_set():
+                                logging.info("Combined detection stopped for %s", stream_url)
+                                break
+                            if frame.__class__.__name__ == "VideoFrame":
+                                img = frame.to_ndarray(format='bgr24')
+                                detections = detect_frame_yolov8(img)
+                                if detections:
+                                    annotated = annotate_frame(img, detections)
+                                    log_detection(detections, stream_url, annotated, platform_name, streamer_name)
+                            elif frame.__class__.__name__ == "AudioFrame" and whisper_model is not None:
                                 try:
-                                    # Convert audio to float32 and normalize
-                                    audio_int16 = np.frombuffer(audio_buffer, dtype=np.int16)
-                                    audio_float = audio_int16.astype(np.float32) / 32768.0
-
-                                    # Resample to 16kHz if needed
-                                    if audio_float.shape[0] != 16000 * 5:
-                                        audio_float = signal.resample(audio_float, 16000 * 5)
-
-                                    # Ensure mono channel
-                                    if len(audio_float.shape) > 1:
-                                        audio_float = audio_float.mean(axis=1)
-
-                                    # Pad or trim to exact 5 seconds
-                                    audio_input = whisper.pad_or_trim(audio_float)
-                                    # Critical Change: Specify n_mels=128 to match model expectation.
-                                    mel = whisper.log_mel_spectrogram(audio_input, n_mels=128).to(whisper_model.device)
-                                    options = whisper.DecodingOptions(fp16=False)
-                                    result = whisper.decode(whisper_model, mel, options)
-                                    text = result.text.strip().lower()
-                                    logging.info("Combined audio transcription: '%s'", text)
-                                    if text:
-                                        with app.app_context():
-                                            keywords = [kw.keyword.lower() for kw in ChatKeyword.query.all()]
-                                        detected = [kw for kw in keywords if kw in text]
-                                        if detected:
-                                            logging.info("Combined flagged audio keywords detected: %s", detected)
-                                            # If there's a recent visual detection, update it with audio info.
-                                            if not update_latest_visual_log_with_audio(stream_url, text, detected):
-                                                with app.app_context():
-                                                    # Log the audio detection in DetectionLog so it shows up in notifications.
-                                                    log_entry = DetectionLog(
-                                                        room_url=stream_url,
-                                                        event_type='audio_detection',
-                                                        details={
-                                                            'keywords': detected,
-                                                            'transcript': text,
-                                                            'platform': platform_name,
-                                                            'streamer_name': streamer_name,
-                                                            'timestamp': datetime.utcnow().isoformat()
-                                                        },
-                                                        read=False
-                                                    )
-                                                    db.session.add(log_entry)
-                                                    db.session.commit()
-                                                    threading.Thread(target=async_send_notifications, args=(log_entry.id, platform_name, streamer_name)).start()
+                                    audio_data = frame.to_ndarray().tobytes()
+                                    audio_buffer += audio_data
                                 except Exception as e:
-                                    logging.error("Combined Whisper transcription error: %s", e)
-                                audio_buffer = b""
-                except Exception as e:
-                    logging.error("Error decoding packet: %s", e)
+                                    logging.error("Error converting audio frame: %s", e)
+                                    continue
+
+                                if len(audio_buffer) >= required_audio_bytes:
+                                    try:
+                                        # Convert audio to float32 and normalize
+                                        audio_int16 = np.frombuffer(audio_buffer, dtype=np.int16)
+                                        audio_float = audio_int16.astype(np.float32) / 32768.0
+
+                                        # Resample to 16kHz if needed
+                                        if audio_float.shape[0] != 16000 * 5:
+                                            audio_float = signal.resample(audio_float, 16000 * 5)
+
+                                        # Ensure mono channel
+                                        if len(audio_float.shape) > 1:
+                                            audio_float = audio_float.mean(axis=1)
+
+                                        # Pad or trim to exact 5 seconds
+                                        audio_input = whisper.pad_or_trim(audio_float)
+                                        # Critical Change: Specify n_mels=128 to match model expectation.
+                                        mel = whisper.log_mel_spectrogram(audio_input, n_mels=128).to(whisper_model.device)
+                                        # NEW: Add language detection to focus on English
+                                        options = whisper.DecodingOptions(
+                                            language='en',  # Force English language detection
+                                            fp16=False
+                                        )
+                                        result = whisper.decode(whisper_model, mel, options)
+                                        text = result.text.strip().lower()
+                                        logging.info("Combined audio transcription: '%s'", text)
+                                        if text:
+                                            with app.app_context():
+                                                keywords = [kw.keyword.lower() for kw in ChatKeyword.query.all()]
+                                            detected = [kw for kw in keywords if kw in text]
+                                            if detected:
+                                                logging.info("Combined flagged audio keywords detected: %s", detected)
+                                                # If there's a recent visual detection, update it with audio info.
+                                                if not update_latest_visual_log_with_audio(stream_url, text, detected):
+                                                    with app.app_context():
+                                                        # Log the audio detection in DetectionLog so it shows up in notifications.
+                                                        log_entry = DetectionLog(
+                                                            room_url=stream_url,
+                                                            event_type='audio_detection',
+                                                            details={
+                                                                'keywords': detected,
+                                                                'transcript': text,
+                                                                'platform': platform_name,
+                                                                'streamer_name': streamer_name,
+                                                                'timestamp': datetime.utcnow().isoformat()
+                                                            },
+                                                            read=False
+                                                        )
+                                                        db.session.add(log_entry)
+                                                        db.session.commit()
+                                                        threading.Thread(target=async_send_notifications, args=(log_entry.id, platform_name, streamer_name)).start()
+                                    except Exception as e:
+                                        logging.error("Combined Whisper transcription error: %s", e)
+                                    audio_buffer = b""
+                    except Exception as e:
+                        logging.error("Error decoding packet: %s", e)
+                        break
+            except Exception as e:
+                logging.error("Error during demuxing: %s", e)
+            finally:
+                container.close()
+                logging.info("Container closed for %s", stream_url)
+                if cancel_event.is_set():
                     break
-        except Exception as e:
-            logging.error("Error during demuxing: %s", e)
-        finally:
-            container.close()
-            logging.info("Container closed for %s", stream_url)
-            if cancel_event.is_set():
-                break
-            time.sleep(5)
-    logging.info("Combined detection ended for %s", stream_url)
+                time.sleep(5)
+        logging.info("Combined detection ended for %s", stream_url)
 
 def check_stream_online(m3u8_url, timeout=10):
     try:
