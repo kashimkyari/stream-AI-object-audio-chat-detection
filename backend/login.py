@@ -3,7 +3,9 @@
 This script logs in to Chaturbate using provided credentials,
 navigates to a specified room page, and then uses Seleniumwire to capture
 network traffic to extract any URLs containing ".m3u8".
-
+The monkey patch for blinker._saferef is included to address compatibility issues,
+which can help beat certain Cloudflare challenges.
+ 
 Requirements:
 - selenium
 - selenium-wire
@@ -16,6 +18,7 @@ import re
 import tempfile
 import sys
 import types
+
 # --- Monkey Patch for blinker._saferef ---
 if 'blinker._saferef' not in sys.modules:
     saferef = types.ModuleType('blinker._saferef')
@@ -50,11 +53,12 @@ ROOM_URL = "https://chaturbate.com/cassies1/"  # Update this to the desired room
 
 # Provided login credentials (update if needed)
 USERNAME = "journalistafraid"
-PASSWORD = '4adPwNBq,g\"}+x3'  # note: ensure proper escaping if needed
+PASSWORD = '4adPwNBq,g\"}+x3'  # Ensure proper escaping if needed
 
 def init_driver():
     """
     Initialize a headless Seleniumwire Chrome driver with a temporary user data directory.
+    
     Returns:
         driver: Seleniumwire webdriver instance.
     """
@@ -63,7 +67,7 @@ def init_driver():
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--ignore-certificate-errors")
-    # Create a temporary directory for user data
+    # Create a temporary directory for user data to mimic a real profile
     unique_user_data_dir = tempfile.mkdtemp()
     chrome_options.add_argument(f"--user-data-dir={unique_user_data_dir}")
     driver = webdriver.Chrome(options=chrome_options)
@@ -77,6 +81,9 @@ def login_chaturbate(driver, username, password):
         driver: Selenium webdriver instance.
         username (str): Username for login.
         password (str): Password for login.
+        
+    Returns:
+        bool: True if login succeeded, False otherwise.
     """
     logging.info("Navigating to login page: %s", LOGIN_URL)
     driver.get(LOGIN_URL)
@@ -99,7 +106,6 @@ def login_chaturbate(driver, username, password):
     password_input.clear()
     password_input.send_keys(password)
     
-    # Note: The CSRF token is usually automatically set in a hidden input.
     # Locate and click the submit button. Adjust the selector if needed.
     try:
         submit_button = driver.find_element(By.XPATH, "//button[@type='submit']")
@@ -108,7 +114,7 @@ def login_chaturbate(driver, username, password):
         logging.error("Failed to locate or click the login button: %s", e)
         return False
 
-    # Wait for the login to process. One strategy is to wait for the URL to change.
+    # Wait for the login to process by waiting for the URL to change.
     try:
         WebDriverWait(driver, 15).until(
             EC.url_changes(LOGIN_URL)
