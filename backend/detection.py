@@ -19,6 +19,7 @@ from io import BytesIO
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from scipy import signal
+import torch  # Added for mel spectrogram interpolation
 
 from config import app
 from models import FlaggedObject, Log, ChatKeyword, DetectionLog, Stream, ChaturbateStream, StripchatStream, TelegramRecipient
@@ -37,7 +38,7 @@ last_video_alerted_objects = {}  # Key: stream_url, Value: set of detected objec
 last_audio_detection_time = {}  # Key: stream_url, Value: datetime
 
 # --- Configuration for audio processing ---
-TARGET_AUDIO_SECONDS = 10  # Change to 30 for 30-second chunks if desired.
+TARGET_AUDIO_SECONDS = 10  # You can change this to 30 if desired.
 SAMPLE_RATE = 16000
 EXPECTED_AUDIO_LENGTH = SAMPLE_RATE * TARGET_AUDIO_SECONDS
 required_audio_bytes = EXPECTED_AUDIO_LENGTH * 2  # 16-bit audio
@@ -296,7 +297,7 @@ def process_combined_detection(stream_url, cancel_event):
             return
 
         logging.info("Combined detection started for %s", stream_url)
-        # For audio, we now require a chunk corresponding to TARGET_AUDIO_SECONDS seconds.
+        # For audio, we now collect a chunk corresponding to TARGET_AUDIO_SECONDS seconds.
         audio_buffer = b""
 
         try:
@@ -350,6 +351,9 @@ def process_combined_detection(stream_url, cancel_event):
 
                                     # Compute mel spectrogram with 128 mels.
                                     mel = whisper.log_mel_spectrogram(audio_float, n_mels=128).to(whisper_model.device)
+                                    # If the mel spectrogram still has 80 channels, upscale to 128.
+                                    if mel.shape[1] == 80:
+                                        mel = torch.nn.functional.interpolate(mel, size=(128, mel.shape[2]), mode='bilinear', align_corners=False)
                                     # Force English transcription.
                                     options = whisper.DecodingOptions(fp16=False, language="en")
                                     result = whisper.decode(whisper_model, mel, options)
