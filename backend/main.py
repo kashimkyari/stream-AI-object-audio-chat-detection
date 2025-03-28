@@ -106,8 +106,8 @@ if __name__ == "__main__":
     # Optional SSL configuration:
     # If environment variables SSL_CERT_PATH and SSL_KEY_PATH are set,
     # Flask will run with HTTPS.
-    ssl_cert = "/home/ec2-user/certs/fullchain.pem"
-    ssl_key = "/home/ec2-user/certs/privkey.pem"
+    ssl_cert = "/home/ec2-user/certs/fullchain2.pem"
+    ssl_key = "/home/ec2-user/certs/privkey2.pem"
     ssl_context = (ssl_cert, ssl_key) if ssl_cert and ssl_key else None
     if ssl_context:
         logger.info("Starting app with SSL context.")
