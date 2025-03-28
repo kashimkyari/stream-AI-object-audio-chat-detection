@@ -290,7 +290,13 @@ def process_combined_detection(stream_url, cancel_event):
         logging.info("Faster Whisper model loaded for combined detection.")
     except Exception as e:
         logging.error("Error loading faster-whisper model: %s", e)
-        faster_whisper_model = None
+        logging.info("Falling back to CPU mode for faster-whisper model.")
+        try:
+            faster_whisper_model = FasterWhisperModel("large-v2", device="cpu", compute_type="int8")
+            logging.info("Faster Whisper model loaded in CPU mode for combined detection.")
+        except Exception as e2:
+            logging.error("Error loading faster-whisper model in CPU mode: %s", e2)
+            faster_whisper_model = None
 
     while not cancel_event.is_set():
         if not check_stream_online(stream_url):
