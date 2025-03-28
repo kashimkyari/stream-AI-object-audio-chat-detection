@@ -5,9 +5,14 @@ capture network traffic, and extract any URLs that contain ".m3u8".
 It prints the first found m3u8 URL (if any) from the intercepted network requests.
 """
 
-import logging
-import time
 import sys
+import types
+import tempfile  # For generating unique user-data directories
+import os
+import re
+import logging
+import uuid
+import time
 # --- Monkey Patch for blinker._saferef ---
 if 'blinker._saferef' not in sys.modules:
     saferef = types.ModuleType('blinker._saferef')
