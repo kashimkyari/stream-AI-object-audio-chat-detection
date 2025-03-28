@@ -615,18 +615,23 @@ def monitor_inactivity():
 
 # --- Flask App Hooks to Auto-Run and Update Activity ---
 
-@app.before_first_request
 def start_detection_on_dashboard_load():
     """
-    On the first dashboard load, start detection for all active streams and the inactivity monitor.
+    On the first dashboard load, start detection for all active streams
+    and the inactivity monitor.
     """
     start_detection_for_streams()
     threading.Thread(target=monitor_inactivity, daemon=True).start()
     logging.info("Inactivity monitor started.")
 
-@app.before_request
+# Register the function using the app.before_first_request() method.
+app.before_first_request(start_detection_on_dashboard_load)
+
+
+
 def update_last_activity():
     """
     Update the last activity timestamp on every request.
     """
     update_activity()
+app.before_request(update_last_activity)
