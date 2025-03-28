@@ -6,7 +6,7 @@ Usage:
     python chaturbate_scraper_selenium.py https://chaturbate.com/roomslug/
 
 This script uses undetected-chromedriver (Selenium) to bypass Cloudflare's JS challenge.
-It loads the room page, extracts necessary cookies and CSRF token,
+It loads the room page, waits until the challenge is solved, extracts necessary cookies and the CSRF token,
 and then uses a requests session to send the POST request to obtain the HLS URL.
 """
 
@@ -21,6 +21,8 @@ from bs4 import BeautifulSoup  # pip install beautifulsoup4
 # Import undetected_chromedriver (pip install undetected-chromedriver)
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -49,6 +51,7 @@ def extract_room_slug(url: str) -> str:
 def get_page_with_selenium(room_url: str) -> (str, dict):
     """
     Uses undetected-chromedriver to load the page and bypass Cloudflare's challenge.
+    Waits until the page title no longer contains "Just a moment" and the document is fully loaded.
     
     Args:
         room_url (str): The URL of the room.
@@ -62,7 +65,6 @@ def get_page_with_selenium(room_url: str) -> (str, dict):
     logging.info(f"Launching headless browser for {room_url}")
     options = uc.ChromeOptions()
     options.headless = True
-    # Options to help mimic a real browser:
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     
@@ -70,12 +72,16 @@ def get_page_with_selenium(room_url: str) -> (str, dict):
     
     try:
         driver.get(room_url)
-        # Wait for Cloudflare challenge to complete and the page to load.
-        time.sleep(10)  # Adjust if needed (challenge page may take a few seconds)
+        # Wait up to 30 seconds for the challenge to be solved and the actual page to load.
+        wait = WebDriverWait(driver, 30)
+        wait.until(lambda d: d.execute_script("return document.readyState") == "complete")
+        wait.until(lambda d: "Just a moment" not in d.title)
+        # Optionally, wait for a known element from the real room page.
+        # For instance, if the room page always has a specific element:
+        # wait.until(EC.presence_of_element_located((By.ID, "room_video_container")))
         
-        # Optionally, check for an element that confirms the page is fully loaded.
-        # For example, wait until the body tag is present:
-        driver.find_element(By.TAG_NAME, "body")
+        # Extra wait to ensure all dynamic content loads.
+        time.sleep(5)
         
         html = driver.page_source
         # Get cookies from Selenium and convert them into a dict for requests.
@@ -114,6 +120,7 @@ def get_csrf_token_from_html(html: str) -> str:
         logging.info("CSRF token extracted from meta tag.")
         return csrf_token
 
+    logging.error("CSRF token not found in page HTML.")
     raise Exception("CSRF token not found in page HTML.")
 
 
