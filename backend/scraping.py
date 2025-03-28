@@ -158,16 +158,16 @@ def scrape_chaturbate_data(url, progress_callback=None):
             "Referer": f"https://chaturbate.com/{room_slug}/",
             "X-Requested-With": "XMLHttpRequest",
             "Origin": "https://chaturbate.com",
-            "Cookie": 'stcki="Eg6Gdq=1\054kHDa2i=1"'  # Added custom cookie
+            
         }
         data = {
             "room_slug": room_slug,
             "jpeg": "1",
-            "csrfmiddlewaretoken": "vfO2sk8hUsSXVILMJwtcyGqhPy6WqwhH"
+            "csrfmiddlewaretoken": "aFzSCjt3Lhxt9YPOkZoFfOWAIoneAOL9"
         }
         cookies = {
-            "csrftoken": "vfO2sk8hUsSXVILMJwtcyGqhPy6WqwhH",
-            "stcki": '"Eg6Gdq=1,kHDa2i=1"'  # Added to session cookies
+            "csrftoken": "aFzSCjt3Lhxt9YPOkZoFfOWAIoneAOL9",
+            
         }
         import requests
         session = requests.Session()
