@@ -33,6 +33,9 @@ _yolo_lock = threading.Lock()
 stream_info = {}
 last_video_alerted_objects = {}  # Key: stream_url, Value: set of detected object classes
 
+# New dictionary to track last audio detection alert time per stream
+last_audio_detection_time = {}  # Key: stream_url, Value: datetime
+
 def extract_stream_info_from_db(stream_url):
     with app.app_context():
         chaturbate_stream = ChaturbateStream.query.filter_by(chaturbate_m3u8_url=stream_url).first()
@@ -332,43 +335,46 @@ def process_combined_detection(stream_url, cancel_event):
                                     if audio_float.shape[0] != 16000 * 5:
                                         audio_float = signal.resample(audio_float, 16000 * 5)
 
-                                    # Ensure mono channel
-                                    if len(audio_float.shape) > 1:
-                                        audio_float = audio_float.mean(axis=1)
-
-                                    # Pad or trim to exact 5 seconds
-                                    audio_input = whisper.pad_or_trim(audio_float)
-                                    # Critical Change: Specify n_mels=128 to match model expectation.
-                                    mel = whisper.log_mel_spectrogram(audio_input, n_mels=128).to(whisper_model.device)
-                                    options = whisper.DecodingOptions(fp16=False)
+                                    # Use the raw audio chunk directly without padding or trimming.
+                                    mel = whisper.log_mel_spectrogram(audio_float, n_mels=128).to(whisper_model.device)
+                                    # Force English transcription.
+                                    options = whisper.DecodingOptions(fp16=False, language="en")
                                     result = whisper.decode(whisper_model, mel, options)
-                                    text = result.text.strip().lower()
-                                    logging.info("Combined audio transcription: '%s'", text)
+                                    text = result.text.strip()
                                     if text:
+                                        # Print realtime transcription to terminal.
+                                        print("Realtime transcription:", text)
+                                        # Check for flagged keywords.
                                         with app.app_context():
                                             keywords = [kw.keyword.lower() for kw in ChatKeyword.query.all()]
-                                        detected = [kw for kw in keywords if kw in text]
+                                        detected = [kw for kw in keywords if kw in text.lower()]
                                         if detected:
                                             logging.info("Combined flagged audio keywords detected: %s", detected)
-                                            # If there's a recent visual detection, update it with audio info.
-                                            if not update_latest_visual_log_with_audio(stream_url, text, detected):
-                                                with app.app_context():
-                                                    # Log the audio detection in DetectionLog so it shows up in notifications.
-                                                    log_entry = DetectionLog(
-                                                        room_url=stream_url,
-                                                        event_type='audio_detection',
-                                                        details={
-                                                            'keywords': detected,
-                                                            'transcript': text,
-                                                            'platform': platform_name,
-                                                            'streamer_name': streamer_name,
-                                                            'timestamp': datetime.utcnow().isoformat()
-                                                        },
-                                                        read=False
-                                                    )
-                                                    db.session.add(log_entry)
-                                                    db.session.commit()
-                                                    threading.Thread(target=async_send_notifications, args=(log_entry.id, platform_name, streamer_name)).start()
+                                            now = datetime.utcnow()
+                                            # Check if an audio alert was sent in the last 5 minutes.
+                                            last_alert = last_audio_detection_time.get(stream_url)
+                                            if last_alert and (now - last_alert) < timedelta(minutes=5):
+                                                logging.info("Skipping audio alert for %s to avoid spamming.", stream_url)
+                                            else:
+                                                last_audio_detection_time[stream_url] = now
+                                                # Update recent visual detection log if available; otherwise, log new audio detection.
+                                                if not update_latest_visual_log_with_audio(stream_url, text, detected):
+                                                    with app.app_context():
+                                                        log_entry = DetectionLog(
+                                                            room_url=stream_url,
+                                                            event_type='audio_detection',
+                                                            details={
+                                                                'keywords': detected,
+                                                                'transcript': text,
+                                                                'platform': platform_name,
+                                                                'streamer_name': streamer_name,
+                                                                'timestamp': now.isoformat()
+                                                            },
+                                                            read=False
+                                                        )
+                                                        db.session.add(log_entry)
+                                                        db.session.commit()
+                                                        threading.Thread(target=async_send_notifications, args=(log_entry.id, platform_name, streamer_name)).start()
                                 except Exception as e:
                                     logging.error("Combined Whisper transcription error: %s", e)
                                 audio_buffer = b""

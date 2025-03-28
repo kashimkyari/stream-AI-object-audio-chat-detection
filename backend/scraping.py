@@ -192,12 +192,12 @@ def scrape_chaturbate_data(url, progress_callback=None):
             progress_callback(20, "Attempting to find valid edge server")
         
         # Try edge servers 1-12
-        for edge_num in range(1, 13):
+        for edge_num in range(1, 24):
             try:
                 m3u8_url = url_template.format(edge_num=edge_num, room_slug=room_slug)
                 
                 # Quick validity check
-                response = requests.head(m3u8_url, timeout=5)
+                response = requests.head(m3u8_url, timeout=60)
                 if response.status_code == 200:
                     if progress_callback:
                         progress_callback(100, f"Found valid stream on edge{edge_num}")
