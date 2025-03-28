@@ -161,10 +161,8 @@ def extract_m3u8_urls(html_content):
 # --- Updated Chaturbate Scraping Function (No AJAX) ---
 def scrape_chaturbate_data(url, progress_callback=None):
     """
-    Scrape Chaturbate data by fetching the room URL's HTML and extracting the m3u8 URL.
-    
-    This function extracts the room slug from the provided URL, fetches the page's HTML content,
-    then looks for m3u8 URLs in the HTML source.
+    Scrape Chaturbate data by attempting to construct a valid livestream URL 
+    using multiple edge servers.
     
     Args:
         url (str): The full Chaturbate room URL (e.g., "https://chaturbate.com/bunnydollstella/").
@@ -181,38 +179,50 @@ def scrape_chaturbate_data(url, progress_callback=None):
         # Extract room slug from the URL
         room_slug = url.rstrip("/").split("/")[-1]
         
-        if progress_callback:
-            progress_callback(20, "Fetching page content")
-        # Fetch the page's HTML content
-        html_content = fetch_page_content(url)
+        # Template for Chaturbate livestream URL
+        url_template = (
+            "https://edge{edge_num}-sof.live.mmcdn.com/live-edge/"
+            "amlst:{room_slug}-sd-2c7654400be3ea198275ea9be7c29a7ed69b094af88455a15e4eda04d8fbc54c_trns_h264/playlist.m3u8"
+        )
+        
+        # Import requests to check URL validity
+        import requests
         
         if progress_callback:
-            progress_callback(50, "Extracting m3u8 URL from page")
-        # Extract m3u8 URLs from the HTML
-        urls = extract_m3u8_urls(html_content)
+            progress_callback(20, "Attempting to find valid edge server")
         
-        if not urls:
-            error_msg = "No m3u8 URL found in page content"
-            logging.error(error_msg)
-            if progress_callback:
-                progress_callback(100, f"Error: {error_msg}")
-            return None
+        # Try edge servers 1-12
+        for edge_num in range(1, 13):
+            try:
+                m3u8_url = url_template.format(edge_num=edge_num, room_slug=room_slug)
+                
+                # Quick validity check
+                response = requests.head(m3u8_url, timeout=5)
+                if response.status_code == 200:
+                    if progress_callback:
+                        progress_callback(100, f"Found valid stream on edge{edge_num}")
+                    return {
+                        "streamer_username": room_slug,
+                        "chaturbate_m3u8_url": m3u8_url,
+                    }
+            except Exception as e:
+                logging.debug(f"Edge{edge_num} failed: {e}")
+                continue
         
-        # Use the first found m3u8 URL
-        m3u8_url = urls[0]
+        # If no valid URL is found
+        error_msg = "No valid m3u8 URL found for any edge server"
+        logging.error(error_msg)
         if progress_callback:
-            progress_callback(100, "Scraping complete")
-        return {
-            "streamer_username": room_slug,
-            "chaturbate_m3u8_url": m3u8_url,
-        }
+            progress_callback(100, f"Error: {error_msg}")
+        return None
+    
     except Exception as e:
         logging.error("Error scraping Chaturbate URL %s: %s", url, e)
         if progress_callback:
             progress_callback(100, f"Error: {e}")
         return None
 
-# --- Existing Functions Remain Unchanged ---
+        # --- Existing Functions Remain Unchanged ---
 def fetch_m3u8_from_page(url, timeout=90):
     """Fetch the M3U8 URL from the given page using Selenium."""
     chrome_options = Options()
