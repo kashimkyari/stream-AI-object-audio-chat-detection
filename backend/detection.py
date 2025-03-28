@@ -346,9 +346,10 @@ def process_combined_detection(stream_url, cancel_event):
 
                                     # Pad or trim to exact 5 seconds
                                     audio_input = whisper.pad_or_trim(audio_float)
-                                    # Critical Change: Force English transcription via language parameter and specify n_mels=128.
+                                    # Improved Whisper decoding config:
+                                    # Using beam search with best_of sampling and a fixed temperature to enhance transcription quality.
                                     mel = whisper.log_mel_spectrogram(audio_input, n_mels=128).to(whisper_model.device)
-                                    options = whisper.DecodingOptions(fp16=False, language="en")
+                                    options = whisper.DecodingOptions(fp16=False, language="en", beam_size=5, best_of=5, temperature=0.0)
                                     result = whisper.decode(whisper_model, mel, options)
                                     text = result.text.strip().lower()
                                     logging.info("Combined audio transcription: '%s'", text)
