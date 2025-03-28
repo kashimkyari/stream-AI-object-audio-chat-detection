@@ -389,8 +389,7 @@ def fetch_chaturbate_chat_history(room_slug):
 def refresh_chaturbate_stream(room_slug):
     """
     Refresh the m3u8 URL for a Chaturbate stream based on the given room slug.
-    This function fetches the room page, extracts the m3u8 URL, and updates the corresponding
-    ChaturbateStream in the database.
+    This function attempts to find a valid m3u8 URL by rotating through edge servers.
     
     Args:
         room_slug (str): The room slug (streamer username).
@@ -398,31 +397,46 @@ def refresh_chaturbate_stream(room_slug):
     Returns:
         str or None: The new m3u8 URL if successful, or None if an error occurred.
     """
-    url = f"https://chaturbate.com/{room_slug}/"
+    # Template for Chaturbate livestream URL
+    url_template = (
+        "https://edge{edge_num}-sof.live.mmcdn.com/live-edge/"
+        "amlst:{room_slug}-sd-2c7654400be3ea198275ea9be7c29a7ed69b094af88455a15e4eda04d8fbc54c_trns_h264/playlist.m3u8"
+    )
+    
     try:
-        html_content = fetch_page_content(url)
+        import requests
+        
+        # Try edge servers 1-12
+        for edge_num in range(1, 50):
+            try:
+                new_url = url_template.format(edge_num=edge_num, room_slug=room_slug)
+                
+                # Quick validity check
+                response = requests.head(new_url, timeout=60)
+                if response.status_code == 200:
+                    # Update the corresponding ChaturbateStream in the database.
+                    stream = ChaturbateStream.query.filter_by(streamer_username=room_slug).first()
+                    if stream:
+                        stream.chaturbate_m3u8_url = new_url  # Replace the old URL with the new one.
+                        try:
+                            db.session.commit()
+                            logging.info("Updated stream '%s' with new m3u8 URL: %s", room_slug, new_url)
+                            return new_url
+                        except Exception as db_e:
+                            db.session.rollback()
+                            logging.error("Database commit failed: %s", db_e)
+                            return None
+                    else:
+                        logging.info("No existing stream found, but found valid URL: %s", new_url)
+                        return new_url
+            except Exception as e:
+                logging.debug(f"Edge{edge_num} failed for {room_slug}: {e}")
+                continue
+        
+        # If no valid URL is found
+        logging.error("No valid m3u8 URL found for room slug: %s", room_slug)
+        return None
+    
     except Exception as e:
-        logging.error("Error fetching page content for refresh: %s", e)
-        return None
-    
-    urls = extract_m3u8_urls(html_content)
-    if not urls:
-        logging.error("No m3u8 URL found during refresh")
-        return None
-    
-    new_url = urls[0]
-    # Update the corresponding ChaturbateStream in the database.
-    stream = ChaturbateStream.query.filter_by(streamer_username=room_slug).first()
-    if stream:
-        stream.chaturbate_m3u8_url = new_url  # Replace the old URL with the new one.
-        try:
-            db.session.commit()
-            logging.info("Updated stream '%s' with new m3u8 URL: %s", room_slug, new_url)
-        except Exception as db_e:
-            db.session.rollback()
-            logging.error("Database commit failed: %s", db_e)
-            return None
-        return new_url
-    else:
-        logging.error("No Chaturbate stream found for room slug: %s", room_slug)
+        logging.error("Error refreshing stream for room slug %s: %s", room_slug, e)
         return None
