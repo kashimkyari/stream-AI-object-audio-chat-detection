@@ -357,6 +357,11 @@ def process_combined_detection(stream_url, cancel_event):
                                                 logging.info("Skipping audio alert for %s to avoid spamming.", stream_url)
                                             else:
                                                 last_audio_detection_time[stream_url] = now
+                                                # Create a full sentence notification message.
+                                                notification_message = (
+                                                    f"Audio Alert: Detected flagged keyword(s) {', '.join(detected)} "
+                                                    f"in the transcription: \"{text}\"."
+                                                )
                                                 # Update recent visual detection log if available; otherwise, log new audio detection.
                                                 if not update_latest_visual_log_with_audio(stream_url, text, detected):
                                                     with app.app_context():
@@ -366,6 +371,7 @@ def process_combined_detection(stream_url, cancel_event):
                                                             details={
                                                                 'keywords': detected,
                                                                 'transcript': text,
+                                                                'notification_message': notification_message,
                                                                 'platform': platform_name,
                                                                 'streamer_name': streamer_name,
                                                                 'timestamp': now.isoformat()
