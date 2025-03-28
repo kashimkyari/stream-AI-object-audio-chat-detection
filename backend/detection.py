@@ -33,8 +33,10 @@ _yolo_lock = threading.Lock()
 stream_info = {}
 last_video_alerted_objects = {}  # Key: stream_url, Value: set of detected object classes
 
-# New dictionary to track last audio detection alert time per stream
+# Dictionary to track last audio detection alert time per stream
 last_audio_detection_time = {}  # Key: stream_url, Value: datetime
+
+EXPECTED_AUDIO_LENGTH = 16000 * 5  # 5 seconds at 16kHz
 
 def extract_stream_info_from_db(stream_url):
     with app.app_context():
@@ -291,7 +293,7 @@ def process_combined_detection(stream_url, cancel_event):
             return
 
         logging.info("Combined detection started for %s", stream_url)
-        required_audio_bytes = 16000 * 2 * 5  # 5 seconds of audio (mono, 16-bit, 16kHz)
+        required_audio_bytes = EXPECTED_AUDIO_LENGTH * 2  # 16-bit audio
         audio_buffer = b""
 
         try:
@@ -332,8 +334,15 @@ def process_combined_detection(stream_url, cancel_event):
                                     audio_float = audio_int16.astype(np.float32) / 32768.0
 
                                     # Resample to 16kHz if needed
-                                    if audio_float.shape[0] != 16000 * 5:
-                                        audio_float = signal.resample(audio_float, 16000 * 5)
+                                    if audio_float.shape[0] != EXPECTED_AUDIO_LENGTH:
+                                        audio_float = signal.resample(audio_float, EXPECTED_AUDIO_LENGTH)
+
+                                    # Verify correct audio length; if not, skip transcription.
+                                    if audio_float.shape[0] != EXPECTED_AUDIO_LENGTH:
+                                        logging.error("Audio chunk length is %d, expected %d. Skipping transcription.", 
+                                                      audio_float.shape[0], EXPECTED_AUDIO_LENGTH)
+                                        audio_buffer = b""
+                                        continue
 
                                     # Use the raw audio chunk directly without padding or trimming.
                                     mel = whisper.log_mel_spectrogram(audio_float, n_mels=128).to(whisper_model.device)
@@ -342,7 +351,6 @@ def process_combined_detection(stream_url, cancel_event):
                                     result = whisper.decode(whisper_model, mel, options)
                                     text = result.text.strip()
                                     if text:
-                                        # Print realtime transcription to terminal.
                                         print("Realtime transcription:", text)
                                         # Check for flagged keywords.
                                         with app.app_context():
