@@ -624,10 +624,10 @@ def start_detection_on_dashboard_load():
     logging.info("Inactivity monitor started.")
 
 # Conditionally register the startup hook.
-if hasattr(app, 'before_serving'):
-    app.before_serving(start_detection_on_dashboard_load)
-else:
-    app.before_first_request(start_detection_on_dashboard_load)
+# if hasattr(app, 'before_serving'):
+#     app.before_serving(start_detection_on_dashboard_load)
+# else:
+#     app.before_first_request(start_detection_on_dashboard_load)
 
 
 
@@ -636,4 +636,4 @@ def update_last_activity():
     Update the last activity timestamp on every request.
     """
     update_activity()
-app.before_request(update_last_activity)
+# app.before_request(update_last_activity)
