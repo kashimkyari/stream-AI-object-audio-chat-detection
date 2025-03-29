@@ -20,7 +20,7 @@ const MessageComponent = ({ user }) => {
   const configureSocket = useCallback(() => {
     if (!user) return;
 
-    const socketUrl = 'https://54.86.99.85:5000';
+    const socketUrl = 'http://localhost:5000';
     
     socketRef.current = io(socketUrl, {
       withCredentials: true,

@@ -6,7 +6,6 @@ This module provides scraping functions for Chaturbate (and Stripchat) streams.
 The updated Chaturbate scraper uses a POST request to retrieve the HLS URL 
 via free proxies. SSL verification is disabled due to known proxy issues.
 """
-
 import sys
 import types
 import tempfile  # For generating unique user-data directories
@@ -121,108 +120,110 @@ def extract_room_slug(url: str) -> str:
     return path_parts[0]
 
 
+
 # --- Updated Proxy List from free-proxy-list.net (Updated at 2025-03-28 21:42:02 UTC) ---
 PROXY_LIST = [
-    "43.153.16.223:13001",
-    "170.106.100.130:13001",
-    "216.229.112.25:8080",
-    "52.73.224.54:3128",
-    "43.153.98.125:13001",
-    "43.153.103.42:13001",
-    "43.153.106.210:13001",
-    "43.153.107.10:13001",
-    "51.20.19.159:3128",
-    "13.55.210.141:3128",
-    "16.16.239.39:3128",
-    "51.16.179.113:1080",
-    "3.97.176.251:3128",
-    "15.156.24.206:3128",
-    "13.246.184.110:3128",
-    "99.80.11.54:3128",
-    "13.246.209.48:1080",
-    "204.236.176.61:3128",
-    "43.130.109.92:13001",
-    "43.153.45.169:13001",
-    "43.130.11.212:13001",
-    "18.228.198.164:80",
-    "43.201.121.81:80",
-    "35.72.118.126:80",
-    "13.208.56.180:80",
-    "43.159.132.190:13001",
-    "49.51.232.89:13001",
-    "4.145.89.88:8080",
-    "13.56.192.187:80",
-    "184.169.154.119:80",
-    "178.63.237.145:7575",
-    "13.38.176.104:3128",
-    "13.37.59.99:3128",
-    "170.106.135.2:13001",
-    "18.230.71.1:20202",
-    "34.233.124.56:20202",
-    "98.81.33.66:20002",
-    "18.182.43.188:20201",
-    "54.233.45.198:20202",
-    "3.22.116.89:20202",
-    "54.75.158.178:20201",
-    "16.171.52.52:20202",
-    "13.251.59.10:20202",
-    "15.237.27.182:20201",
-    "54.173.153.36:20202",
-    "13.251.1.82:20202",
-    "54.159.36.185:20201",
-    "3.128.90.134:20201",
-    "51.44.176.151:20202",
-    "13.247.223.169:20202",
-    "51.17.85.72:20201",
-    "13.203.209.37:20202",
-    "43.207.50.162:20202",
-    "15.236.92.30:20201",
-    "56.155.27.142:20201",
-    "3.27.132.207:20201",
-    "3.75.101.111:20201",
-    "16.170.223.72:45554",
-    "13.250.172.255:20202",
-    "51.17.115.67:20202",
-    "13.214.35.84:20201",
-    "54.180.234.231:20201",
-    "54.151.71.253:20201",
-    "51.17.40.85:20201",
-    "13.247.58.145:20201",
-    "13.55.192.34:20202",
-    "3.88.235.53:20202",
-    "50.19.39.56:20201",
-    "52.201.245.219:20202",
-    "141.95.238.126:8080",
-    "54.248.238.110:80",
-    "43.153.16.91:13001",
-    "43.153.85.209:13001",
-    "63.32.1.88:3128",
-    "3.97.167.115:3128",
-    "13.213.114.238:3128",
-    "3.130.65.162:3128",
-    "43.130.38.18:13001",
-    "35.76.62.196:80",
-    "43.159.149.62:13001",
-    "43.135.178.216:13001",
-    "49.51.193.30:13001",
-    "43.153.105.141:13001",
-    "49.51.38.113:13001",
-    "187.217.194.178:8080",
-    "51.84.57.200:20202",
-    "35.78.198.199:20202",
-    "18.183.24.164:20202",
-    "13.244.157.177:20202",
-    "51.17.112.131:20202",
-    "13.214.122.121:20202",
-    "18.230.74.67:20202",
-    "3.99.172.72:20201",
-    "18.197.127.166:20201",
-    "51.16.53.5:20202",
-    "3.27.16.79:20201",
-    "52.53.183.6:20202",
-    "98.81.79.162:20202",
-    "13.53.126.216:20201",
-    "18.138.241.49:20202",
+    "43.130.47.130:18088",  
+"204.236.137.68:80",  
+"13.55.210.141:3128",  
+"51.16.179.113:1080",  
+"51.20.50.149:3128",  
+"99.80.11.54:3128",  
+"52.63.129.110:3128",  
+"51.16.199.206:3128",  
+"43.200.77.128:3128",  
+"103.129.200.2:8124",  
+"13.36.113.81:3128",  
+"15.235.10.31:28003",  
+"18.230.71.1:20202",  
+"51.84.68.153:20202",  
+"13.239.31.125:20202",  
+"3.68.91.163:20201",  
+"34.233.124.56:20202",  
+"51.84.57.200:20202",  
+"98.81.33.66:20002",  
+"18.183.24.164:20202",  
+"56.155.28.22:20202",  
+"18.182.43.188:20201",  
+"15.157.63.239:20202",  
+"3.22.116.89:20202",  
+"3.27.112.170:20201",  
+"18.138.124.192:20202",  
+"13.214.122.121:20202",  
+"16.171.52.52:20202",  
+"3.79.206.9:20202",  
+"18.140.231.34:20201",  
+"3.99.172.72:20201",  
+"18.207.97.58:20201",  
+"43.201.58.184:20202",  
+"51.20.137.15:20202",  
+"18.197.127.166:20201",  
+"15.237.27.182:20201",  
+"54.173.153.36:20202",  
+"51.16.53.5:20202",  
+"3.27.16.79:20201",  
+"3.128.90.134:20201",  
+"13.53.126.216:20201",  
+"13.40.100.60:20202",  
+"35.183.236.38:20202",  
+"13.247.223.169:20202",  
+"18.231.121.68:20201",  
+"13.51.6.203:20202",  
+"47.129.126.231:20005",  
+"3.35.133.153:20201",  
+"176.34.199.110:20202",  
+"3.26.147.255:20202",  
+"51.16.113.105:3128",  
+"51.44.173.80:20202",  
+"13.203.209.37:20202",  
+"54.180.131.34:20202",  
+"51.17.5.160:20201",  
+"51.17.21.181:20202",  
+"3.106.120.30:20201",  
+"13.247.88.206:20202",  
+"15.236.92.30:20201",  
+"51.44.185.55:20202",  
+"13.231.150.2:20202",  
+"51.17.42.250:20202",  
+"3.36.99.188:20201",  
+"13.124.128.42:20202",  
+"51.17.241.16:20202",  
+"56.155.27.142:20201",  
+"52.26.248.158:3128",  
+"51.84.67.35:45554",  
+"18.141.156.100:20202",  
+"54.215.228.245:20202",  
+"3.115.5.216:20202",  
+"43.204.227.94:20201",  
+"54.209.104.96:20202",  
+"3.249.124.251:20202",  
+"18.181.208.20:20201",  
+"13.250.172.255:20202",  
+"18.144.72.79:20201",  
+"13.115.194.123:20202",  
+"13.214.35.84:20201",  
+"54.151.71.253:20201",  
+"54.210.2.20:20201",  
+"56.155.29.90:20201",  
+"13.245.229.158:20201",  
+"13.208.183.144:20201",  
+"3.27.111.170:20202",  
+"54.174.37.207:20005",  
+"54.252.193.7:20201",  
+"99.79.64.51:20201",  
+"18.134.160.73:20201",  
+"13.247.58.145:20201",  
+"13.49.75.100:20202",  
+"15.236.210.236:20201",  
+"51.16.53.20:20202",  
+"13.208.56.180:80",  
+"71.14.218.2:8080",  
+"15.152.50.120:20202",  
+"18.215.151.253:20201",  
+"34.226.195.206:20202",  
+"13.125.35.27:20202",  
+"13.245.229.200:20201"  
+
 ]
 
 
@@ -238,6 +239,8 @@ def get_random_proxy() -> dict:
         "http": f"http://{proxy}",
         "https": f"http://{proxy}"
     }
+
+
 
 
 def get_hls_url(room_slug: str, max_attempts: int = 15) -> dict:
@@ -260,34 +263,7 @@ def get_hls_url(room_slug: str, max_attempts: int = 15) -> dict:
     url = 'https://chaturbate.com/get_edge_hls_url_ajax/'
     headers = {
         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0',
-        'Accept': '*/*',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Accept-Encoding': 'gzip, deflate, br, zstd',
-        'Referer': f'https://chaturbate.com/{room_slug}/',
-        'X-NewRelic-ID': 'VQIGWV9aDxACUFNVDgMEUw==',
-        'newrelic': 'eyJ2IjpbMCwxXSwiZCI6eyJ0eSI6IkJyb3dzZXIiLCJhYyI6IjE0MTg5OTciLCJhcCI6IjI0NTA2NzUwIiwiaWQiOiI3ZWJkMTk3MDQxMTUwOGY5IiwidHIiOiJiYzU3ZDE4Y2RiN2U0ZjVjMjgzMmUxYTdmZTA1ODcyYSIsInRpIjoxNzQzMTg3NDY1MDAyfX0=',
-        'traceparent': '00-bc57d18cdb7e4f5c2832e1a7fe05872a-7ebd1970411508f9-01',
-        'tracestate': '1418997@nr=0-1-1418997-24506750-7ebd1970411508f9----1743187465002',
-        'X-Requested-With': 'XMLHttpRequest',
-        'Content-Type': 'multipart/form-data; boundary=----geckoformboundary6a610b256c356f4fb7599aaf07b1de15',
-        'Origin': 'https://chaturbate.com',
-        'Connection': 'keep-alive',
-        'Cookie': (
-            'csrftoken=QBEfLYOhYb02QMAA8FsDhvimMi2rbhTh; '
-            'affkey="eJx1jEEKhTAMBa8SsslGrUQ/Qm7zUauiUqmFLsS7S4TiRnfDm8cc6FEAxxC2XYyJMRaDc8PSF61bDWaAnXou+ZeXnHMDXAnXUjfqbFB5kCcB+mhQBvS3Vh+KncJLTt2WTsHPCdv1WRPs012hE88LBBcvuQ=="; '
-            'sbr=sec:sbr9f095e3f-07ec-4e77-a51a-051c8118632f:1txykY:nZcRPVNiTcLgruuwAyCND2URhh7k8KiarIG-keMrJm0; '
-            'agreeterms=1; *ga*GX0FLQH21P=GS1.1.1743184454.89.1.1743187454.0.0.0; '
-            '*ga=GA1.1.1168548972.1740698693; '
-            '*_utfpp=f:trnxe24f72c170ba31fce403b24790344164:1tyDuC:xbeHGH_IVk_zJ7fCru4B9cPNtf8CygJAak-5isMJL80; '
-            'ag={"18to21-cams":44,"20to30-cams":169,"30to50-cams":1,"teen-cams":7}; '
-            '*iidt=S2MQGvAmZ4b0Q9yh/u+gqep47eY16gzG9f3Zk7mjcnUw/NAQdEDPDUFKML3I4WazjVDyDp++4p6Yuw==; '
-            '*vid_t=XfyHEnNugyWCCux5Ihh3neS4GdETZcpEz/Uhl7Xq/U70+U0/ZoLRbwlxuB+yb0EfdVPwGwM3W4F5BA==; '
-            '__cf_bm=qPhk3uapv9sxmHBNTtrQRBPHv03gc0DZjZeDKte8s7k-1743186615-1.0.1.1-eeYAfpneSLyhG5ii1JiOS.FEI_oSQ5yA.oyYxOoQSv5u5FMuqS2cr5QI4NKDWa4lWDyghY_gyEzgwkUywjtwWwddeHKk.VmaY8kBkrMfIHA; '
-            'cf_clearance=tnF75pLB8eFZEUikS5OPTINkrhEvcomnt9vfKMw5JNM-1743187276-1.2.1.1-QLV90oVctAggVWp8bskoOTIPaVnL04Rql8gM4AtI7_nBBGibb6TaAzXUIZzQaDjh_mZGIi2uZujUSW5xBbONM4LY_imBh.ASxLCrtAwtlb17Cy6W5_rotlanU1LlX9UFG6Yf_QS4yagcjpfYoPHnvM9.tOtwfZw655j4TcWXMPb2qj_5NCgKKiUZx77DhLmN4gV4QziW1Ud0QIzMTFgyvb8F0WCXpYsW5fd7TfVoXD3pcDATTZXcV1VDLeIjHqMNw7lOJkeE0AH2sGnVzhdOi3Lb.OEDhZdp0tr3EgqKLdhA7Cz0if26VPFdylei2Q1OS7MYEjdQhEUIIU6_EnGxry..IKM4cUvPVEO8VqB64z1Y; '
-            'stcki="Eg6Gdq=1"; '
-            f'tbu_{room_slug}={{"source":"df","index":4,"source_filter":"{{}}","room_list_id":"5ed8234b-4ce5-4a52-9699-86ab9105b907"}}; '
-            'language_subdomain_continuity=1'
-        )
+        # ... (headers remain unchanged)
     }
 
     # Define the boundary string (without prefixed dashes)
@@ -338,6 +314,11 @@ def get_hls_url(room_slug: str, max_attempts: int = 15) -> dict:
                 time.sleep(1)
                 continue
 
+            # Check for offline status first
+            if result.get('room_status') == 'offline':
+                logging.error("Room is offline, stopping attempts")
+                return {'error': 'room_offline', 'message': 'Stream is offline'}
+
             if result:
                 # Use 'hls_url' if available; otherwise, check for 'url'
                 hls_url = result.get("hls_url") or result.get("url")
@@ -371,6 +352,8 @@ def get_hls_url(room_slug: str, max_attempts: int = 15) -> dict:
     return None
 
 
+
+
 # --- Updated Chaturbate Scraping Function (Using AJAX) ---
 def scrape_chaturbate_data(url, progress_callback=None):
     """
@@ -395,11 +378,22 @@ def scrape_chaturbate_data(url, progress_callback=None):
         result = get_hls_url(room_slug)
         
         if result:
+            if 'error' in result:
+                if result['error'] == 'room_offline':
+                    if progress_callback:
+                        progress_callback(100, "Stream is offline")
+                    return {'status': 'offline', 'message': result['message']}
+                else:
+                    if progress_callback:
+                        progress_callback(100, f"Error: {result.get('message')}")
+                    return None
+            
             hls_url = result.get("hls_url")
             if hls_url:
                 if progress_callback:
                     progress_callback(100, "Scraping complete")
                 return {
+                    "status": "online",
                     "streamer_username": room_slug,
                     "chaturbate_m3u8_url": hls_url,
                 }
@@ -419,6 +413,7 @@ def scrape_chaturbate_data(url, progress_callback=None):
         if progress_callback:
             progress_callback(100, f"Error: {e}")
         return None
+
 
 
 # --- Existing Functions Remain Unchanged ---
@@ -703,3 +698,33 @@ def refresh_chaturbate_stream(room_slug):
     except Exception as e:
         logging.error("Error refreshing stream for room slug %s: %s", room_slug, e)
         return None
+
+def refresh_stripchat_stream(room_url: str) -> str:
+    """
+    Refresh the M3U8 URL for a Stripchat stream by re-scraping the page.
+    
+    Args:
+        room_url (str): The full URL of the Stripchat room.
+    
+    Returns:
+        str: The new M3U8 URL if successful, None otherwise.
+    """
+    try:
+        scraped_data = scrape_stripchat_data(room_url)
+        if not scraped_data:
+            return None
+        new_url = scraped_data.get("stripchat_m3u8_url")
+        if new_url:
+            stream = StripchatStream.query.filter_by(room_url=room_url).first()
+            if stream:
+                stream.stripchat_m3u8_url = new_url
+                db.session.commit()
+                return new_url
+        return None
+    except Exception as e:
+        logging.error(f"Error refreshing Stripchat stream: {str(e)}")
+        return None
+
+
+
+

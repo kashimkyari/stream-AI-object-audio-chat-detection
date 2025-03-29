@@ -1198,3 +1198,43 @@
           background: #218838;
         }
      
+
+     /* Add to your CSS file */
+.add-button.success {
+  background: #4CAF50 !important;
+  border-color: #45a049 !important;
+}
+
+.add-button.error {
+  background: #f44336 !important;
+  border-color: #d32f2f !important;
+  animation: error-shake 0.5s;
+}
+
+@keyframes error-shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(5px); }
+  50% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+  100% { transform: translateX(0); }
+}
+
+.button-progress {
+  position: relative;
+  height: 100%;
+}
+
+.progress-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.3);
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  position: relative;
+  z-index: 1;
+  color: white;
+}

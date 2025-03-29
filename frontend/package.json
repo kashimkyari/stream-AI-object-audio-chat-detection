@@ -13,6 +13,7 @@
     "date-fns": "^2.30.0",
     "hls-video-element": "^1.4.1",
     "hls.js": "^1.5.20",
+    "http-proxy-middleware": "^3.0.3",
     "lucide-react": "^0.484.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -28,7 +29,7 @@
     "start": "react-scripts start",
     "service": "node server.js"
   },
-  "proxy": "https://127.0.0.1:5000", 
+  "proxy": "https://54.86.99.85:5000",
   "browserslist": {
     "production": [
       ">0.2%",

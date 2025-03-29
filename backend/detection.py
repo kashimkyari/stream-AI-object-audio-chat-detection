@@ -64,7 +64,7 @@ def load_yolov8_model():
     with _yolo_lock:
         if _yolo_model is None:
             try:
-                _yolo_model = YOLO("yolo11l.pt", verbose=False)
+                _yolo_model = YOLO("yolov9c.pt", verbose=False)
                 _yolo_model.verbose = False
                 logging.info("YOLO11 model loaded successfully.")
             except Exception as e:
@@ -299,11 +299,11 @@ def process_combined_detection(stream_url, cancel_event):
             return
 
         logging.info("Combined detection started for %s", stream_url)
-        required_audio_bytes = 16000 * 2 * 5  # 5 seconds of audio (mono, 16-bit, 16kHz)
+        required_audio_bytes = 16000 * 2 * 10  # 5 seconds of audio (mono, 16-bit, 16kHz)
         audio_buffer = b""
 
         try:
-            whisper_model = load_model("medium")
+            whisper_model = load_model("base")
             logging.info("Whisper model loaded for combined detection.")
         except Exception as e:
             logging.error("Error loading Whisper model: %s", e)

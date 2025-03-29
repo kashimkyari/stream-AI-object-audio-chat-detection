@@ -28,7 +28,7 @@ from utils import allowed_file, login_required
 from notifications import send_notifications
 from scraping import (
     scrape_stripchat_data, scrape_chaturbate_data, run_scrape_job, scrape_jobs,
-    stream_creation_jobs, run_stream_creation_job, refresh_chaturbate_stream
+    stream_creation_jobs, run_stream_creation_job, refresh_chaturbate_stream, refresh_stripchat_stream
 )
 from detection import chat_detection_loop, refresh_keywords
 import speech_recognition as sr
@@ -938,3 +938,20 @@ def forward_notification(notification_id):
     return jsonify({"message": "Notification forwarded"}), 200
 
 
+
+@app.route("/api/streams/refresh/stripchat", methods=["POST"])
+@login_required(role="admin")
+def refresh_stripchat_route():
+    data = request.get_json()
+    room_url = data.get("room_url", "").strip()
+    if not room_url:
+        return jsonify({"message": "Room URL is required"}), 400
+
+    new_url = refresh_stripchat_stream(room_url)
+    if new_url:
+        return jsonify({
+            "message": "Stream refreshed successfully",
+            "m3u8_url": new_url
+        }), 200
+    else:
+        return jsonify({"message": "Failed to refresh stream"}), 500

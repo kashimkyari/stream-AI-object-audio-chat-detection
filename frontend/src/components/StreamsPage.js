@@ -540,6 +540,9 @@ const AddStreamForm = ({ onAddStream, refreshStreams, onStreamAdded, refreshAgen
   const [estimatedTime, setEstimatedTime] = useState(0);
   const [isFormExpanded] = useState(true);
   const [showAddAgentModal, setShowAddAgentModal] = useState(false);
+  const [submitError, setSubmitError] = useState(false);
+
+
 
   useEffect(() => {
     const fetchAgents = async () => {
@@ -571,12 +574,20 @@ const AddStreamForm = ({ onAddStream, refreshStreams, onStreamAdded, refreshAgen
       setProgress(data.progress);
       setProgressMessage(data.message);
       setEstimatedTime(data.estimated_time || 0);
+      
+      
       if (data.progress >= 100) {
+        if (data.error) {
+          setSubmitError(true);
+          setError(data.error);
+        }
         eventSource.close();
       }
     };
     eventSource.onerror = (err) => {
       console.error("SSE error:", err);
+      setSubmitError(true);
+      setError('Connection to progress updates failed');
       eventSource.close();
     };
   };
@@ -585,8 +596,11 @@ const AddStreamForm = ({ onAddStream, refreshStreams, onStreamAdded, refreshAgen
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
+    setSubmitError(false);
     setProgress(0);
     setProgressMessage('Initializing...');
+    setJobId(null);
+    
     try {
       const response = await axios.post('/api/streams/interactive', {
         room_url: roomUrl,
@@ -598,6 +612,7 @@ const AddStreamForm = ({ onAddStream, refreshStreams, onStreamAdded, refreshAgen
       subscribeToProgress(job_id);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to start stream creation');
+      setSubmitError(true);
       setIsSubmitting(false);
     }
   };
@@ -610,12 +625,21 @@ const AddStreamForm = ({ onAddStream, refreshStreams, onStreamAdded, refreshAgen
           const newStream = res.data[res.data.length - 1];
           onAddStream(newStream);
           setSubmitSuccess(true);
-          setTimeout(() => setSubmitSuccess(false), 5000);
-          setRoomUrl('');
-          setIsSubmitting(false);
+          setSubmitError(false);
+          
+          // Reset after 3 seconds
+          setTimeout(() => {
+            setSubmitSuccess(false);
+            setIsSubmitting(false);
+            setRoomUrl('');
+            setProgress(0);
+            setJobId(null);
+          }, 3000);
+          
           if (onStreamAdded) onStreamAdded();
         } catch (err) {
           console.error('Failed to fetch new stream:', err);
+          setSubmitError(true);
         }
       };
       fetchNewStream();
@@ -680,22 +704,29 @@ const AddStreamForm = ({ onAddStream, refreshStreams, onStreamAdded, refreshAgen
           </div>
         </div>
         <button
-          type="submit"
-          className={`add-button ${isSubmitting ? 'submitting' : ''} ${submitSuccess ? 'success' : ''}`}
-          disabled={isSubmitting}
-          style={{ width: '100%', position: 'relative', overflow: 'hidden' }}
-        >
-          {isSubmitting ? (
-            <div className="button-progress">
-              <div className="progress-fill" style={{ width: `${progress}%` }}></div>
-              <div className="progress-text">
-                {progress}% - {progressMessage} {estimatedTime > 0 && `(Est. ${estimatedTime}s left)`}
-              </div>
+        type="submit"
+        className={`add-button 
+          ${isSubmitting ? 'submitting' : ''} 
+          ${submitSuccess ? 'success' : ''}
+          ${submitError ? 'error' : ''}`}
+        disabled={isSubmitting && !submitError}
+        style={{ width: '100%', position: 'relative', overflow: 'hidden' }}
+      >
+        {submitError ? (
+          'Retry Now'
+        ) : isSubmitting ? (
+          <div className="button-progress">
+            <div className="progress-fill" style={{ width: `${progress}%` }}></div>
+            <div className="progress-text">
+              {progress}% - {progressMessage} {estimatedTime > 0 && `(Est. ${estimatedTime}s left)`}
             </div>
-          ) : (
-            'Add Stream'
-          )}
-        </button>
+          </div>
+        ) : submitSuccess ? (
+          'Stream Created Successfully!'
+        ) : (
+          'Add Stream'
+        )}
+      </button>
       </form>
       {showAddAgentModal && (
         <AddAgentModal 

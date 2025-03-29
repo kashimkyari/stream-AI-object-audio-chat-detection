@@ -30,4 +30,5 @@ ultralytics
 av
 undetected-chromedriver
 openai-whisper
+vaderSentiment
 
