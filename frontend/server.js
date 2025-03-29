@@ -24,7 +24,7 @@ app.use(express.static(buildPath));
 
 // Proxy API requests with /api prefix without rewriting.
 app.use('/api', createProxyMiddleware({
-  target: 'https://54.86.99.85:5000', // Backend URL
+  target: 'https://54.86.99.85:5000/api', // Backend URL
   changeOrigin: true,
   secure: true, // Set to false if using self-signed certificates on the backend
   logLevel: 'debug'
