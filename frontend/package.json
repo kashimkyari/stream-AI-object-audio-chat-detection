@@ -27,7 +27,7 @@
     "serve": "serve -s build -l 3000 --ssl-cert ssl/fullchain-rsa.pem --ssl-key ssl/privkey-rsa.pem",
     "start": "react-scripts start"
   },
-  "proxy": "https://54.86.99.85:5000", 
+  "proxy": "https://54.86.99.85:5000/api", 
   "browserslist": {
     "production": [
       ">0.2%",
