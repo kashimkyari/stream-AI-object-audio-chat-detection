@@ -1,6 +1,5 @@
 {
   "name": "stream-monitor-frontend",
-  "type": "module",
   "version": "1.0.0",
   "private": true,
   "dependencies": {
@@ -26,7 +25,8 @@
     "dev": "NODE_OPTIONS=--openssl-legacy-provider react-scripts start",
     "build": "react-scripts build",
     "serve": "serve -s build -l 3000 --ssl-cert ssl/fullchain-rsa.pem --ssl-key ssl/privkey-rsa.pem",
-    "start": "react-scripts start"
+    "start": "react-scripts start",
+    "service": "node server.js"
   },
   "proxy": "https://54.86.99.85:5000", 
   "browserslist": {
