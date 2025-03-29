@@ -19,7 +19,7 @@ app.use(express.static(buildPath));
 
 // Proxy API requests (without rewriting the path).
 app.use('/api', createProxyMiddleware({
-  target: 'https://54.86.99.85:5000',
+  target: 'https://127.0.0.1:5000',
   changeOrigin: true,
   secure: true, // set to false if your backend uses self-signed certs
   logLevel: 'debug'

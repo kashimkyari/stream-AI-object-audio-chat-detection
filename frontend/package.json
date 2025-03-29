@@ -28,7 +28,7 @@
     "start": "react-scripts start",
     "service": "node server.js"
   },
-  "proxy": "https://54.86.99.85:5000", 
+  "proxy": "https://127.0.0.1:5000", 
   "browserslist": {
     "production": [
       ">0.2%",
