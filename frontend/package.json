@@ -1,5 +1,6 @@
 {
   "name": "stream-monitor-frontend",
+  "type": "module",
   "version": "1.0.0",
   "private": true,
   "dependencies": {
@@ -27,7 +28,7 @@
     "serve": "serve -s build -l 3000 --ssl-cert ssl/fullchain-rsa.pem --ssl-key ssl/privkey-rsa.pem",
     "start": "react-scripts start"
   },
-  "proxy": "https://54.86.99.85:5000/api", 
+  "proxy": "https://54.86.99.85:5000", 
   "browserslist": {
     "production": [
       ">0.2%",
