@@ -6,7 +6,7 @@ module.exports = function (app) {
         createProxyMiddleware({
             target: 'https://54.86.99.85:5000',
             changeOrigin: true,
-            secure: true,  // Allow self-signed SSL certificates
+            secure: false,  // Allow self-signed SSL certificates
         })
     );
 };
