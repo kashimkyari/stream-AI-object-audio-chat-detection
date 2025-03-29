@@ -4,9 +4,9 @@ module.exports = function (app) {
   app.use(
     "/api",
     createProxyMiddleware({
-      target: "https://54.86.99.85:5000/api", // Update with your Elastic IP
+      target: "https://54.86.99.85:5000", // Update with your Elastic IP
       changeOrigin: true,
-      secure: false,
+      secure: true,
     })
   );
 };
