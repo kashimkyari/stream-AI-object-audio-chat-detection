@@ -26,8 +26,8 @@ app.get('*', (req, res) => {
 
 // Read SSL certificate and key files.
 const sslOptions = {
-  key: fs.readFileSync(path.join(__dirname, 'ssl', '/home/ec2-user/certs/fullchain-rsa.pem')),
-  cert: fs.readFileSync(path.join(__dirname, 'ssl', '/home/ec2-user/certs/privkey-rsa.pem')),
+  key: fs.readFileSync(path.join(__dirname, 'ssl', './home/ec2-user/certs/fullchain-rsa.pem')),
+  cert: fs.readFileSync(path.join(__dirname, 'ssl', './home/ec2-user/certs/privkey-rsa.pem')),
 };
 
 // Set the port; default to 443 for HTTPS.
