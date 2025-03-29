@@ -26,7 +26,7 @@ app.use(express.static(buildPath));
 app.use('/api', createProxyMiddleware({
   target: 'https://54.86.99.85:5000',
   changeOrigin: true,
-  secure: false,
+  secure: true,
   logLevel: 'debug',
   onError: (err, req, res) => {
     console.error('Proxy error:', err);
