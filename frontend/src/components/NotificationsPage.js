@@ -4,7 +4,7 @@ import io from 'socket.io-client';
 import './NotificationsPage.css';
 
 axios.defaults.withCredentials = true;
-const SOCKET_SERVER_URL = 'http://localhost:5000';
+const SOCKET_SERVER_URL = 'https://54.86.99.85:5000';
 
 const NotificationsPage = ({ user, ongoingStreams = [] }) => {
   const [notifications, setNotifications] = useState([]);
