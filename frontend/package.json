@@ -24,7 +24,7 @@
   "scripts": {
     "dev": "NODE_OPTIONS=--openssl-legacy-provider react-scripts start",
     "build": "react-scripts build",
-    "serve": "http-server build -S -C ssl/fullchain-rsa.pem -K ssl/privkey-rsa.pem -p 3000",
+    "serve": "serve -s build -l 3000 --ssl-cert ssl/fullchain-rsa.pem --ssl-key ssl/privkey-rsa.pem",
     "start": "node server.js"
   },
   "proxy": "https://54.86.99.85:5000",
