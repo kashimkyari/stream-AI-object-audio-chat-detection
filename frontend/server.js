@@ -21,7 +21,7 @@ app.use(express.static(buildPath));
 app.use('/api', createProxyMiddleware({
   target: 'https://54.86.99.85:5000',
   changeOrigin: true,
-  secure: false, // set to false if your backend uses self-signed certs
+  secure: true, // set to false if your backend uses self-signed certs
   logLevel: 'debug'
 }));
 
