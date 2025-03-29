@@ -23,14 +23,13 @@ const buildPath = path.join(__dirname, 'build');
 app.use(express.static(buildPath));
 
 // Proxy API requests to your backend.
+// Proxy API requests to your backend without rewriting the path.
 app.use('/api', createProxyMiddleware({
   target: 'https://54.86.99.85:5000', // Backend URL
   changeOrigin: true,
-  secure: false, // Set to false if you're using self-signed certs in backend
-  pathRewrite: {
-    '^/api': '' // Remove /api prefix when forwarding the request
-  }
+  secure: false // Set to false if you're using self-signed certificates on the backend
 }));
+
 
 // For any other route, send back the index.html (for SPA routing).
 app.get('*', (req, res) => {
