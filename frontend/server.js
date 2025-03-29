@@ -23,11 +23,15 @@ const buildPath = path.join(__dirname, 'build');
 app.use(express.static(buildPath));
 
 // Proxy API requests to your backend.
-// Proxy API requests to your backend without rewriting the path.
 app.use('/api', createProxyMiddleware({
-  target: 'https://127.0.0.1:5000', // Backend URL
+  target: 'https://54.86.99.85:5000',
   changeOrigin: true,
-  secure: false // Set to false if you're using self-signed certificates on the backend
+  secure: false,
+  logLevel: 'debug',
+  onError: (err, req, res) => {
+    console.error('Proxy error:', err);
+    res.status(500).json({ error: 'Proxy error', details: err.message });
+  }
 }));
 
 
