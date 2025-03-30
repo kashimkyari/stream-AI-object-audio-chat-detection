@@ -148,6 +148,7 @@ const HlsPlayer = ({ m3u8Url, isModalOpen, posterUrl, platform, streamerName }) 
         playsInline
         poster={posterUrl}
         style={{ width: '100%', height: '100%' }}
+
       />
       {isModalOpen && (
         <div className="volume-controls">
@@ -307,6 +308,7 @@ const VideoPlayer = ({
             <button className="close-modal" onClick={handleModalToggle}>
               &times;
             </button>
+            
           </div>
         </div>
       )}
