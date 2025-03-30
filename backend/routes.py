@@ -1011,25 +1011,6 @@ def get_forwarded_notifications():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/api/messages/<int:agent_id>", methods=["GET"])
-@login_required()
-def get_agent_messages(agent_id):
-    if not (session['user_role'] == 'admin' or session['user_id'] == agent_id):
-        return jsonify({"error": "Unauthorized"}), 403
-    
-    messages = ChatMessage.query.filter(
-        (ChatMessage.receiver_id == agent_id) |
-        (ChatMessage.sender_id == agent_id)
-    ).order_by(ChatMessage.timestamp.asc()).all()
-    
-    return jsonify([{
-        'id': m.id,
-        'content': m.message,
-        'sender': m.sender_id == session['user_id'],
-        'timestamp': m.timestamp.isoformat(),
-        'system': m.is_system,
-        'details': m.details
-    } for m in messages]), 200
 
 # Update existing forward endpoint
 # routes.py
@@ -1085,50 +1066,33 @@ def refresh_stripchat_route():
 @app.route("/api/messages", methods=["POST"])
 @login_required()
 def send_message():
-    try:
-        data = request.get_json()
-        receiver_id = data.get("receiver_id")
-        message_text = data.get("message")
+    data = request.get_json()
+    receiver_id = data.get("receiver_id")
+    message_text = data.get("message")
 
-        if not receiver_id or not message_text:
-            return jsonify({"error": "Missing required fields"}), 400
+    if not receiver_id or not message_text:
+        return jsonify({"error": "Missing receiver_id or message"}), 400
 
-        new_message = ChatMessage(
-            sender_id=session["user_id"],
-            receiver_id=receiver_id,
-            message=message_text,
-            timestamp=datetime.utcnow(),
-            is_system=False
-        )
-        
-        db.session.add(new_message)
-        db.session.commit()
-        return jsonify(new_message.serialize()), 201
-        
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": str(e)}), 500
+    new_message = ChatMessage(
+        sender_id=session["user_id"],
+        receiver_id=receiver_id,
+        message=message_text,
+        timestamp=datetime.utcnow(),
+        is_system=False
+    )
+    db.session.add(new_message)
+    db.session.commit()
+    return jsonify(new_message.serialize()), 201
 
-@app.route("/api/messages/<int:agent_id>", methods=["GET"])
+@app.route("/api/messages/<int:receiver_id>", methods=["GET"])
 @login_required()
-def get_agent_messages(agent_id):
-    # Check if user has valid session
-    if "user_role" not in session or "user_id" not in session:
-        return jsonify({"error": "Unauthorized"}), 401
-        
-    # Authorization check
-    if not (session['user_role'] == 'admin' or session['user_id'] == agent_id):
-        return jsonify({"error": "Forbidden"}), 403
-
-    try:
-        messages = ChatMessage.query.filter(
-            (ChatMessage.receiver_id == agent_id) |
-            (ChatMessage.sender_id == agent_id)
-        ).order_by(ChatMessage.timestamp.asc()).all()
-        
-        return jsonify([message.serialize() for message in messages])
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+def get_messages(receiver_id):
+    user_id = session["user_id"]
+    messages = ChatMessage.query.filter(
+        ((ChatMessage.sender_id == user_id) & (ChatMessage.receiver_id == receiver_id)) |
+        ((ChatMessage.sender_id == receiver_id) & (ChatMessage.receiver_id == user_id))
+    ).order_by(ChatMessage.timestamp.asc()).all()
+    return jsonify([msg.serialize() for msg in messages])
 
 @app.route("/api/online-users", methods=["GET"])
 @login_required()
@@ -1152,3 +1116,24 @@ def mark_messages_read():
     ChatMessage.query.filter(ChatMessage.id.in_(message_ids)).update({"read": True})
     db.session.commit()
     return jsonify({"message": f"Marked {len(message_ids)} messages as read"})
+
+@app.route("/api/messages/<int:agent_id>", methods=["GET"])
+@login_required()
+def get_agent_messages(agent_id):
+    # Check if user has valid session
+    if "user_role" not in session or "user_id" not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+        
+    # Authorization check
+    if not (session['user_role'] == 'admin' or session['user_id'] == agent_id):
+        return jsonify({"error": "Forbidden"}), 403
+
+    try:
+        messages = ChatMessage.query.filter(
+            (ChatMessage.receiver_id == agent_id) |
+            (ChatMessage.sender_id == agent_id)
+        ).order_by(ChatMessage.timestamp.asc()).all()
+        
+        return jsonify([message.serialize() for message in messages])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
