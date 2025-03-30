@@ -35,20 +35,22 @@ const AgentDashboard = () => {
   const [selectedAssignment, setSelectedAssignment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [agentName, setAgentName] = useState('');
-  const [agentNotifications, setAgentNotifications] = useState([]);
+  
+  // Unified notifications state.
+  const [allNotifications, setAllNotifications] = useState([]);
   const [notificationCounts, setNotificationCounts] = useState({});
-
+  
   // Video refs and HLS instance refs for each assignment.
   const videoRefs = useRef({});
   const hlsInstances = useRef({});
   const [streamStates, setStreamStates] = useState({});
 
-  // Fetch agent notifications from the API.
-  const fetchAgentNotifications = async () => {
+  // Fetch all notifications from the unified endpoint.
+  const fetchAllNotifications = async () => {
     try {
-      const res = await axios.get('/api/agent/notifications');
-      setAgentNotifications(res.data);
-      // Calculate unread notifications per stream (room_url).
+      const res = await axios.get('/api/notifications');
+      setAllNotifications(res.data);
+      // Count unread notifications per stream (room_url).
       const counts = {};
       res.data.forEach(notification => {
         if (!notification.read) {
@@ -57,15 +59,15 @@ const AgentDashboard = () => {
       });
       setNotificationCounts(counts);
     } catch (err) {
-      console.error('Error fetching agent notifications:', err);
+      console.error('Error fetching notifications:', err);
     }
   };
 
-  // Mark a specific notification as read.
+  // Mark a notification as read.
   const markNotificationRead = async (notificationId) => {
     try {
-      await axios.put(`/api/agent/notifications/${notificationId}/read`);
-      setAgentNotifications(prev =>
+      await axios.put(`/api/notifications/${notificationId}/read`);
+      setAllNotifications(prev =>
         prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
       );
     } catch (err) {
@@ -73,7 +75,7 @@ const AgentDashboard = () => {
     }
   };
 
-  // Fetch session info, assigned streams, and initial notifications.
+  // Fetch session, assignments, and notifications.
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
@@ -104,8 +106,8 @@ const AgentDashboard = () => {
           ongoing_streams: dashboardRes.data.ongoing_streams,
           assignments: assignments
         });
-        // Fetch initial notifications.
-        await fetchAgentNotifications();
+        // Fetch all notifications.
+        await fetchAllNotifications();
         setLoading(false);
       } catch (error) {
         console.error('Error fetching initial data:', error);
@@ -116,10 +118,10 @@ const AgentDashboard = () => {
     fetchInitialData();
 
     // Set up polling for notifications every 10 seconds.
-    const notificationInterval = setInterval(fetchAgentNotifications, 10000);
-
+    const notificationInterval = setInterval(fetchAllNotifications, 10000);
+    
     return () => {
-      // Cleanup HLS instances.
+      // Clean up HLS instances.
       Object.values(hlsInstances.current).forEach(hls => {
         if (hls) hls.destroy();
       });
@@ -157,7 +159,6 @@ const AgentDashboard = () => {
       return;
     }
 
-    // If HLS is supported, initialize the player.
     if (Hls.isSupported()) {
       const hls = new Hls({ autoStartLoad: true, startLevel: -1, debug: false });
       hls.loadSource(m3u8Url);
@@ -359,8 +360,8 @@ const AgentDashboard = () => {
   const renderNotificationBadge = useCallback((assignment) => {
     const count = notificationCounts[assignment.room_url] || 0;
     if (count === 0) return null;
-    const notifications = agentNotifications
-      .filter(n => n.room_url === assignment.room_url && !n.read)
+    const notifications = allNotifications
+      .filter(n => n.room_url === assignment.room_url)
       .slice(0, 3); // Show up to 3 notifications as previews.
     return (
       <div className="notification-badge">
@@ -378,22 +379,17 @@ const AgentDashboard = () => {
               <span className="notification-time">
                 {new Date(notification.timestamp).toLocaleTimeString()}
               </span>
-              {notification.details?.detections?.map((d, i) => (
-                <span key={i} className="detection-tag">
-                  {d.class} ({(d.confidence * 100).toFixed(1)}%)
+              {notification.assigned_agent && (
+                <span className="assigned-agent">
+                  Assigned: {notification.assigned_agent}
                 </span>
-              ))}
+              )}
             </div>
           ))}
-          {count > 3 && (
-            <div className="notification-more">
-              +{count - 3} more notifications
-            </div>
-          )}
         </div>
       </div>
     );
-  }, [agentNotifications, notificationCounts]);
+  }, [allNotifications, notificationCounts]);
 
   if (loading) {
     return (
@@ -445,18 +441,13 @@ const AgentDashboard = () => {
               <div className="stream-info">
                 <p><strong>Platform:</strong> {selectedAssignment.platform}</p>
                 <p><strong>URL:</strong> {selectedAssignment.room_url}</p>
-                {/* Display notifications specific to this stream */}
+                {/* Display all notifications for this stream */}
                 <div className="stream-notifications">
-                  <h3>Recent Alerts</h3>
-                  {agentNotifications
+                  <h3>All Alerts for This Stream</h3>
+                  {allNotifications
                     .filter(n => n.room_url === selectedAssignment.room_url)
-                    .slice(0, 5)
                     .map(notification => (
-                      <div 
-                        key={notification.id} 
-                        className={`notification-item ${notification.read ? 'read' : 'unread'}`}
-                        onClick={() => markNotificationRead(notification.id)}
-                      >
+                      <div key={notification.id} className="notification-item">
                         <div className="notification-header">
                           <span className="notification-type">
                             {notification.event_type.replace('_', ' ').toUpperCase()}
@@ -465,12 +456,11 @@ const AgentDashboard = () => {
                             {new Date(notification.timestamp).toLocaleString()}
                           </span>
                         </div>
-                        {notification.details?.detections?.map((d, i) => (
-                          <div key={i} className="detection-item">
-                            <span>{d.class}</span>
-                            <span className="confidence">{(d.confidence * 100).toFixed(1)}%</span>
+                        {notification.assigned_agent && (
+                          <div className="assigned-info">
+                            Assigned to: {notification.assigned_agent}
                           </div>
-                        ))}
+                        )}
                       </div>
                     ))}
                 </div>

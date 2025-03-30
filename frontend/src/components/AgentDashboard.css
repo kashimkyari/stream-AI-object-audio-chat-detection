@@ -440,3 +440,18 @@
   color: #b9bbbe;
   font-weight: 600;
 }
+
+
+.assigned-agent, .assigned-info {
+  display: block;
+  font-size: 12px;
+  color: #b9bbbe;
+  margin-top: 4px;
+}
+
+.assigned-info {
+  padding: 4px;
+  background-color: rgba(114, 137, 218, 0.1);
+  border-radius: 4px;
+  margin: 6px 0;
+}

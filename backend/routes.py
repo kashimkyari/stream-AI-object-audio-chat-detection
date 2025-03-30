@@ -941,7 +941,7 @@ def get_logs():
 # Add these endpoints for notifications
 @app.route("/api/notifications", methods=["GET"])
 @login_required()
-def get_notifications():
+def get_all_notifications():
     try:
         notifications = DetectionLog.query.order_by(DetectionLog.timestamp.desc()).all()
         return jsonify([{
@@ -950,7 +950,10 @@ def get_notifications():
             "timestamp": n.timestamp.isoformat(),
             "details": n.details,
             "read": n.read,
-            "room_url": n.room_url
+            "room_url": n.room_url,
+            "streamer": n.details.get('streamer_name', 'Unknown'),
+            "platform": n.details.get('platform', 'Unknown'),
+            "assigned_agent": n.details.get('assigned_agent', 'Unassigned')
         } for n in notifications]), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
