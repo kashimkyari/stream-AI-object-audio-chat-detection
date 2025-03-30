@@ -279,10 +279,8 @@ class DetectionLog(db.Model):
         }
 
 
+# models.py
 class ChatMessage(db.Model):
-    """
-    ChatMessage model stores messages exchanged between users (admin/agent).
-    """
     __tablename__ = "chat_messages"
     id = db.Column(db.Integer, primary_key=True)
     sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
@@ -290,6 +288,8 @@ class ChatMessage(db.Model):
     message = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
     read = db.Column(db.Boolean, default=False, index=True)
+    is_system = db.Column(db.Boolean, default=False)
+    details = db.Column(db.JSON)
 
     sender = db.relationship("User", foreign_keys=[sender_id])
     receiver = db.relationship("User", foreign_keys=[receiver_id])
@@ -297,9 +297,13 @@ class ChatMessage(db.Model):
     def serialize(self):
         return {
             "id": self.id,
-            "sender_username": self.sender.username if self.sender else None,
-            "receiver_username": self.receiver.username if self.receiver else None,
+            "sender_id": self.sender_id,
+            "receiver_id": self.receiver_id,
             "message": self.message,
             "timestamp": self.timestamp.isoformat(),
             "read": self.read,
+            "is_system": self.is_system,
+            "details": self.details,
+            "sender_username": self.sender.username if self.sender else None,
+            "receiver_username": self.receiver.username if self.receiver else None
         }

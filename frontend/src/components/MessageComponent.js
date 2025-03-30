@@ -1,285 +1,245 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import io from 'socket.io-client';
+import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
 import { formatDistanceToNow } from 'date-fns';
 import './MessageComponent.css';
+
+const Sidebar = ({ user, onlineUsers, selectedUser, setSelectedUser, unreadCounts }) => {
+  return (
+    <div className="user-list-container">
+      <h2 className="section-title">Online Users</h2>
+      <div className="user-list">
+        {onlineUsers.map(u => (
+          <div 
+            key={u.id} 
+            className={`user-card ${selectedUser?.id === u.id ? 'active' : ''}`}
+            onClick={() => {
+              setSelectedUser(u);
+              if (unreadCounts[u.id]) {
+                unreadCounts[u.id] = 0;
+              }
+            }}
+          >
+            <div className="user-avatar">
+              <span>{u.username[0]}</span>
+              <div className={`online-status ${u.online ? 'online' : 'offline'}`} />
+            </div>
+            <div className="user-info">
+              <h3>{u.username}</h3>
+              <p>{u.role}</p>
+              {unreadCounts[u.id] > 0 && (
+                <span className="unread-count">{unreadCounts[u.id]}</span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const MessageBubble = ({ message, isUserMessage, onlineUsers, setNotificationDetails }) => {
+  return (
+    <div className={`message ${isUserMessage ? 'sent' : 'received'} ${message.is_system ? 'system' : ''}`}>
+      {message.is_system ? (
+        <div className="system-message">
+          <div className="message-content">
+            {message.message}
+            {message.details && (
+              <button 
+                className="details-btn"
+                onClick={() => setNotificationDetails(message.details)}
+              >
+                View Details
+              </button>
+            )}
+          </div>
+          <span className="message-time">
+            {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}
+          </span>
+        </div>
+      ) : (
+        <>
+          <div className="message-header">
+            {!isUserMessage && (
+              <span className="sender-name">
+                {onlineUsers.find(u => u.id === message.sender_id)?.username}
+              </span>
+            )}
+            <span className="message-time">
+              {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}
+            </span>
+          </div>
+          <div className="message-content">
+            {message.message}
+          </div>
+          {isUserMessage && (
+            <div className="message-status">
+              {message.read ? '✓✓' : '✓'}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
+const MessageInput = ({ inputMessage, sendMessage, handleInputChange }) => {
+  return (
+    <div className="message-input-container">
+      <textarea
+        value={inputMessage}
+        onChange={handleInputChange}
+        placeholder="Type your message..."
+        onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+      />
+      <button onClick={sendMessage} disabled={!inputMessage.trim()}>
+        Send
+      </button>
+    </div>
+  );
+};
 
 const MessageComponent = ({ user }) => {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [isTyping, setIsTyping] = useState(false);
   const [unreadCounts, setUnreadCounts] = useState({});
   const [notificationDetails, setNotificationDetails] = useState(null);
-  const [connectionError, setConnectionError] = useState(false);
-  const messagesEndRef = useRef(null);
-  const socketRef = useRef(null);
-  const typingTimeout = useRef(null);
+  const pollingInterval = useRef();
 
-  // Configure WebSocket connection
-  const configureSocket = useCallback(() => {
-    if (!user) return;
-
-    const socketUrl = 'http://54.86.99.85:5000';
-    
-    socketRef.current = io(socketUrl, {
-      withCredentials: true,
-      transports: ['websocket', 'polling'],
-      reconnectionAttempts: 5,
-      query: { 
-        userId: user.id,
-        role: user.role 
+  const fetchMessages = async (receiverId) => {
+    try {
+      const res = await axios.get(`/api/messages/${receiverId}`);
+      if (res.data) {
+        setMessages(res.data);
       }
-    });
-
-    // Connection handlers
-    socketRef.current.on('connect', () => {
-      console.log('WebSocket connected');
-      setConnectionError(false);
-    });
-
-    socketRef.current.on('connect_error', (err) => {
-      console.error('WebSocket connection error:', err);
-      setConnectionError(true);
-    });
-
-    socketRef.current.on('disconnect', (reason) => {
-      console.log('WebSocket disconnected:', reason);
-      if (reason === 'io server disconnect') {
-        socketRef.current.connect();
-      }
-    });
-
-    // Event listeners
-    socketRef.current.on('online_users', handleOnlineUsers);
-    socketRef.current.on('receive_message', handleReceiveMessage);
-    socketRef.current.on('typing', handleTypingIndicator);
-    socketRef.current.on('notification_forwarded', handleForwardedNotification);
-
-    return () => {
-      socketRef.current.off('connect');
-      socketRef.current.off('connect_error');
-      socketRef.current.off('disconnect');
-      socketRef.current.disconnect();
-    };
-  }, [user]);
-
-  useEffect(() => {
-    configureSocket();
-  }, [configureSocket]);
-
-  const handleOnlineUsers = (users) => {
-    setOnlineUsers(users.filter(u => u.id !== user.id));
-  };
-
-  // Add to MessageComponent.js
-useEffect(() => {
-  const activityTimer = setInterval(() => {
-    socketRef.current.emit('user_activity');
-  }, 300000); // 5 minutes
-
-  const activityEvents = ['mousemove', 'keydown', 'scroll'];
-  const handleActivity = () => {
-    socketRef.current.emit('user_activity');
-  };
-
-  activityEvents.forEach(event => {
-    window.addEventListener(event, handleActivity);
-  });
-
-  return () => {
-    clearInterval(activityTimer);
-    activityEvents.forEach(event => {
-      window.removeEventListener(event, handleActivity);
-    });
-  };
-}, []);
-
-  const handleReceiveMessage = (message) => {
-    setMessages(prev => [...prev, message]);
-    if (message.senderId !== selectedUser?.id) {
-      setUnreadCounts(prev => ({
-        ...prev,
-        [message.senderId]: (prev[message.senderId] || 0) + 1
-      }));
+    } catch (error) {
+      console.error('Error fetching messages:', error);
     }
-    scrollToBottom();
   };
 
-  const handleTypingIndicator = ({ senderId, typing }) => {
-    if (senderId === selectedUser?.id) setIsTyping(typing);
+  const fetchOnlineUsers = async () => {
+    try {
+      const res = await axios.get('/api/online-users');
+      setOnlineUsers(res.data);
+    } catch (error) {
+      console.error('Error fetching online users:', error);
+    }
   };
 
-  const handleForwardedNotification = (notification) => {
-    const systemMessage = {
-      id: `notif-${notification.id}`,
-      content: `🚨 Forwarded Alert: ${notification.details.message}`,
-      senderId: 'system',
-      receiverId: user.id,
-      timestamp: new Date().toISOString(),
-      type: 'notification',
-      meta: notification.details
-    };
-    setMessages(prev => [...prev, systemMessage]);
-    scrollToBottom();
-  };
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const sendMessage = useCallback(async () => {
+  const sendMessage = async () => {
     const content = inputMessage.trim();
     if (!content || !selectedUser) return;
 
-    const message = {
-      content,
-      receiverId: selectedUser.id,
-      senderId: user.id,
-      timestamp: new Date().toISOString(),
-      read: false
-    };
-
     try {
-      socketRef.current.emit('send_message', message);
+      await axios.post('/api/messages', {
+        receiver_id: selectedUser.id,
+        message: content
+      });
       setInputMessage('');
+      fetchMessages(selectedUser.id);
     } catch (error) {
       console.error('Message send error:', error);
     }
-  }, [inputMessage, selectedUser, user]);
+  };
 
-  const handleTyping = (e) => {
-    setInputMessage(e.target.value);
-    
-    // Typing indicator with debounce
-    if (typingTimeout.current) clearTimeout(typingTimeout.current);
-    socketRef.current.emit('typing', {
-      receiverId: selectedUser?.id,
-      typing: true
-    });
+  const markMessagesAsRead = async (messageIds) => {
+    try {
+      await axios.put('/api/messages/mark-read', { messageIds });
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+    }
+  };
 
-    typingTimeout.current = setTimeout(() => {
-      socketRef.current.emit('typing', {
-        receiverId: selectedUser?.id,
-        typing: false
+  useEffect(() => {
+    const startPolling = () => {
+      fetchOnlineUsers();
+      if (selectedUser) fetchMessages(selectedUser.id);
+      pollingInterval.current = setInterval(() => {
+        fetchOnlineUsers();
+        if (selectedUser) fetchMessages(selectedUser.id);
+      }, 10000);
+    };
+
+    startPolling();
+    return () => clearInterval(pollingInterval.current);
+  }, [selectedUser]);
+
+  useEffect(() => {
+    const calculateUnreads = () => {
+      const counts = {};
+      messages.forEach(msg => {
+        if (!msg.read && msg.sender_id !== user.id) {
+          counts[msg.sender_id] = (counts[msg.sender_id] || 0) + 1;
+        }
       });
-    }, 1000);
-  };
+      setUnreadCounts(counts);
+    };
+    calculateUnreads();
+  }, [messages, user.id]);
 
-  const renderMessage = (message) => {
-    const isUserMessage = message.senderId === user.id;
-    const isNotification = message.type === 'notification';
+  useEffect(() => {
+    const markAsRead = async () => {
+      const unreadIds = messages
+        .filter(msg => !msg.read && msg.sender_id === selectedUser?.id)
+        .map(msg => msg.id);
 
-    return (
-      <div key={message.id} className={`message ${isUserMessage ? 'sent' : 'received'} ${isNotification ? 'notification' : ''}`}>
-        <div className="message-header">
-          {!isUserMessage && !isNotification && (
-            <span className="sender-name">
-              {onlineUsers.find(u => u.id === message.senderId)?.name}
-            </span>
-          )}
-          <span className="message-time">
-            {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}
-          </span>
-        </div>
-        <div className="message-content">
-          {message.content}
-          {isNotification && (
-            <button 
-              className="details-btn"
-              onClick={() => setNotificationDetails(message.meta)}
-            >
-              View Details
-            </button>
-          )}
-        </div>
-        {isUserMessage && (
-          <div className="message-status">
-            {message.read ? '✓✓' : '✓'}
-          </div>
-        )}
-      </div>
-    );
-  };
+      if (unreadIds.length > 0) {
+        await markMessagesAsRead(unreadIds);
+        fetchMessages(selectedUser.id);
+      }
+    };
+
+    if (selectedUser) markAsRead();
+  }, [messages, selectedUser]);
 
   return (
     <div className="messaging-container">
-      {connectionError && (
-        <div className="connection-error">
-          Connection lost. Trying to reconnect...
-        </div>
-      )}
-
-      <div className="user-list-container">
-        <h2 className="section-title">Online Agents</h2>
-        <div className="user-list">
-          {onlineUsers.map(user => (
-            <div 
-              key={user.id} 
-              className={`user-card ${selectedUser?.id === user.id ? 'active' : ''}`}
-              onClick={() => {
-                setSelectedUser(user);
-                setUnreadCounts(prev => ({ ...prev, [user.id]: 0 }));
-              }}
-            >
-              <div className="user-avatar">
-                <span>{user.name[0]}</span>
-                <div className={`online-status ${user.online ? 'online' : 'offline'}`} />
-              </div>
-              <div className="user-info">
-                <h3>{user.name}</h3>
-                <p>{user.role}</p>
-                {unreadCounts[user.id] > 0 && (
-                  <span className="unread-count">{unreadCounts[user.id]}</span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <Sidebar 
+        user={user}
+        onlineUsers={onlineUsers}
+        selectedUser={selectedUser}
+        setSelectedUser={setSelectedUser}
+        unreadCounts={unreadCounts}
+      />
 
       <div className="chat-container">
         {selectedUser ? (
           <>
             <div className="chat-header">
               <div className="user-info">
-                <div className="avatar">{selectedUser.name[0]}</div>
+                <div className="avatar">{selectedUser.username[0]}</div>
                 <div>
-                  <h2>{selectedUser.name}</h2>
-                  <p className="status">{isTyping ? 'Typing...' : 'Online'}</p>
+                  <h2>{selectedUser.username}</h2>
+                  <p className="status">{onlineUsers.find(u => u.id === selectedUser.id)?.online ? 'Online' : 'Offline'}</p>
                 </div>
               </div>
             </div>
-
+            
             <div className="messages-window">
-              {messages.filter(m => 
-                (m.senderId === selectedUser.id || m.receiverId === selectedUser.id) ||
-                m.type === 'notification'
-              ).map(renderMessage)}
-              <div ref={messagesEndRef} />
+              {messages.map(message => (
+                <MessageBubble 
+                  key={message.id}
+                  message={message}
+                  isUserMessage={message.sender_id === user.id}
+                  onlineUsers={onlineUsers}
+                  setNotificationDetails={setNotificationDetails}
+                />
+              ))}
             </div>
 
-            <div className="message-input-container">
-              <textarea
-                value={inputMessage}
-                onChange={handleTyping}
-                placeholder="Type your message..."
-                onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-                disabled={connectionError}
-              />
-              <button 
-                onClick={sendMessage} 
-                disabled={!inputMessage.trim() || connectionError}
-              >
-                <span className="send-icon">➤</span>
-              </button>
-            </div>
+            <MessageInput 
+              inputMessage={inputMessage}
+              sendMessage={sendMessage}
+              handleInputChange={(e) => setInputMessage(e.target.value)}
+            />
           </>
         ) : (
           <div className="no-selection">
             <div className="welcome-message">
               <h1>Secure Messaging Platform</h1>
-              <p>Select an agent to start communicating</p>
+              <p>Select a user to start communicating</p>
             </div>
           </div>
         )}
@@ -308,12 +268,6 @@ useEffect(() => {
                 ))}
               </div>
             </div>
-            {user.role === 'admin' && (
-              <div className="detail-item">
-                <label>Assigned Agent:</label>
-                <span>{notificationDetails.assigned_agent || 'Unassigned'}</span>
-              </div>
-            )}
           </div>
         </div>
       )}

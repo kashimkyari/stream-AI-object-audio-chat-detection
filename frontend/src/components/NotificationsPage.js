@@ -221,16 +221,19 @@ const NotificationsPage = ({ user, ongoingStreams = [] }) => {
     }
   };
 
-  const forwardNotification = useCallback(async (agentId) => {
-    if (!selectedNotification) return;
-    try {
-      await axios.post(`/api/notifications/${selectedNotification.id}/forward`, { agent_id: agentId });
-      setShowAgentDropdown(false);
-      fetchNotifications();
-    } catch (err) {
-      console.error('Forward error:', err);
-    }
-  }, [selectedNotification, fetchNotifications]);
+// NotificationsPage.js
+const forwardNotification = useCallback(async (agentId) => {
+  if (!selectedNotification) return;
+  try {
+    await axios.post(`/api/notifications/${selectedNotification.id}/forward`, { 
+      agent_id: agentId 
+    });
+    setShowAgentDropdown(false);
+    fetchNotifications();
+  } catch (err) {
+    console.error('Forward error:', err);
+  }
+}, [selectedNotification, fetchNotifications]);
 
   const handleNotificationClick = (notification) => {
     if (!notification.read) markAsRead(notification.id);
