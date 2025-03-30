@@ -38,20 +38,26 @@ const Sidebar = ({ user, onlineUsers, selectedUser, setSelectedUser, unreadCount
 };
 
 const MessageBubble = ({ message, isUserMessage, onlineUsers, setNotificationDetails }) => {
+  const renderDetailsButton = () => {
+    if (!message.details) return null;
+    
+    return (
+      <button 
+        className="details-btn"
+        onClick={() => setNotificationDetails(message.details)}
+      >
+        View Alert Details
+      </button>
+    );
+  };
+
   return (
     <div className={`message ${isUserMessage ? 'sent' : 'received'} ${message.is_system ? 'system' : ''}`}>
       {message.is_system ? (
         <div className="system-message">
           <div className="message-content">
             {message.message}
-            {message.details && (
-              <button 
-                className="details-btn"
-                onClick={() => setNotificationDetails(message.details)}
-              >
-                View Details
-              </button>
-            )}
+            {renderDetailsButton()}
           </div>
           <span className="message-time">
             {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}
@@ -95,6 +101,84 @@ const MessageInput = ({ inputMessage, sendMessage, handleInputChange }) => {
       <button onClick={sendMessage} disabled={!inputMessage.trim()}>
         Send
       </button>
+    </div>
+  );
+};
+
+const NotificationModal = ({ notificationDetails, closeModal }) => {
+  if (!notificationDetails) return null;
+
+  const renderContent = () => {
+    if (!notificationDetails) return null;
+
+    switch(notificationDetails.event_type) {
+      case 'object_detection':
+        return (
+          <>
+            <div className="image-preview">
+              {notificationDetails.annotated_image && (
+                <img 
+                  src={`data:image/jpeg;base64,${notificationDetails.annotated_image}`} 
+                  alt="Annotated detection"
+                />
+              )}
+            </div>
+            <div className="detection-list">
+              {notificationDetails.detections?.map((det, i) => (
+                <div key={i} className="detection-item">
+                  <span>{det.class}</span>
+                  <span className="confidence">
+                    {(det.confidence * 100).toFixed(1)}%
+                  </span>
+                </div>
+              ))}
+            </div>
+          </>
+        );
+      case 'chat_detection':
+        return (
+          <>
+            <div className="keywords-list">
+              {notificationDetails.keywords?.map((kw, i) => (
+                <span key={i} className="keyword-tag">{kw}</span>
+              ))}
+            </div>
+            <div className="chat-messages">
+              {notificationDetails.messages?.map((msg, i) => (
+                <div key={i} className="chat-message">
+                  <span className="sender">{msg.sender}:</span>
+                  <span className="content">{msg.message}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        );
+      case 'audio_detection':
+        return (
+          <>
+            <div className="keyword">{notificationDetails.keyword}</div>
+            <div className="transcript">{notificationDetails.transcript}</div>
+          </>
+        );
+      default:
+        return <div>{JSON.stringify(notificationDetails)}</div>;
+    }
+  };
+
+  return (
+    <div className="notification-modal">
+      <div className="modal-content">
+        <button className="close-btn" onClick={closeModal}>×</button>
+        <h3>Alert Details</h3>
+        <div className="meta-info">
+          <div>Platform: {notificationDetails.platform}</div>
+          <div>Streamer: {notificationDetails.streamer}</div>
+          <div>Time: {new Date(notificationDetails.timestamp).toLocaleString()}</div>
+        </div>
+        <div className="alert-content">
+          {renderContent()}
+        </div>
+      </div>
     </div>
   );
 };
@@ -159,7 +243,7 @@ const MessageComponent = ({ user }) => {
       pollingInterval.current = setInterval(() => {
         fetchOnlineUsers();
         if (selectedUser) fetchMessages(selectedUser.id);
-      }, 10000);
+      }, 10000); // Poll every 10 seconds
     };
 
     startPolling();
@@ -212,7 +296,9 @@ const MessageComponent = ({ user }) => {
                 <div className="avatar">{selectedUser.username[0]}</div>
                 <div>
                   <h2>{selectedUser.username}</h2>
-                  <p className="status">{onlineUsers.find(u => u.id === selectedUser.id)?.online ? 'Online' : 'Offline'}</p>
+                  <p className="status">
+                    {onlineUsers.find(u => u.id === selectedUser.id)?.online ? 'Online' : 'Offline'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -245,32 +331,10 @@ const MessageComponent = ({ user }) => {
         )}
       </div>
 
-      {notificationDetails && (
-        <div className="notification-modal">
-          <div className="modal-content">
-            <button className="close-btn" onClick={() => setNotificationDetails(null)}>×</button>
-            <h3>Alert Details</h3>
-            <div className="detail-item">
-              <label>Streamer:</label>
-              <span>{notificationDetails.streamer_name || 'N/A'}</span>
-            </div>
-            <div className="detail-item">
-              <label>Platform:</label>
-              <span>{notificationDetails.platform || 'N/A'}</span>
-            </div>
-            <div className="detail-item">
-              <label>Detections:</label>
-              <div className="detection-list">
-                {notificationDetails.detections?.map((det, i) => (
-                  <span key={i} className="detection-tag">
-                    {det.class} ({(det.confidence * 100).toFixed(1)}%)
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <NotificationModal 
+        notificationDetails={notificationDetails}
+        closeModal={() => setNotificationDetails(null)}
+      />
     </div>
   );
 };

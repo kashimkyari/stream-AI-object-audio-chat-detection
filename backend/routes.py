@@ -1013,8 +1013,7 @@ def get_forwarded_notifications():
         return jsonify({"error": str(e)}), 500
 
 
-# Update existing forward endpoint
-# routes.py
+# In routes.py - update the forward_notification function
 @app.route("/api/notifications/<int:notification_id>/forward", methods=["POST"])
 @login_required(role="admin")
 def forward_notification(notification_id):
@@ -1027,39 +1026,26 @@ def forward_notification(notification_id):
     if not notification or not agent:
         return jsonify({"message": "Invalid notification or agent"}), 404
 
-    # Build detailed message content
-    details = {
-        "event_type": notification.event_type,
-        "timestamp": notification.timestamp.isoformat(),
-        "stream_url": notification.room_url,
-        "streamer": notification.details.get('streamer_name', 'Unknown'),
-        "platform": notification.details.get('platform', 'Unknown')
-    }
+    # Check if agent is assigned to this stream
+    assignment = Assignment.query.filter_by(
+        agent_id=agent_id,
+        stream_id=Stream.query.filter_by(room_url=notification.room_url).first().id
+    ).first()
 
-    # Add type-specific details
-    if notification.event_type == 'object_detection':
-        details.update({
-            "detections": notification.details.get('detections', []),
-            "annotated_image": base64.b64encode(notification.detection_image).decode('utf-8') 
-                if notification.detection_image else None
-        })
-    elif notification.event_type == 'chat_detection':
-        details.update({
-            "keywords": notification.details.get('keywords', []),
-            "messages": notification.details.get('detections', [])
-        })
-    elif notification.event_type == 'audio_detection':
-        details.update({
-            "keyword": notification.details.get('keyword'),
-            "transcript": notification.details.get('transcript')
-        })
+    if not assignment:
+        return jsonify({"message": "Agent is not assigned to this stream"}), 400
 
     # Create system message
     sys_msg = ChatMessage(
         sender_id=session['user_id'],
         receiver_id=agent.id,
         message=f"🚨 Forwarded {notification.event_type.replace('_', ' ').title()} Alert",
-        details=details,
+        details={
+            **notification.details,
+            "assigned_stream": notification.room_url,
+            "assigned_streamer": notification.details.get('streamer_name'),
+            "assigned_platform": notification.details.get('platform')
+        },
         is_system=True,
         timestamp=datetime.utcnow()
     )
@@ -1067,8 +1053,61 @@ def forward_notification(notification_id):
     db.session.add(sys_msg)
     db.session.commit()
     
-    return jsonify({"message": "Notification forwarded", "message": sys_msg.serialize()}), 200
+    return jsonify({"message": "Notification forwarded"}), 200
 
+# In routes.py
+@app.route("/api/agent/notifications/<int:notification_id>/read", methods=["PUT"])
+@login_required(role="agent")
+def mark_notification_read(notification_id):
+    try:
+        notification = DetectionLog.query.get(notification_id)
+        if not notification:
+            return jsonify({"message": "Notification not found"}), 404
+            
+        # Verify agent is assigned to this stream
+        agent_id = session["user_id"]
+        assignment = Assignment.query.join(Stream).filter(
+            Assignment.agent_id == agent_id,
+            Stream.room_url == notification.room_url
+        ).first()
+        
+        if not assignment:
+            return jsonify({"message": "Not authorized"}), 403
+            
+        notification.read = True
+        db.session.commit()
+        
+        return jsonify({"message": "Notification marked as read"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/agent/notifications", methods=["GET"])
+@login_required(role="agent")
+def get_agent_notifications():
+    try:
+        agent_id = session["user_id"]
+        
+        # Get all streams assigned to this agent
+        assigned_streams = Assignment.query.filter_by(agent_id=agent_id).all()
+        stream_urls = [assignment.stream.room_url for assignment in assigned_streams]
+        
+        # Get notifications for these streams
+        notifications = DetectionLog.query.filter(
+            DetectionLog.room_url.in_(stream_urls)
+        ).order_by(DetectionLog.timestamp.desc()).all()
+        
+        return jsonify([{
+            "id": n.id,
+            "event_type": n.event_type,
+            "timestamp": n.timestamp.isoformat(),
+            "details": n.details,
+            "read": n.read,
+            "room_url": n.room_url,
+            "streamer": n.details.get('streamer_name', 'Unknown'),
+            "platform": n.details.get('platform', 'Unknown')
+        } for n in notifications]), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/streams/refresh/stripchat", methods=["POST"])
