@@ -488,8 +488,8 @@ def fetch_m3u8_from_page(url, timeout=90):
 
 def scrape_stripchat_data(url, progress_callback=None):
     """
-    Enhanced Stripchat scraper with modern browser emulation and robust HLS (m3u8) detection.
-    Uses Selenium Wire to intercept network requests for capturing m3u8 URLs.
+    Enhanced Stripchat scraper that intercepts network XHR requests to capture HLS (m3u8) URL.
+    This version does not look for the video element, relying solely on intercepted network requests.
 
     Args:
         url (str): The Stripchat stream URL.
@@ -499,9 +499,9 @@ def scrape_stripchat_data(url, progress_callback=None):
         dict: Stream status and extracted m3u8 URL or error details.
     """
 
-    def update_progress(p, m):
+    def update_progress(percent, message):
         if progress_callback:
-            progress_callback(p, m)
+            progress_callback(percent, message)
 
     try:
         update_progress(10, "Initializing browser")
@@ -528,42 +528,45 @@ def scrape_stripchat_data(url, progress_callback=None):
             update_progress(20, "Loading page")
             driver.get(url)
             
-            # Wait for the video element to be present
-            WebDriverWait(driver, 20).until(
-                EC.presence_of_element_located((By.TAG_NAME, "video"))
-            )
-            update_progress(40, "Capturing stream data")
-
-            # Try to obtain m3u8 URL directly from the video element
-            video_element = driver.find_element(By.TAG_NAME, "video")
-            m3u8_url = driver.execute_script("return arguments[0].src;", video_element)
-
-            # Enhance: If direct extraction fails, search network requests for m3u8 URL
-            if not m3u8_url or "m3u8" not in m3u8_url:
-                update_progress(50, "Analyzing network traffic for m3u8 URL")
-                m3u8_urls = []
-                # Allow some time for network traffic to accumulate
-                time.sleep(3)
-                
-                # Loop through all intercepted requests
+            # Wait up to 10 seconds for network traffic to capture m3u8 requests
+            update_progress(30, "Waiting for network XHR requests")
+            m3u8_urls = set()
+            max_wait = 10
+            start_time = time.time()
+            while time.time() - start_time < max_wait:
                 for request in driver.requests:
+                    # Check only XHR requests that have a response and include m3u8 in URL
                     if request.response and request.method == "GET" and "m3u8" in request.url:
                         clean_url = request.url.split('?')[0]
-                        if clean_url not in m3u8_urls:
-                            m3u8_urls.append(clean_url)
-                
-                # Prioritize URLs that include 'chunklist' indicating HLS segments
-                m3u8_url = next((req_url for req_url in m3u8_urls if "chunklist" in req_url), None)
+                        m3u8_urls.add(clean_url)
+                if m3u8_urls:
+                    break
+                time.sleep(1)
+
+            # Log candidate URLs for debugging purposes
+            if m3u8_urls:
+                logging.debug(f"Candidate m3u8 URLs: {list(m3u8_urls)}")
+            else:
+                logging.error("No m3u8 URLs found in intercepted XHR requests.")
+
+            # Prioritize URLs containing 'chunklist' to ensure HLS segments
+            m3u8_url = next((url for url in m3u8_urls if "chunklist" in url), None)
+            # If none with 'chunklist', fall back to any candidate
+            if not m3u8_url and m3u8_urls:
+                m3u8_url = next(iter(m3u8_urls))
 
             if not m3u8_url:
-                raise RuntimeError("M3U8 URL not found in video element or network requests.")
+                # Provide full network debug info if available
+                network_debug = [req.url for req in driver.requests if "m3u8" in req.url]
+                logging.error(f"No m3u8 URL found. Network debug info: {network_debug}")
+                raise RuntimeError("M3U8 URL not found in network requests.")
 
             update_progress(80, "Validating stream URL")
-            # Validate URL format
+            # Validate the m3u8 URL format
             if not re.match(r"https?://[^\s]+\.m3u8", m3u8_url):
                 raise ValueError("Invalid M3U8 URL format detected.")
 
-            # Extract streamer username from the URL
+            # Extract streamer username from the provided URL (fallback extraction)
             streamer_username = url.rstrip("/").split("/")[-1]
 
             update_progress(100, "Stream URL successfully captured")
@@ -598,7 +601,6 @@ def scrape_stripchat_data(url, progress_callback=None):
             "error_type": "scraping_error",
             "platform": "stripchat"
         }
-
 
 def run_scrape_job(job_id, url):
     """Run a scraping job and update progress interactively."""
