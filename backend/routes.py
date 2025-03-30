@@ -955,18 +955,6 @@ def get_notifications():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/api/notifications/<int:notification_id>/read", methods=["PUT"])
-@login_required()
-def mark_notification_read(notification_id):
-    try:
-        notification = DetectionLog.query.get(notification_id)
-        if not notification:
-            return jsonify({"message": "Notification not found"}), 404
-        notification.read = True
-        db.session.commit()
-        return jsonify({"message": "Notification marked as read"}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 @app.route("/api/notifications/<int:notification_id>", methods=["DELETE"])
 @login_required(role="admin")
