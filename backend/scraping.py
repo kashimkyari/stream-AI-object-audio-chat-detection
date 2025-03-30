@@ -642,8 +642,21 @@ def run_stream_creation_job(job_id, room_url, platform, agent_id=None):
             # Phase 3: Database
             update_stream_job_progress(job_id, 50, "Creating record")
             try:
-                stream = ChaturbateStream(**scraped_data) if platform == "chaturbate" \
-                    else StripchatStream(**scraped_data)
+                # In the section where the stream is created:
+                if platform == "chaturbate":
+                    stream = ChaturbateStream(
+                        room_url=room_url,
+                        streamer_username=scraped_data['streamer_username'],
+                        chaturbate_m3u8_url=scraped_data['chaturbate_m3u8_url'],
+                        type='chaturbate'
+                    )
+                else:
+                    stream = StripchatStream(
+                        room_url=room_url,
+                        streamer_username=scraped_data['streamer_username'],
+                        stripchat_m3u8_url=scraped_data['stripchat_m3u8_url'],
+                        type='stripchat'
+                    )
                     
                 db.session.add(stream)
                 db.session.commit()
