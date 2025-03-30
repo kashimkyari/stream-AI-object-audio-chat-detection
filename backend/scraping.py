@@ -255,30 +255,29 @@ def get_random_proxy() -> dict:
 def get_hls_url(room_slug: str, max_attempts: int = 15) -> dict:
     """
     Send a POST request to Chaturbate's endpoint to fetch the HLS URL for a given room.
-    Tries multiple proxies from the free proxy list if necessary.
-    
-    Enhanced logging is added to capture raw responses and diagnose errors.
-    If the response does not contain 'hls_url' but does contain 'url', it is used as the HLS URL.
-    
-    Args:
-        room_slug (str): The room slug to query.
-        max_attempts (int): Maximum number of attempts with different proxies.
-    
-    Returns:
-        dict: JSON response from the endpoint if successful.
-              Expected to contain the HLS URL under 'hls_url' or 'url'.
-        None: If all attempts fail.
+    Includes necessary headers and cookies observed from browser DevTools.
     """
     url = 'https://chaturbate.com/get_edge_hls_url_ajax/'
+    
+    # Dynamic boundary generation
+    boundary = uuid.uuid4().hex
+    
     headers = {
         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0',
-        # ... (headers remain unchanged)
+        'X-Requested-With': 'XMLHttpRequest',
+        'Referer': f'https://chaturbate.com/{room_slug}/',
+        'Origin': 'https://chaturbate.com',
+        'Content-Type': f'multipart/form-data; boundary={boundary}',
+        'Cookie': (
+            'csrftoken=QBEfLYOhYb02QMAA8FsDhvimMi2rbhTh; '
+            '__cf_bm=aRWJoCGvyxZsRyCS9qMJeMwF1ikmvIEucwTQpB3VDcE-1743303491-1.0.1.1-pc6j_3W8_POkMuCh2yhnhdG18vOaMl1tAsv9bIjj8wDQn9M4W3pGJN5yaucI8_vJp4meSVffE62zILQmuHg.ipapPlEw3OCsfsBNg05dEV0; '
+            'sbr=sec:sbr9f095e3f-07ec-4e77-a51a-051c8118632f:1txykY:nZcRPVNiTcLgruuwAyCND2URhh7k8KiarIG-keMrJm0; '
+            'agreeterms=1; '
+            'stcki="Eg6Gdq=1"'
+        )
     }
 
-    # Define the boundary string (without prefixed dashes)
-    boundary = "----geckoformboundary6a610b256c356f4fb7599aaf07b1de15"
-
-    # Construct the multipart/form-data payload.
+    # Construct dynamic multipart payload
     payload = (
         f'--{boundary}\r\n'
         'Content-Disposition: form-data; name="room_slug"\r\n\r\n'
@@ -288,7 +287,7 @@ def get_hls_url(room_slug: str, max_attempts: int = 15) -> dict:
         'high\r\n'
         f'--{boundary}\r\n'
         'Content-Disposition: form-data; name="current_edge"\r\n\r\n'
-        'edge10-mad.live.mmcdn.com\r\n'
+        '\r\n'  # Empty current_edge to let server assign
         f'--{boundary}\r\n'
         'Content-Disposition: form-data; name="exclude_edge"\r\n\r\n'
         '\r\n'
@@ -302,158 +301,86 @@ def get_hls_url(room_slug: str, max_attempts: int = 15) -> dict:
     while attempts < max_attempts:
         proxy_dict = get_random_proxy()
         try:
-            logging.info("Attempt %s: Using proxy %s", attempts + 1, proxy_dict['http'])
             response = requests.post(
                 url,
                 headers=headers,
                 data=payload.encode('utf-8'),
                 proxies=proxy_dict,
                 timeout=10,
-                verify=False  # Disable SSL verification due to proxy issues
+                verify=False
             )
-            response.raise_for_status()  # Raise error for non-200 HTTP status codes
-            logging.info("Request successful using proxy %s", proxy_dict['http'])
-            try:
-                result = response.json()
-            except ValueError as json_err:
-                # Log the raw response to help diagnose the issue
-                logging.error("JSON decoding failed with proxy %s: %s", proxy_dict['http'], json_err)
-                logging.error("Raw response content: %s", response.text)
-                attempts += 1
-                time.sleep(1)
-                continue
+            response.raise_for_status()
+            result = response.json()
 
-            # Check for offline status first
             if result.get('room_status') == 'offline':
-                logging.error("Room is offline, stopping attempts")
                 return {'error': 'room_offline', 'message': 'Stream is offline'}
 
-            if result:
-                # Use 'hls_url' if available; otherwise, check for 'url'
-                hls_url = result.get("hls_url") or result.get("url")
-                if hls_url:
-                    logging.info("HLS URL found: %s", hls_url)
-                    # Ensure the result dict contains 'hls_url'
-                    result["hls_url"] = hls_url
-                    return result
-                else:
-                    error_msg = "HLS URL not found in response"
-                    logging.error(error_msg)
-                    logging.error("Response content: %s", result)
-                    attempts += 1
-                    time.sleep(1)
-                    continue
-            else:
-                logging.error("Empty JSON response received.")
-                attempts += 1
-                time.sleep(1)
-                continue
-        except (RequestException, SSLError) as e:
-            logging.error("Request failed with proxy %s: %s", proxy_dict['http'], e)
+            hls_url = result.get("hls_url") or result.get("url")
+            if hls_url:
+                result["hls_url"] = hls_url
+                return result
+            
             attempts += 1
-            time.sleep(1)
         except Exception as e:
-            logging.error("Unexpected error with proxy %s: %s", proxy_dict['http'], e)
             attempts += 1
             time.sleep(1)
 
-    logging.error("Exceeded maximum proxy attempts.")
     return None
-
-
 
 
 # --- Updated Chaturbate Scraping Function (Using AJAX) ---
 def scrape_chaturbate_data(url, progress_callback=None):
-    """Scrape Chaturbate using headless browser to capture M3U8 from network"""
-    from selenium.webdriver.support.ui import WebDriverWait
-    from selenium.webdriver.support import expected_conditions as EC
-    from selenium.webdriver.common.by import By
-
-    def update_progress(p, m):
-        if progress_callback:
-            progress_callback(p, m)
-
+    """Enhanced Chaturbate scraper with validation"""
     try:
-        update_progress(10, "Initializing browser")
+        # Initial validation
+        if not url or 'chaturbate.com/' not in url:
+            raise ValueError("Invalid Chaturbate URL")
+
+        # Progress tracking
+        def update_progress(p, m):
+            if progress_callback:
+                progress_callback(p, m)
+
+        update_progress(10, "Extracting room slug")
+        room_slug = extract_room_slug(url)
         
-        # Configure stealth browser
-        chrome_options = Options()
-        chrome_options.add_argument("--headless=new")
-        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-        chrome_options.add_argument("--window-size=1920,1080")
-        chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36")
-        chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
-        chrome_options.add_experimental_option("useAutomationExtension", False)
-
-        driver = webdriver.Chrome(options=chrome_options)
+        update_progress(30, "Fetching HLS URL")
+        result = get_hls_url(room_slug)
         
-        try:
-            update_progress(20, "Loading room page")
-            driver.get(url)
+        # Response validation
+        if not result:
+            raise ValueError("Empty response from Chaturbate API")
+        
+        if 'error' in result:
+            error_msg = result.get('message', 'Unknown error')
+            raise RuntimeError(f"Chaturbate API error: {error_msg}")
             
-            # Wait for video container or offline indicator
-            try:
-                WebDriverWait(driver, 15).until(
-                    EC.presence_of_element_located((By.CSS_SELECTOR, "#video-container, .offline-placeholder"))
-                )
-            except:
-                raise RuntimeError("Page failed to load")
+        hls_url = result.get("hls_url") or result.get("url")
+        if not hls_url:
+            raise ValueError("Missing HLS URL in response")
+            
+        if 'edge' not in hls_url:
+            raise ValueError("Invalid HLS URL format")
 
-            # Check for offline status
-            if driver.find_elements(By.CSS_SELECTOR, ".offline-placeholder"):
-                raise RuntimeError("Stream is offline")
-
-            update_progress(40, "Monitoring network requests")
-            
-            # Capture M3U8 URLs with CDN pattern
-            m3u8_urls = []
-            start_time = time.time()
-            timeout = 25  # Increased timeout for slow streams
-            
-            while time.time() - start_time < timeout:
-                for request in driver.requests:
-                    if request.response and "m3u8" in request.url and "edge" in request.url:
-                        clean_url = request.url.split('?')[0]
-                        if clean_url not in m3u8_urls:
-                            m3u8_urls.append(clean_url)
-                if m3u8_urls:
-                    break
-                time.sleep(1)
-
-            if not m3u8_urls:
-                raise RuntimeError("M3U8 URL not found in network requests")
-
-            update_progress(80, "Validating stream URL")
-            
-            # Get streamer username from URL
-            streamer_username = url.rstrip("/").split("/")[-1]
-            
-            return {
-                "status": "online",
-                "streamer_username": streamer_username,
-                "chaturbate_m3u8_url": m3u8_urls[0],
-                "backup_urls": m3u8_urls[1:]  # CDN fallbacks
-            }
-            
-        except Exception as e:
-            # Capture screenshot for debugging
-            driver.save_screenshot(f"chaturbate_error_{int(time.time())}.png")
-            raise e
-            
-        finally:
-            driver.quit()
+        update_progress(100, "Scraping complete")
+        return {
+            "status": "online",
+            "streamer_username": room_slug,
+            "chaturbate_m3u8_url": hls_url,
+        }
 
     except Exception as e:
-        error_msg = f"Chaturbate scraping failed: {str(e)}"
+        error_msg = f"Scraping failed: {str(e)}"
         logging.error(error_msg)
-        update_progress(100, error_msg)
+        if progress_callback:
+            progress_callback(100, error_msg)
         return {
             "status": "error",
             "message": error_msg,
-            "error_type": "scraping_error",
-            "platform": "chaturbate"
+            "details": str(e)
         }
+
+
 # --- Existing Functions Remain Unchanged ---
 def fetch_page_content(url, use_selenium=False):
     """
