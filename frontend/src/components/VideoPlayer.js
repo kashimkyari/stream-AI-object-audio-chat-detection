@@ -10,7 +10,8 @@ const HlsPlayer = ({
   platform, 
   streamerName, 
   onError,
-  onRefresh 
+  onRefresh,
+  loading 
 }) => {
   const videoRef = React.useRef(null);
   const [isStreamLoaded, setIsStreamLoaded] = useState(false);
@@ -21,6 +22,7 @@ const HlsPlayer = ({
   const [volume, setVolume] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // Video control handlers
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.muted = isMuted;
@@ -28,6 +30,7 @@ const HlsPlayer = ({
     }
   }, [isMuted, volume]);
 
+  // HLS initialization
   useEffect(() => {
     let hls;
     if (!m3u8Url) {
@@ -81,17 +84,6 @@ const HlsPlayer = ({
     return () => hls?.destroy();
   }, [m3u8Url, refreshKey, onError]);
 
-  useEffect(() => {
-    if (isStreamLoaded && m3u8Url) {
-      axios.post('/api/trigger-detection', {
-        stream_url: m3u8Url,
-        timestamp: new Date().toISOString(),
-        platform: platform,
-        streamer_name: streamerName
-      }).catch(console.error);
-    }
-  }, [isStreamLoaded, m3u8Url, platform, streamerName]);
-
   const handleRefresh = async () => {
     setHasError(false);
     setIsLoading(true);
@@ -113,7 +105,7 @@ const HlsPlayer = ({
         </div>
       )}
 
-      {isLoading && (
+      {(isLoading || loading) && (
         <div className="loading-overlay">
           <div className="loading-spinner"></div>
           <div className="loading-text">Loading stream...</div>
@@ -121,14 +113,36 @@ const HlsPlayer = ({
       )}
 
       {hasError && (
-        <div className="error-overlay">
-          <div className="error-icon">⚠️</div>
-          <div className="error-text">{errorMessage}</div>
-          {(platform === 'chaturbate' || platform === 'stripchat') && (
-            <button className="refresh-button" onClick={handleRefresh}>
-              Refresh Stream
-            </button>
-          )}
+        <div className="interactive-overlay" onClick={handleRefresh}>
+          <div className="offline-content">
+            <img 
+              src={posterUrl || '/default-thumbnail.jpg'} 
+              alt="Stream preview" 
+              className="offline-thumbnail"
+            />
+            <div className="offline-message">
+              <div className="offline-icon">🔴</div>
+              <h3>Stream Offline</h3>
+              <p>We're trying to reconnect automatically</p>
+              <button 
+                className="refresh-button interactive-button"
+                onClick={handleRefresh}
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <span className="spinner"></span>
+                    Refreshing...
+                  </>
+                ) : (
+                  'Try Now'
+                )}
+              </button>
+              <div className="retry-timer">
+                <div className="timer-bar" style={{ width: `${loading ? 100 : 0}%` }}></div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -146,6 +160,7 @@ const HlsPlayer = ({
           <button 
             className="mute-button"
             onClick={() => setIsMuted(!isMuted)}
+            aria-label={isMuted ? "Unmute" : "Mute"}
           >
             {isMuted ? '🔇' : volume > 0 ? '🔊' : '🔈'}
           </button>
@@ -161,6 +176,7 @@ const HlsPlayer = ({
               setVolume(newVolume);
               if (newVolume > 0) setIsMuted(false);
             }}
+            aria-label="Volume control"
           />
         </div>
       )}
@@ -179,6 +195,7 @@ const VideoPlayer = ({
   const [m3u8Url, setM3u8Url] = useState(null);
   const [posterUrl, setPosterUrl] = useState(null);
   const [videoHasError, setVideoHasError] = useState(false);
+  const [lastChecked, setLastChecked] = useState(new Date());
 
   useEffect(() => {
     if (!isOnline || videoHasError) {
@@ -212,6 +229,7 @@ const VideoPlayer = ({
         setPosterUrl(`https://jpeg.live.mmcdn.com/stream?room=${streamerName}&f=${Math.random()}`);
       } finally {
         setLoading(false);
+        setLastChecked(new Date());
       }
     };
 
@@ -245,6 +263,7 @@ const VideoPlayer = ({
       setVideoHasError(true);
     } finally {
       setLoading(false);
+      setLastChecked(new Date());
     }
   };
 
@@ -257,7 +276,10 @@ const VideoPlayer = ({
   return (
     <div className="video-container">
       {loading ? (
-        <div className="loading-message">Loading...</div>
+        <div className="loading-state">
+          <div className="loading-animation"></div>
+          <p>Checking stream status...</p>
+        </div>
       ) : (
         <>
           {isOnline && !videoHasError ? (
@@ -273,6 +295,7 @@ const VideoPlayer = ({
                   setIsOnline(!error);
                 }}
                 onRefresh={handleRefresh}
+                loading={loading}
               />
               
               {!isModalOpen && (
@@ -282,37 +305,30 @@ const VideoPlayer = ({
               )}
             </div>
           ) : (
-            <div className="error-state">
-              <div className="error-message">
-                {platform === 'stripchat' 
-                  ? 'Stripchat stream is offline' 
-                  : 'Chaturbate stream is offline'}
-              </div>
-              <button 
-                className="refresh-button" 
-                onClick={handleRefresh}
-                disabled={loading}
-              >
-                {loading ? 'Refreshing...' : 'Try Refresh'}
-              </button>
-            </div>
-          )}
-
-          {isModalOpen && (
-            <div className="modal-overlay" onClick={handleModalToggle}>
-              <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                <HlsPlayer
-                  m3u8Url={m3u8Url}
-                  isModalOpen={true}
-                  posterUrl={posterUrl}
-                  platform={platform}
-                  streamerName={streamerName}
-                  onError={setVideoHasError}
-                  onRefresh={handleRefresh}
-                />
-                <button className="close-modal" onClick={handleModalToggle}>
-                  &times;
-                </button>
+            <div className="interactive-offline">
+              <div className="offline-card">
+                <div className="platform-icon">
+                  {platform === 'chaturbate' ? '🎥' : '📡'}
+                </div>
+                <h3>{streamerName} is Offline</h3>
+                <p className="last-checked">
+                  Last checked: {lastChecked.toLocaleTimeString()}
+                </p>
+                <div className="action-buttons">
+                  <button 
+                    className="refresh-button" 
+                    onClick={handleRefresh}
+                    disabled={loading}
+                  >
+                    {loading ? 'Checking...' : 'Check Again'}
+                  </button>
+                  <button 
+                    className="notify-button"
+                    onClick={() => {/* Implement notification logic */}
+                  >
+                    Notify Me When Live
+                  </button>
+                </div>
               </div>
             </div>
           )}
