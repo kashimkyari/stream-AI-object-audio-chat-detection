@@ -46,7 +46,7 @@ from flask import jsonify
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Import models and database session for stream creation.
-from models import ChaturbateStream, StripchatStream, Assignment, TelegramRecipient
+from models import Stream, ChaturbateStream, StripchatStream, Assignment, TelegramRecipient, User
 from extensions import db
 from config import app  # Use the Flask app for application context
 from notifications import send_text_message
@@ -573,25 +573,30 @@ def run_scrape_job(job_id, url):
     update_job_progress(job_id, 100, scrape_jobs[job_id].get("error", "Scraping complete"))
 
 
-def run_stream_creation_job(job_id, room_url, platform, agent_id=None):
-    """Phased stream creation with proper error handling"""
-    with app.app_context():
-        # Initialize job with all required fields
-        stream_creation_jobs[job_id] = {
-            'start_time': time.time(),
-            'progress': 0,
-            'message': 'Initializing',
-            'estimated_time': 120,
-            'last_updated': time.time(),
-            'error': None,
-            'stream': None
-        }
-        
-        try:
-            # Phase 1: Validation
-            update_stream_job_progress(job_id, 5, "Validating input parameters")
-            if Stream.query.filter_by(room_url=room_url).first():
-                raise ValueError(f"Stream {room_url} already exists")
+    def run_stream_creation_job(job_id, room_url, platform, agent_id=None):
+        """Phased stream creation with proper DB handling"""
+        with app.app_context():
+            try:
+                # Initialize job first
+                stream_creation_jobs[job_id] = {
+                    'start_time': time.time(),
+                    'progress': 0,
+                    'message': 'Initializing',
+                    'estimated_time': 120,
+                    'last_updated': time.time(),
+                    'error': None,
+                    'stream': None
+                }
+
+                # Phase 1: Validation with explicit commit
+                update_stream_job_progress(job_id, 5, "Validating input parameters")
+                with db.session.begin():
+                    exists = db.session.query(
+                        db.exists().where(Stream.room_url == room_url)
+                    ).scalar()
+                    
+                if exists:
+                    raise ValueError(f"Stream {room_url} already exists")
 
             # Phase 2: Scraping
             update_stream_job_progress(job_id, 10, f"Starting {platform} scraping")
