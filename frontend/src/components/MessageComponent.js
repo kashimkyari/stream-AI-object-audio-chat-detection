@@ -6,7 +6,7 @@ import './MessageComponent.css';
 const Sidebar = ({ user, onlineUsers, selectedUser, setSelectedUser, unreadCounts }) => {
   return (
     <div className="user-list-container">
-      <h2 className="section-title">Online Users</h2>
+      <h2 className="section-title">Users</h2>
       <div className="user-list">
         {onlineUsers.map(u => (
           <div 
