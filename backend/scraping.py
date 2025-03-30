@@ -573,30 +573,30 @@ def run_scrape_job(job_id, url):
     update_job_progress(job_id, 100, scrape_jobs[job_id].get("error", "Scraping complete"))
 
 
-    def run_stream_creation_job(job_id, room_url, platform, agent_id=None):
-        """Phased stream creation with proper DB handling"""
-        with app.app_context():
-            try:
-                # Initialize job first
-                stream_creation_jobs[job_id] = {
-                    'start_time': time.time(),
-                    'progress': 0,
-                    'message': 'Initializing',
-                    'estimated_time': 120,
-                    'last_updated': time.time(),
-                    'error': None,
-                    'stream': None
-                }
+def run_stream_creation_job(job_id, room_url, platform, agent_id=None):
+    """Phased stream creation with proper DB handling"""
+    with app.app_context():
+        try:
+            # Initialize job first
+            stream_creation_jobs[job_id] = {
+                'start_time': time.time(),
+                'progress': 0,
+                'message': 'Initializing',
+                'estimated_time': 120,
+                'last_updated': time.time(),
+                'error': None,
+                'stream': None
+            }
 
-                # Phase 1: Validation with explicit commit
-                update_stream_job_progress(job_id, 5, "Validating input parameters")
-                with db.session.begin():
-                    exists = db.session.query(
-                        db.exists().where(Stream.room_url == room_url)
-                    ).scalar()
-                    
-                if exists:
-                    raise ValueError(f"Stream {room_url} already exists")
+            # Phase 1: Validation with explicit commit
+            update_stream_job_progress(job_id, 5, "Validating input parameters")
+            with db.session.begin():
+                exists = db.session.query(
+                    db.exists().where(Stream.room_url == room_url)
+                ).scalar()
+                
+            if exists:
+                raise ValueError(f"Stream {room_url} already exists")
 
             # Phase 2: Scraping
             update_stream_job_progress(job_id, 10, f"Starting {platform} scraping")
