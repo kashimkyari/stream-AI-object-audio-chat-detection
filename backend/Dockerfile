@@ -7,11 +7,12 @@ WORKDIR /app
 # Copy the requirements file into the container
 COPY requirements.txt .
 
-# Install dependencies
+# Install dependencies and clean up apt cache for a smaller image size
 RUN apt-get update && apt-get install -y \
     build-essential \
-    libgl1-mesa-glx \
-    && pip install --no-cache-dir -r requirements.txt
+    libgl1-mesa-glx && \
+    rm -rf /var/lib/apt/lists/* && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application code into the container
 COPY . .
@@ -19,9 +20,9 @@ COPY . .
 # Make port 5000 available to the world outside this container
 EXPOSE 5000
 
-# Set environment variables
+# Set environment variables for Flask
 ENV FLASK_APP=main.py
 ENV FLASK_ENV=production
 
-# Add a command to run Gunicorn server
+# Run Gunicorn server with gevent worker for production
 CMD ["gunicorn", "--worker-class", "gevent", "--workers", "4", "--bind", "0.0.0.0:5000", "main:app"]

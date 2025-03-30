@@ -25,6 +25,9 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: .
+          # Set context to the backend folder where the Dockerfile resides
+          context: ./backend
+          # Explicitly specify the Dockerfile path
+          file: ./backend/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/stream-backend:latest
