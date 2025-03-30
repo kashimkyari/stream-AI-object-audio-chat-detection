@@ -278,40 +278,123 @@ def refresh_chaturbate_route():
 @app.route("/api/streams/interactive", methods=["POST"])
 @login_required(role="admin")
 def interactive_create_stream():
-    data = request.get_json()
-    room_url = data.get("room_url", "").strip().lower()
-    platform = data.get("platform", "Chaturbate").strip().lower()
-    agent_id = data.get("agent_id")
-    
-    # Convert agent_id to integer if provided and non-empty.
-    if agent_id and str(agent_id).strip() != "":
-        try:
-            agent_id = int(agent_id)
-        except ValueError:
-            return jsonify({"message": "Invalid agent ID"}), 400
-    else:
-        agent_id = None
-    
-    if not room_url:
-        return jsonify({"message": "Room URL required"}), 400
-    if platform == "chaturbate" and "chaturbate.com/" not in room_url:
-        return jsonify({"message": "Invalid Chaturbate URL"}), 400
-    if platform == "stripchat" and "stripchat.com/" not in room_url:
-        return jsonify({"message": "Invalid Stripchat URL"}), 400
-    if Stream.query.filter_by(room_url=room_url).first():
-        return jsonify({"message": "Stream exists"}), 400
-    
-    job_id = str(uuid.uuid4())
-    stream_creation_jobs[job_id] = {"progress": 0, "message": "Job initialized"}
-    
-    threading.Thread(
-        target=run_stream_creation_job, 
-        args=(job_id, room_url, platform, agent_id),
-        daemon=True
-    ).start()
-    
-    return jsonify({"message": "Stream creation job started", "job_id": job_id}), 202
+    """Enhanced stream creation endpoint with full validation"""
+    try:
+        # Validate request format
+        if not request.is_json:
+            return jsonify({
+                "message": "Request must be JSON",
+                "error": "invalid_content_type"
+            }), 400
 
+        data = request.get_json()
+        required_fields = ["room_url", "platform"]
+        missing = [field for field in required_fields if field not in data]
+        if missing:
+            return jsonify({
+                "message": f"Missing required fields: {', '.join(missing)}",
+                "error": "missing_fields",
+                "missing": missing
+            }), 400
+
+        # Extract and sanitize inputs
+        room_url = data.get("room_url", "").strip().lower()
+        platform = data.get("platform", "").strip().lower()
+        raw_agent_id = data.get("agent_id")
+
+        # Validate URL structure
+        if not room_url:
+            return jsonify({
+                "message": "Room URL cannot be empty",
+                "error": "invalid_url"
+            }), 400
+
+        # Platform validation matrix
+        platform_validations = {
+            "chaturbate": {
+                "domain": "chaturbate.com",
+                "model": ChaturbateStream,
+                "url_pattern": r"https?://(www\.)?chaturbate\.com/[a-zA-Z0-9_]+/?$"
+            },
+            "stripchat": {
+                "domain": "stripchat.com",
+                "model": StripchatStream,
+                "url_pattern": r"https?://(www\.)?stripchat\.com/[a-zA-Z0-9_]+/?$"
+            }
+        }
+
+        if platform not in platform_validations:
+            return jsonify({
+                "message": f"Invalid platform. Valid options: {', '.join(platform_validations.keys())}",
+                "error": "invalid_platform"
+            }), 400
+
+        # URL format validation
+        platform_config = platform_validations[platform]
+        if not re.match(platform_config["url_pattern"], room_url):
+            return jsonify({
+                "message": f"Invalid {platform} URL format",
+                "error": "invalid_url_format",
+                "example": f"https://{platform_config['domain']}/username"
+            }), 400
+
+        # Agent ID validation
+        agent_id = None
+        if raw_agent_id not in [None, ""]:
+            try:
+                agent_id = int(raw_agent_id)
+                agent = User.query.filter_by(id=agent_id, role="agent").first()
+                if not agent:
+                    return jsonify({
+                        "message": "Specified agent does not exist",
+                        "error": "invalid_agent_id"
+                    }), 400
+            except ValueError:
+                return jsonify({
+                    "message": "Agent ID must be a valid integer",
+                    "error": "invalid_agent_format"
+                }), 400
+
+        # Check for existing stream
+        existing_stream = Stream.query.filter_by(room_url=room_url).first()
+        if existing_stream:
+            return jsonify({
+                "message": "Stream already exists",
+                "error": "duplicate_stream",
+                "existing_id": existing_stream.id
+            }), 409  # Conflict status code
+
+        # Create stream job
+        job_id = str(uuid.uuid4())
+        stream_creation_jobs[job_id] = {
+            "progress": 0,
+            "message": "Initializing",
+            "created_at": datetime.now().isoformat(),
+            "room_url": room_url,
+            "platform": platform,
+            "agent_id": agent_id
+        }
+
+        # Start processing thread
+        threading.Thread(
+            target=run_stream_creation_job,
+            args=(job_id, room_url, platform, agent_id),
+            daemon=True
+        ).start()
+
+        return jsonify({
+            "message": "Stream creation started",
+            "job_id": job_id,
+            "monitor_url": f"/api/streams/interactive/sse?job_id={job_id}"
+        }), 202
+
+    except Exception as e:
+        logging.error("Unexpected error in stream creation: %s", str(e))
+        return jsonify({
+            "message": "Internal server error",
+            "error": "server_error",
+            "details": str(e)
+        }), 500
 @app.route("/api/streams/interactive/sse")
 @login_required(role="admin")
 def stream_creation_sse():
@@ -351,6 +434,23 @@ def stream_creation_sse():
 
     return Response(event_stream(), mimetype="text/event-stream")
 
+@app.route("/api/streams/interactive/cleanup", methods=["POST"])
+@login_required(role="admin")
+def cleanup_jobs():
+    from scraping import stream_creation_jobs
+    expired_jobs = [
+        job_id for job_id, job in stream_creation_jobs.items()
+        if job["progress"] >= 100 or 
+        (datetime.now() - job.get("created_at", datetime.now())) > timedelta(hours=1)
+    ]
+    
+    for job_id in expired_jobs:
+        del stream_creation_jobs[job_id]
+        
+    return jsonify({
+        "message": f"Cleaned up {len(expired_jobs)} old jobs",
+        "remaining_jobs": len(stream_creation_jobs)
+    })
 # --------------------------------------------------------------------
 # Assignment Endpoints
 # --------------------------------------------------------------------
