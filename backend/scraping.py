@@ -487,90 +487,113 @@ def fetch_m3u8_from_page(url, timeout=90):
 
 
 def scrape_stripchat_data(url, progress_callback=None):
-    """Enhanced Stripchat scraper with headless browser bypass"""
+    """Stripchat scraper with robust proxy rotation and modern anti-detection"""
     from selenium.webdriver.support.ui import WebDriverWait
     from selenium.webdriver.support import expected_conditions as EC
     from selenium.webdriver.common.by import By
-    
+
     def update_progress(p, m):
         if progress_callback:
             progress_callback(p, m)
 
-    try:
-        update_progress(10, "Initializing browser")
-        
-        # Configure stealth browser
-        chrome_options = Options()
-        chrome_options.add_argument("--headless=new")
-        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-        chrome_options.add_argument("--window-size=1920,1080")
-        chrome_options.add_argument(f"user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36")
-        
-        # Anti-detection config
-        chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
-        chrome_options.add_experimental_option("useAutomationExtension", False)
+    MAX_ATTEMPTS = 3
+    stream_data = None
 
-        driver = webdriver.Chrome(options=chrome_options)
-        
+    for attempt in range(MAX_ATTEMPTS):
+        proxy = get_random_proxy()
+        update_progress(10, f"Attempt {attempt+1}/{MAX_ATTEMPTS} - Initializing browser")
+
         try:
-            update_progress(20, "Loading page")
-            driver.get(url)
+            # Configure browser with stealth options
+            chrome_options = Options()
+            chrome_options.add_argument("--headless=new")
+            chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+            chrome_options.add_argument("--window-size=1920,1080")
+            chrome_options.add_argument("--no-sandbox")
+            chrome_options.add_argument("--disable-dev-shm-usage")
+            chrome_options.add_argument(f"user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36")
             
-            # Wait for stream container
-            WebDriverWait(driver, 15).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "div.video-container"))
-            )
-            
-            update_progress(40, "Capturing network requests")
-            
-            # Capture M3U8 URLs from network requests
-            m3u8_urls = []
-            start_time = time.time()
-            timeout = 30  # Increased timeout
-            
-            while time.time() - start_time < timeout:
-                for request in driver.requests:
-                    if request.response and ".m3u8" in request.url:
-                        clean_url = request.url.split('?')[0]
-                        if clean_url not in m3u8_urls:
-                            m3u8_urls.append(clean_url)
-                if m3u8_urls:
-                    break
-                time.sleep(1)
-            
-            if not m3u8_urls:
-                raise RuntimeError("M3U8 URL not found in network requests")
-            
-            update_progress(80, "Validating stream URL")
-            
-            # Get streamer username from URL
-            streamer_username = url.rstrip("/").split("/")[-1]
-            
-            return {
-                "status": "online",
-                "streamer_username": streamer_username,
-                "stripchat_m3u8_url": m3u8_urls[0],
-                "backup_urls": m3u8_urls[1:]  # For fallback
+            # Configure proxy through Selenium Wire
+            seleniumwire_options = {
+                'proxy': {
+                    'http': proxy['http'],
+                    'https': proxy['https'],
+                    'no_proxy': 'localhost,127.0.0.1'
+                },
+                'verify_ssl': False,
+                'connection_timeout': 30
             }
-            
-        except Exception as e:
-            # Capture screenshot for debugging
-            driver.save_screenshot(f"stripchat_error_{int(time.time())}.png")
-            raise e
-            
-        finally:
-            driver.quit()
 
-    except Exception as e:
-        error_msg = f"Stripchat scraping failed: {str(e)}"
-        logging.error(error_msg)
-        update_progress(100, error_msg)
+            driver = webdriver.Chrome(
+                options=chrome_options,
+                seleniumwire_options=seleniumwire_options
+            )
+
+            try:
+                update_progress(30, "Loading page via proxy")
+                driver.set_page_load_timeout(45)
+                driver.get(url)
+
+                # Wait for critical elements with extended timeout
+                WebDriverWait(driver, 30).until(
+                    EC.presence_of_element_located((By.XPATH, "//video[@class='video']"))
+                )
+
+                # Extract M3U8 through multiple methods
+                m3u8_url = driver.execute_script(
+                    "return document.querySelector('video.video').src"
+                ) or next(
+                    (req.url for req in reversed(driver.requests)
+                    if 'm3u8' in req.url and 'chunklist' in req.url and req.response
+                ), None)
+
+                if m3u8_url and re.match(r'https?://[^\s]+\.m3u8', m3u8_url):
+                    stream_data = {
+                        "status": "online",
+                        "streamer_username": url.split('/')[-1],
+                        "stripchat_m3u8_url": m3u8_url.split('?')[0]
+                    }
+                    break
+
+            except Exception as e:
+                logging.warning(f"Attempt {attempt+1} failed: {str(e)}")
+                driver.save_screenshot(f'stripchat_error_{attempt}.png')
+
+            finally:
+                driver.quit()
+
+        except Exception as fatal_error:
+            logging.error(f"Proxy connection failed: {str(fatal_error)}")
+
+        time.sleep(2)
+
+    if not stream_data:
         return {
             "status": "error",
-            "message": error_msg,
-            "error_type": "scraping_error",
+            "message": "Failed after 3 proxy attempts",
+            "error_type": "proxy_failure",
             "platform": "stripchat"
         }
+
+    # Verify M3U8 accessibility from the backend server
+    try:
+        verify_response = requests.get(
+            f"http://54.86.99.85:5000/api/verify-stream",
+            params={'url': stream_data['stripchat_m3u8_url']},
+            timeout=15
+        )
+        if verify_response.status_code != 200:
+            raise ValueError("M3U8 verification failed")
+    except Exception as verification_error:
+        return {
+            "status": "error",
+            "message": f"Stream verification failed: {str(verification_error)}",
+            "error_type": "verification_failure",
+            "platform": "stripchat"
+        }
+
+    return stream_data
+
 def run_scrape_job(job_id, url):
     """Run a scraping job and update progress interactively."""
     update_job_progress(job_id, 0, "Starting scrape job")

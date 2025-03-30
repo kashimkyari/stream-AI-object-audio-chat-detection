@@ -567,70 +567,30 @@ const AddStreamForm = ({ onAddStream, refreshStreams, onStreamAdded, refreshAgen
     }
   }, [roomUrl]);
 
-const subscribeToProgress = (jobId) => {
-  const eventSource = new EventSource(`/api/streams/interactive/sse?job_id=${jobId}`);
-  
-  eventSource.onmessage = (e) => {
-    const data = JSON.parse(e.data);
-    setProgress(data.progress);
-    setProgressMessage(data.message);
-    setEstimatedTime(data.estimated_time || 0);
-
-    // Handle completion
-    if (data.progress >= 100) {
-      if (data.error) {
-        setSubmitError(true);
-        setError(data.error);
-        setIsSubmitting(false);
-      }
-      eventSource.close();
-    }
-  };
-
-  eventSource.onerror = (err) => {
-    console.error("SSE error:", err);
-    setSubmitError(true);
-    setError('Connection to progress updates failed');
-    setIsSubmitting(false);
-    eventSource.close();
-  };
-};
-
-useEffect(() => {
-  const fetchNewStream = async () => {
-    try {
-      const res = await axios.get('/api/streams?platform=' + platform);
-      const newStream = res.data[res.data.length - 1];
-      onAddStream(newStream);
-      setSubmitSuccess(true);
-      setSubmitError(false);
-      setIsSubmitting(false);
+  const subscribeToProgress = (jobId) => {
+    const eventSource = new EventSource(`/api/streams/interactive/sse?job_id=${jobId}`);
+    eventSource.onmessage = (e) => {
+      const data = JSON.parse(e.data);
+      setProgress(data.progress);
+      setProgressMessage(data.message);
+      setEstimatedTime(data.estimated_time || 0);
       
-      if (onStreamAdded) onStreamAdded();
-    } catch (err) {
-      console.error('Failed to fetch new stream:', err);
+      
+      if (data.progress >= 100) {
+        if (data.error) {
+          setSubmitError(true);
+          setError(data.error);
+        }
+        eventSource.close();
+      }
+    };
+    eventSource.onerror = (err) => {
+      console.error("SSE error:", err);
       setSubmitError(true);
-      setIsSubmitting(false);
-    }
+      setError('Connection to progress updates failed');
+      eventSource.close();
+    };
   };
-
-  if (progress >= 100 && jobId && !submitError) {
-    fetchNewStream();
-  }
-}, [progress, jobId, platform, onAddStream, onStreamAdded, submitError]);
-
-// Reset form after success
-useEffect(() => {
-  if (submitSuccess) {
-    const timer = setTimeout(() => {
-      setRoomUrl('');
-      setProgress(0);
-      setJobId(null);
-    }, 2000); // Clear form after 2 seconds
-
-    return () => clearTimeout(timer);
-  }
-}, [submitSuccess]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -674,7 +634,7 @@ useEffect(() => {
   } catch (err) {
     console.error('Failed to fetch new stream:', err);
     setSubmitSuccess(true);
-    setSubmitError(true);
+    
   }
 };
       fetchNewStream();
@@ -738,30 +698,30 @@ useEffect(() => {
             </button>
           </div>
         </div>
-        <button
-  type="submit"
-  className={`add-button 
-    ${isSubmitting ? 'submitting' : ''} 
-    ${submitSuccess ? 'success' : ''}
-    ${submitError ? 'error' : ''}`}
-  disabled={isSubmitting && !submitError}
-  style={{ width: '100%', position: 'relative', overflow: 'hidden' }}
->
-  {submitError ? (
-    'Retry Now'
-  ) : isSubmitting ? (
-    <div className="button-progress">
-      <div className="progress-fill" style={{ width: `${progress}%` }}></div>
-      <div className="progress-text">
-        {progress}% - {progressMessage} {estimatedTime > 0 && `(Est. ${estimatedTime}s left)`}
-      </div>
-    </div>
-  ) : submitSuccess ? (
-    'Stream Created Successfully!'
-  ) : (
-    'Add Stream'
-  )}
-</button>
+       <button
+         type="submit"
+         className={`add-button 
+           ${isSubmitting && progress < 100 ? 'submitting' : ''}
+           ${(submitSuccess || (progress >= 100 && !submitError)) ? 'success' : ''}
+           ${submitError && !(progress >= 100 && !submitError) ? 'error' : ''}`}
+         disabled={isSubmitting && progress < 100 && !submitError}
+         style={{ width: '100%', position: 'relative', overflow: 'hidden' }}
+       >
+         {submitError && !(progress >= 100 && !submitError) ? (
+           'Retry Now'
+         ) : isSubmitting && progress < 100 ? (
+           <div className="button-progress">
+             <div className="progress-fill" style={{ width: `${progress}%` }}></div>
+             <div className="progress-text">
+               {progress}% - {progressMessage} {estimatedTime > 0 && `(Est. ${estimatedTime}s left)`}
+             </div>
+           </div>
+         ) : (progress >= 100 && !submitError) || submitSuccess ? (
+           'Stream Created Successfully!'
+         ) : (
+           'Add Stream'
+         )}
+       </button>
       </form>
       {showAddAgentModal && (
         <AddAgentModal 
