@@ -79,26 +79,69 @@ def update_job_progress(job_id, percent, message):
 
 
 def update_stream_job_progress(job_id, percent, message):
-    """Update the progress of a stream creation job with interactive data."""
+    """Update job progress with rate limiting and time estimation"""
     now = time.time()
-    if job_id not in stream_creation_jobs or 'start_time' not in stream_creation_jobs[job_id]:
-        stream_creation_jobs[job_id] = {'start_time': now}
-    elapsed = now - stream_creation_jobs[job_id]['start_time']
-    estimated = None
-    if percent > 0:
-        estimated = (100 - percent) / percent * elapsed
-    stream_creation_jobs[job_id].update({
-        "progress": percent,
-        "message": message,
-        "elapsed": round(elapsed, 1),
-        "estimated_time": round(estimated, 1) if estimated is not None else None,
+    job = stream_creation_jobs.setdefault(job_id, {
+        'start_time': now,
+        'last_updated': now,
+        'progress': 0,
+        'message': '',
+        'estimated_time': 0
     })
-    logging.info("Stream Job %s progress: %s%% - %s (Elapsed: %ss, Est: %ss)",
-                 job_id, percent, message,
-                 stream_creation_jobs[job_id]['elapsed'],
-                 stream_creation_jobs[job_id]['estimated_time'])
+    
+    # Calculate time estimates
+    elapsed = now - job['start_time']
+    if percent > 0 and percent < 100:
+        estimated_total = elapsed / (percent / 100)
+        estimated_remaining = max(0, int(estimated_total - elapsed))
+    else:
+        estimated_remaining = 0
 
+    # Update only if significant change (>2%) or message change
+    if (abs(percent - job['progress']) > 2 or
+        message != job['message'] or
+        percent == 100):
+        
+        job.update({
+            'progress': min(100, max(0, percent)),
+            'message': message,
+            'estimated_time': estimated_remaining,
+            'last_updated': now
+        })
+        
+        logging.info(
+            "Stream Job %s: %s%% - %s (Est: %ss)",
+            job_id, percent, message, estimated_remaining
+        )
 
+def send_telegram_notifications(platform, streamer, room_url):
+    """Handle Telegram notifications with error tracking"""
+    try:
+        recipients = TelegramRecipient.query.all()
+        if not recipients:
+            return
+
+        message = (
+            f"🚀 New Stream Created\n"
+            f"Platform: {platform.capitalize()}\n"
+            f"Streamer: {streamer}\n"
+            f"URL: {room_url}"
+        )
+        
+        for recipient in recipients:
+            try:
+                executor.submit(
+                    send_text_message,
+                    message=message,
+                    chat_id=recipient.chat_id,
+                    parse_mode="Markdown"
+                )
+            except Exception as e:
+                logging.error("Telegram send failed for %s: %s", 
+                            recipient.chat_id, str(e))
+                
+    except Exception as e:
+        logging.error("Notification system error: %s", str(e))
 # --- New Helper Functions for Chaturbate Scraping ---
 def extract_room_slug(url: str) -> str:
     """
@@ -568,68 +611,115 @@ def run_scrape_job(job_id, url):
 
 
 def run_stream_creation_job(job_id, room_url, platform, agent_id=None):
+    """Phased stream creation with proper error handling and progress tracking"""
     with app.app_context():
+        job = stream_creation_jobs.setdefault(job_id, {})
         try:
-            update_stream_job_progress(job_id, 5, "Initializing scraping...")
-            if platform == "chaturbate":
-                scraped_data = scrape_chaturbate_data(room_url, progress_callback=lambda p, m: update_stream_job_progress(job_id, 5 + p * 0.45, m))
-            else:
-                scraped_data = scrape_stripchat_data(room_url, progress_callback=lambda p, m: update_stream_job_progress(job_id, 5 + p * 0.45, m))
-            
-            if not scraped_data:
-                update_stream_job_progress(job_id, 100, "Scraping failed")
-                return
-            
-            update_stream_job_progress(job_id, 50, "Creating stream...")
-            streamer_username = room_url.rstrip("/").split("/")[-1]
-            
-            if platform == "chaturbate":
-                stream = ChaturbateStream(
-                    room_url=room_url,
-                    streamer_username=streamer_username,
-                    chaturbate_m3u8_url=scraped_data["chaturbate_m3u8_url"]
-                )
-            else:
-                stream = StripchatStream(
-                    room_url=room_url,
-                    streamer_username=streamer_username,
-                    stripchat_m3u8_url=scraped_data["stripchat_m3u8_url"]
-                )
-            
-            db.session.add(stream)
-            db.session.commit()
+            # Initialize job tracking
+            job.update({
+                "created_at": time.time(),
+                "progress": 0,
+                "message": "Starting stream creation",
+                "error": None,
+                "stream": None,
+                "estimated_time": 120  # Initial estimate
+            })
 
-            # Assign agent if agent_id is provided
-            if agent_id:
-                assignment = Assignment(agent_id=agent_id, stream_id=stream.id)
-                db.session.add(assignment)
+            # Phase 1: Validation and setup
+            update_stream_job_progress(job_id, 5, "Validating input parameters")
+            if Stream.query.filter_by(room_url=room_url).first():
+                raise ValueError(f"Stream {room_url} already exists")
+
+            # Phase 2: Platform-specific scraping
+            update_stream_job_progress(job_id, 10, f"Starting {platform} scraping")
+            try:
+                if platform == "chaturbate":
+                    scraped_data = scrape_chaturbate_data(
+                        room_url, 
+                        progress_callback=lambda p, m: update_stream_job_progress(
+                            job_id, 10 + p*0.35, f"Scraping: {m}")
+                    )
+                else:
+                    scraped_data = scrape_stripchat_data(
+                        room_url,
+                        progress_callback=lambda p, m: update_stream_job_progress(
+                            job_id, 10 + p*0.35, f"Scraping: {m}")
+                    )
+            except Exception as scrape_error:
+                raise RuntimeError(f"Scraping failed: {str(scrape_error)}") from scrape_error
+
+            if not scraped_data or 'status' not in scraped_data:
+                raise RuntimeError("Invalid scraping response")
+
+            if scraped_data.get('status') == 'offline':
+                raise RuntimeError("Stream is offline")
+
+            # Phase 3: Database operations
+            update_stream_job_progress(job_id, 50, "Creating stream record")
+            try:
+                streamer_username = scraped_data.get("streamer_username") or \
+                                  room_url.rstrip("/").split("/")[-1]
+                                  
+                stream_class = ChaturbateStream if platform == "chaturbate" else StripchatStream
+                stream = stream_class(
+                    room_url=room_url,
+                    streamer_username=streamer_username,
+                    **{f"{platform}_m3u8_url": scraped_data[f"{platform}_m3u8_url"]}
+                )
+                
+                db.session.add(stream)
                 db.session.commit()
+                db.session.refresh(stream)
+            except Exception as db_error:
+                db.session.rollback()
+                raise RuntimeError(f"Database error: {str(db_error)}") from db_error
 
-            db.session.refresh(stream)
+            # Phase 4: Agent assignment
+            if agent_id:
+                update_stream_job_progress(job_id, 70, "Assigning agent")
+                try:
+                    if not User.query.get(agent_id):
+                        raise ValueError("Invalid agent ID")
+                        
+                    assignment = Assignment(agent_id=agent_id, stream_id=stream.id)
+                    db.session.add(assignment)
+                    db.session.commit()
+                except Exception as assignment_error:
+                    db.session.rollback()
+                    raise RuntimeError(f"Assignment failed: {str(assignment_error)}") from assignment_error
 
-            for prog in range(51, 101, 10):
-                time.sleep(0.5)
-                update_stream_job_progress(job_id, prog, "Finalizing stream...")
+            # Phase 5: Finalization and notifications
+            update_stream_job_progress(job_id, 90, "Finalizing stream setup")
+            try:
+                send_telegram_notifications(
+                    platform=platform,
+                    streamer=streamer_username,
+                    room_url=room_url
+                )
+            except Exception as notification_error:
+                logging.error("Notification failed: %s", str(notification_error))
 
-            update_stream_job_progress(job_id, 100, "Stream created")
-
-            # Notify Telegram users when the stream is successfully created
-            recipients = TelegramRecipient.query.all()
-            message = (
-                f"🚀 **New Stream Created!**\n"
-                f"🎥 **Platform:** {platform.capitalize()}\n"
-                f"📡 **Streamer:** {streamer_username}\n"
-                f"🔗 **Stream URL:** {room_url}"
-            )
-            for recipient in recipients:
-                executor.submit(send_text_message, message, recipient.chat_id, None)
-
-            stream_creation_jobs[job_id]["stream"] = stream.serialize()
+            # Complete successfully
+            update_stream_job_progress(job_id, 100, "Stream created successfully")
+            job.update({
+                "stream": stream.serialize(),
+                "estimated_time": 0
+            })
 
         except Exception as e:
-            update_stream_job_progress(job_id, 100, f"Error: {str(e)}")
+            db.session.rollback()
+            error_message = f"Creation failed: {str(e)}"
+            update_stream_job_progress(job_id, 100, error_message)
+            job["error"] = error_message
+            logging.exception("Stream creation error")
 
+        finally:
+            try:
+                db.session.close()
+            except Exception as db_close_error:
+                logging.warning("DB session close error: %s", str(db_close_error))
 
+                
 def fetch_chaturbate_chat_history(room_slug):
     """Fetch chat history from Chaturbate's API endpoint."""
     url = "https://chaturbate.com/push_service/room_history/"

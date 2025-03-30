@@ -318,16 +318,37 @@ def stream_creation_sse():
     job_id = request.args.get("job_id")
     if not job_id:
         return jsonify({"message": "Job id required"}), 400
+        
     def event_stream():
         from scraping import stream_creation_jobs
-        while True:
-            job_status = stream_creation_jobs.get(job_id)
-            if job_status:
-                data = json.dumps(job_status)
-                yield f"data: {data}\n\n"
-                if job_status.get("progress", 0) >= 100:
+        try:
+            while True:
+                job_status = stream_creation_jobs.get(job_id)
+                if not job_status:
+                    yield "event: error\ndata: {'message': 'Job not found'}\n\n"
                     break
-            time.sleep(1)
+                
+                # Send progress updates
+                data = json.dumps({
+                    "progress": job_status["progress"],
+                    "message": job_status["message"],
+                    "error": job_status.get("error"),
+                    "estimated_time": job_status.get("estimated_time")
+                })
+                yield f"data: {data}\n\n"
+                
+                # Exit conditions
+                if job_status["progress"] >= 100 or job_status.get("error"):
+                    if "stream_data" in job_status:
+                        yield f"event: completed\ndata: {json.dumps(job_status['stream_data'])}\n\n"
+                    break
+                    
+                time.sleep(1)
+        except GeneratorExit:
+            # Cleanup when client disconnects
+            if job_id in stream_creation_jobs:
+                del stream_creation_jobs[job_id]
+
     return Response(event_stream(), mimetype="text/event-stream")
 
 # --------------------------------------------------------------------

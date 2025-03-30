@@ -526,7 +526,7 @@ const AgentTable = ({ agents, onEdit, onDelete, onAddAgent }) => {
   );
 };
 
-const AddStreamForm = ({ onAddStream, onStreamAdded, refreshAgents }) => {
+const AddStreamForm = ({ onAddStream, refreshStreams, onStreamAdded, refreshAgents }) => {
   const [platform, setPlatform] = useState('chaturbate');
   const [roomUrl, setRoomUrl] = useState('');
   const [selectedAgentId, setSelectedAgentId] = useState('');
@@ -538,7 +538,11 @@ const AddStreamForm = ({ onAddStream, onStreamAdded, refreshAgents }) => {
   const [progress, setProgress] = useState(0);
   const [progressMessage, setProgressMessage] = useState('');
   const [estimatedTime, setEstimatedTime] = useState(0);
+  const [isFormExpanded] = useState(true);
+  const [showAddAgentModal, setShowAddAgentModal] = useState(false);
   const [submitError, setSubmitError] = useState(false);
+
+
 
   useEffect(() => {
     const fetchAgents = async () => {
@@ -563,38 +567,81 @@ const AddStreamForm = ({ onAddStream, onStreamAdded, refreshAgents }) => {
     }
   }, [roomUrl]);
 
-  const subscribeToProgress = (jobId) => {
-    const eventSource = new EventSource(`/api/streams/interactive/sse?job_id=${jobId}`);
-    eventSource.onmessage = (e) => {
-      const data = JSON.parse(e.data);
-      setProgress(data.progress);
-      setProgressMessage(data.message);
-      setEstimatedTime(data.estimated_time || 0);
-      
-      if (data.progress >= 100) {
-        if (data.error) {
-          setSubmitError(true);
-          setError(data.error);
-        }
-        eventSource.close();
+const subscribeToProgress = (jobId) => {
+  const eventSource = new EventSource(`/api/streams/interactive/sse?job_id=${jobId}`);
+  
+  eventSource.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+    setProgress(data.progress);
+    setProgressMessage(data.message);
+    setEstimatedTime(data.estimated_time || 0);
+
+    // Handle completion
+    if (data.progress >= 100) {
+      if (data.error) {
+        setSubmitError(true);
+        setError(data.error);
+        setIsSubmitting(false);
       }
-    };
-    eventSource.onerror = (err) => {
-      console.error("SSE error:", err);
-      setSubmitError(true);
-      setError('Connection to progress updates failed');
       eventSource.close();
-    };
+    }
   };
+
+  eventSource.onerror = (err) => {
+    console.error("SSE error:", err);
+    setSubmitError(true);
+    setError('Connection to progress updates failed');
+    setIsSubmitting(false);
+    eventSource.close();
+  };
+};
+
+useEffect(() => {
+  const fetchNewStream = async () => {
+    try {
+      const res = await axios.get('/api/streams?platform=' + platform);
+      const newStream = res.data[res.data.length - 1];
+      onAddStream(newStream);
+      setSubmitSuccess(true);
+      setSubmitError(false);
+      setIsSubmitting(false);
+      
+      if (onStreamAdded) onStreamAdded();
+    } catch (err) {
+      console.error('Failed to fetch new stream:', err);
+      setSubmitError(true);
+      setIsSubmitting(false);
+    }
+  };
+
+  if (progress >= 100 && jobId && !submitError) {
+    fetchNewStream();
+  }
+}, [progress, jobId, platform, onAddStream, onStreamAdded, submitError]);
+
+// Reset form after success
+useEffect(() => {
+  if (submitSuccess) {
+    const timer = setTimeout(() => {
+      setRoomUrl('');
+      setProgress(0);
+      setJobId(null);
+    }, 2000); // Clear form after 2 seconds
+
+    return () => clearTimeout(timer);
+  }
+}, [submitSuccess]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
-    setSubmitError(false);
-    setSubmitSuccess(false);
+    
     setProgress(0);
     setProgressMessage('Initializing...');
+    setJobId(null);
+    setSubmitError(false);
+  setSubmitSuccess(false);
     
     try {
       const response = await axios.post('/api/streams/interactive', {
@@ -615,44 +662,29 @@ const AddStreamForm = ({ onAddStream, onStreamAdded, refreshAgents }) => {
   useEffect(() => {
     if (progress >= 100 && jobId) {
       const fetchNewStream = async () => {
-        try {
-          const res = await axios.get(`/api/streams?platform=${platform}`);
-          const newStream = res.data.find(stream => 
-            stream.room_url === roomUrl && 
-            stream.type === platform.toLowerCase()
-          );
-
-          if (newStream) {
-            onAddStream(newStream);
-            setSubmitSuccess(true);
-            setSubmitError(false);
-            
-            setTimeout(() => {
-              setSubmitSuccess(false);
-              setIsSubmitting(false);
-              setRoomUrl('');
-              setProgress(0);
-              setJobId(null);
-            }, 3000);
-            
-            onStreamAdded?.();
-          } else {
-            throw new Error('New stream not found in response');
-          }
-        } catch (err) {
-          console.error('Failed to verify stream creation:', err);
-          setSubmitError(true);
-          setSubmitSuccess(false);
-        }
-      };
+  try {
+    const res = await axios.get('/api/streams?platform=' + platform);
+    const newStream = res.data[res.data.length - 1];
+    onAddStream(newStream);
+    setSubmitSuccess(true);
+    setSubmitError(false);
+    
+    
+    if (onStreamAdded) onStreamAdded();
+  } catch (err) {
+    console.error('Failed to fetch new stream:', err);
+    setSubmitSuccess(true);
+    setSubmitError(true);
+  }
+};
       fetchNewStream();
     }
-  }, [progress, jobId, platform, roomUrl]);
+  }, [progress, jobId, platform, onAddStream, onStreamAdded]);
 
   return (
     <div className="form-container">
       <div className="form-header">
-        <h2 className="form-title">Add New Stream</h2>
+        <h2 className="form-title">Stream Management</h2>
       </div>
       
       <form onSubmit={handleSubmit}>
@@ -662,13 +694,12 @@ const AddStreamForm = ({ onAddStream, onStreamAdded, refreshAgents }) => {
             id="platform-select"
             value={platform}
             onChange={(e) => setPlatform(e.target.value)}
-            className="form-select"
+            className={`form-select ${roomUrl.includes('stripchat.com') ? 'platform-switch' : ''}`}
           >
             <option value="chaturbate">Chaturbate</option>
             <option value="stripchat">Stripchat</option>
           </select>
         </div>
-
         <div className="form-group">
           <label htmlFor="room-url">Room URL:</label>
           <input
@@ -679,51 +710,78 @@ const AddStreamForm = ({ onAddStream, onStreamAdded, refreshAgents }) => {
             placeholder={`Enter ${platform} room URL`}
             className="form-input"
             required
+            inputMode="url"
           />
         </div>
-
-        <div className="form-group">
+        <div className="form-group assign-group">
           <label htmlFor="agent-select">Assign Agent:</label>
-          <select
-            id="agent-select"
-            value={selectedAgentId}
-            onChange={(e) => setSelectedAgentId(e.target.value)}
-            className="form-select"
-          >
-            {agents.map((agent) => (
-              <option key={agent.id} value={agent.id}>
-                {agent.username}
-              </option>
-            ))}
-          </select>
+          <div className="assign-wrapper">
+            <select
+              id="agent-select"
+              value={selectedAgentId}
+              onChange={(e) => setSelectedAgentId(e.target.value)}
+              className="form-select"
+            >
+              {agents.map((agent) => (
+                <option key={agent.id} value={agent.id}>
+                  {agent.username}
+                </option>
+              ))}
+            </select>
+            <button 
+              type="button"
+              className="quick-add-button"
+              onClick={() => setShowAddAgentModal(true)}
+              aria-label="Quick add agent"
+            >
+              + Add Agent
+            </button>
+          </div>
         </div>
-
-        {error && <div className="error-message">{error}</div>}
-
         <button
-          type="submit"
-          className={`add-button 
-            ${submitSuccess ? 'success' : ''} 
-            ${submitError ? 'error' : ''}
-            ${isSubmitting ? 'submitting' : ''}`}
-          disabled={isSubmitting && !submitError}
-        >
-          {submitError ? 'Retry Now' : 
-           submitSuccess ? 'Stream Created!' : 
-           isSubmitting ? (
-             <div className="button-progress">
-               <div className="progress-fill" style={{ width: `${progress}%` }} />
-               <div className="progress-text">
-                 {progress}% - {progressMessage}
-               </div>
-             </div>
-           ) : 'Add Stream'}
-        </button>
+  type="submit"
+  className={`add-button 
+    ${isSubmitting ? 'submitting' : ''} 
+    ${submitSuccess ? 'success' : ''}
+    ${submitError ? 'error' : ''}`}
+  disabled={isSubmitting && !submitError}
+  style={{ width: '100%', position: 'relative', overflow: 'hidden' }}
+>
+  {submitError ? (
+    'Retry Now'
+  ) : isSubmitting ? (
+    <div className="button-progress">
+      <div className="progress-fill" style={{ width: `${progress}%` }}></div>
+      <div className="progress-text">
+        {progress}% - {progressMessage} {estimatedTime > 0 && `(Est. ${estimatedTime}s left)`}
+      </div>
+    </div>
+  ) : submitSuccess ? (
+    'Stream Created Successfully!'
+  ) : (
+    'Add Stream'
+  )}
+</button>
       </form>
+      {showAddAgentModal && (
+        <AddAgentModal 
+          onClose={() => setShowAddAgentModal(false)}
+          onAgentCreated={() => {
+            axios.get('/api/agents')
+              .then(res => {
+                setAgents(res.data);
+                if (res.data.length > 0) {
+                  setSelectedAgentId(res.data[res.data.length - 1].id.toString());
+                }
+                if (refreshAgents) refreshAgents();
+              })
+              .catch(err => console.error('Error refreshing agents:', err));
+          }}
+        />
+      )}
     </div>
   );
 };
-
 
 function StreamsPage() {
   const [streams, setStreams] = useState({
