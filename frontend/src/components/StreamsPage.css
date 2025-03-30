@@ -107,7 +107,9 @@
             height: 50px;
             overflow: hidden;
           }
-        
+          .add-button.success {
+            background: #28a745 !important;
+          }
           .button-progress {
             position: relative;
             width: 100%;
@@ -1198,8 +1200,24 @@
      
 
      /* Add to your CSS file */
+.add-button.success {
+  background: #4CAF50 !important;
+  border-color: #45a049 !important;
+}
 
+.add-button.error {
+  background: #f44336 !important;
+  border-color: #d32f2f !important;
+  animation: error-shake 0.5s;
+}
 
+@keyframes error-shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(5px); }
+  50% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+  100% { transform: translateX(0); }
+}
 
 .button-progress {
   position: relative;
@@ -1215,55 +1233,9 @@
   transition: width 0.3s ease;
 }
 
-
-
-
-.add-button {
-  background: #2196f3;
-  color: white;
-  padding: 12px 24px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.add-button.success {
-  background: #4CAF50 !important;
-  animation: success-pulse 1.5s ease;
-}
-
-.add-button.error {
-  background: #f44336 !important;
-  animation: error-shake 0.5s;
-}
-
-.button-progress {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.3);
-  transition: width 0.3s ease;
-}
-
 .progress-text {
   position: relative;
   z-index: 1;
+  color: white;
 }
 
-@keyframes success-pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.02); }
-  100% { transform: scale(1); }
-}
-
-@keyframes error-shake {
-  0% { transform: translateX(0); }
-  25% { transform: translateX(5px); }
-  50% { transform: translateX(-5px); }
-  75% { transform: translateX(5px); }
-  100% { transform: translateX(0); }
-}
