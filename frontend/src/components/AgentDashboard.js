@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import Hls from 'hls.js';
-import './AgentDashboard.css'
+import './AgentDashboard.css';
 
 // Error Boundary Component to catch runtime errors and display fallback UI.
 class ErrorBoundary extends React.Component {
@@ -23,7 +23,6 @@ class ErrorBoundary extends React.Component {
           <h3>Something went wrong.</h3>
           <p>Please try refreshing the page.</p>
           <button onClick={() => window.location.reload()}>Refresh</button>
-          
         </div>
       );
     }
@@ -36,29 +35,58 @@ const AgentDashboard = () => {
   const [selectedAssignment, setSelectedAssignment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [agentName, setAgentName] = useState('');
-  const [detectionAlerts, setDetectionAlerts] = useState({});
-  // Use a ref to throttle notifications (one per minute)
-  const lastNotificationRef = useRef(Date.now());
+  const [agentNotifications, setAgentNotifications] = useState([]);
+  const [notificationCounts, setNotificationCounts] = useState({});
 
-  // Video player state refs and HLS instances
+  // Video refs and HLS instance refs for each assignment.
   const videoRefs = useRef({});
   const hlsInstances = useRef({});
   const [streamStates, setStreamStates] = useState({});
 
-  // Fetch session and assigned streams
+  // Fetch agent notifications from the API.
+  const fetchAgentNotifications = async () => {
+    try {
+      const res = await axios.get('/api/agent/notifications');
+      setAgentNotifications(res.data);
+      // Calculate unread notifications per stream (room_url).
+      const counts = {};
+      res.data.forEach(notification => {
+        if (!notification.read) {
+          counts[notification.room_url] = (counts[notification.room_url] || 0) + 1;
+        }
+      });
+      setNotificationCounts(counts);
+    } catch (err) {
+      console.error('Error fetching agent notifications:', err);
+    }
+  };
+
+  // Mark a specific notification as read.
+  const markNotificationRead = async (notificationId) => {
+    try {
+      await axios.put(`/api/agent/notifications/${notificationId}/read`);
+      setAgentNotifications(prev =>
+        prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
+      );
+    } catch (err) {
+      console.error('Error marking notification as read:', err);
+    }
+  };
+
+  // Fetch session info, assigned streams, and initial notifications.
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        // Fetch session data
+        // Fetch session data.
         const sessionRes = await axios.get('/api/session');
         if (sessionRes.data.logged_in) {
           setAgentName(`${sessionRes.data.user.firstname} ${sessionRes.data.user.lastname}`);
         }
-        // Fetch assigned streams for the agent
+        // Fetch assigned streams.
         const dashboardRes = await axios.get('/api/agent/dashboard');
         const assignments = dashboardRes.data.assignments || [];
 
-        // Initialize stream states for each assignment
+        // Initialize stream states for each assignment.
         const initialStreamStates = {};
         assignments.forEach(assignment => {
           initialStreamStates[assignment.id] = {
@@ -76,6 +104,8 @@ const AgentDashboard = () => {
           ongoing_streams: dashboardRes.data.ongoing_streams,
           assignments: assignments
         });
+        // Fetch initial notifications.
+        await fetchAgentNotifications();
         setLoading(false);
       } catch (error) {
         console.error('Error fetching initial data:', error);
@@ -85,51 +115,30 @@ const AgentDashboard = () => {
 
     fetchInitialData();
 
-    // Set up EventSource for real-time detection events
-    const eventSource = new EventSource('/api/notification-events');
-    eventSource.onmessage = (e) => {
-      const data = JSON.parse(e.data);
-      if (!data.error) {
-        setDetectionAlerts(prev => ({
-          ...prev,
-          [data.stream_url]: data.detections
-        }));
-        // Throttle notifications to one per minute.
-        if (data.detections?.length > 0 && Date.now() - lastNotificationRef.current > 60000) {
-          const detectedItems = data.detections.map(d => d.class).join(', ');
-          if (Notification.permission === 'granted') {
-            new Notification('Object Detected', {
-              body: `Detected ${detectedItems} in ${data.stream_url}`
-            });
-            lastNotificationRef.current = Date.now();
-          }
-        }
-      }
-    };
-    eventSource.onerror = (err) => {
-      console.error('EventSource error:', err);
-      eventSource.close();
-    };
+    // Set up polling for notifications every 10 seconds.
+    const notificationInterval = setInterval(fetchAgentNotifications, 10000);
 
     return () => {
-      // Clean up HLS instances on unmount
+      // Cleanup HLS instances.
       Object.values(hlsInstances.current).forEach(hls => {
         if (hls) hls.destroy();
       });
-      eventSource.close();
+      clearInterval(notificationInterval);
     };
   }, []);
 
   // Initialize HLS player for a given assignment and video element.
-  const initializePlayer = (assignment, videoElement) => {
+  const initializePlayer = useCallback((assignment, videoElement) => {
     if (!videoElement) return;
     const assignmentId = assignment.id;
-    // Clean up any existing HLS instance for this assignment.
+
+    // Clean up any existing HLS instance.
     if (hlsInstances.current[assignmentId]) {
       hlsInstances.current[assignmentId].destroy();
       delete hlsInstances.current[assignmentId];
     }
-    // Choose the appropriate m3u8 URL based on the stream's platform.
+
+    // Choose the correct m3u8 URL based on the platform.
     const m3u8Url = assignment.platform.toLowerCase() === 'chaturbate'
       ? assignment.chaturbate_m3u8_url
       : assignment.stripchat_m3u8_url;
@@ -148,11 +157,13 @@ const AgentDashboard = () => {
       return;
     }
 
+    // If HLS is supported, initialize the player.
     if (Hls.isSupported()) {
       const hls = new Hls({ autoStartLoad: true, startLevel: -1, debug: false });
       hls.loadSource(m3u8Url);
       hls.attachMedia(videoElement);
       hlsInstances.current[assignmentId] = hls;
+
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         setStreamStates(prev => ({
           ...prev,
@@ -163,7 +174,7 @@ const AgentDashboard = () => {
             isStreamOnline: true
           }
         }));
-        videoElement.play().catch(console.error);
+        videoElement.play().catch(error => console.error('Video play error:', error));
       });
       hls.on(Hls.Events.ERROR, (event, data) => {
         if (data.fatal) {
@@ -182,7 +193,7 @@ const AgentDashboard = () => {
     } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
       // For Safari support.
       videoElement.src = m3u8Url;
-      videoElement.addEventListener('loadedmetadata', () => {
+      const onLoadedMetadata = () => {
         setStreamStates(prev => ({
           ...prev,
           [assignmentId]: {
@@ -192,9 +203,11 @@ const AgentDashboard = () => {
             isStreamOnline: true
           }
         }));
-        videoElement.play().catch(console.error);
-      });
-      videoElement.addEventListener('error', () => {
+        videoElement.play().catch(error => console.error('Video play error:', error));
+        videoElement.removeEventListener('loadedmetadata', onLoadedMetadata);
+      };
+      videoElement.addEventListener('loadedmetadata', onLoadedMetadata);
+      const onError = () => {
         setStreamStates(prev => ({
           ...prev,
           [assignmentId]: {
@@ -205,7 +218,9 @@ const AgentDashboard = () => {
             errorMessage: "Playback error"
           }
         }));
-      });
+        videoElement.removeEventListener('error', onError);
+      };
+      videoElement.addEventListener('error', onError);
     } else {
       setStreamStates(prev => ({
         ...prev,
@@ -218,10 +233,10 @@ const AgentDashboard = () => {
         }
       }));
     }
-  };
+  }, []);
 
   // Handle video element references.
-  const handleVideoRef = (element, assignmentId) => {
+  const handleVideoRef = useCallback((element, assignmentId) => {
     if (element && !videoRefs.current[assignmentId]) {
       videoRefs.current[assignmentId] = element;
       const assignment = dashboardData.assignments.find(a => a.id === assignmentId);
@@ -229,10 +244,10 @@ const AgentDashboard = () => {
         initializePlayer(assignment, element);
       }
     }
-  };
+  }, [dashboardData.assignments, initializePlayer]);
 
   // Toggle mute for a given stream.
-  const toggleMute = (assignmentId) => {
+  const toggleMute = useCallback((assignmentId) => {
     setStreamStates(prev => {
       const currentState = prev[assignmentId];
       const newMutedState = !currentState.isMuted;
@@ -251,10 +266,10 @@ const AgentDashboard = () => {
         }
       };
     });
-  };
+  }, []);
 
   // Set volume for a given stream.
-  const setStreamVolume = (assignmentId, newVolume) => {
+  const setStreamVolume = useCallback((assignmentId, newVolume) => {
     setStreamStates(prev => {
       const currentState = prev[assignmentId];
       if (videoRefs.current[assignmentId]) {
@@ -270,12 +285,13 @@ const AgentDashboard = () => {
         }
       };
     });
-  };
+  }, []);
 
-  const closeModal = () => setSelectedAssignment(null);
+  // Close the modal.
+  const closeModal = useCallback(() => setSelectedAssignment(null), []);
 
   // Render the video container with controls and stream status.
-  const renderStreamVideo = (assignment, isModal = false) => {
+  const renderStreamVideo = useCallback((assignment, isModal = false) => {
     const assignmentId = assignment.id;
     const streamState = streamStates[assignmentId] || {
       isStreamLoaded: false,
@@ -337,7 +353,47 @@ const AgentDashboard = () => {
         )}
       </div>
     );
-  };
+  }, [handleVideoRef, setStreamVolume, streamStates, toggleMute]);
+
+  // Render notification badge on each assignment card.
+  const renderNotificationBadge = useCallback((assignment) => {
+    const count = notificationCounts[assignment.room_url] || 0;
+    if (count === 0) return null;
+    const notifications = agentNotifications
+      .filter(n => n.room_url === assignment.room_url && !n.read)
+      .slice(0, 3); // Show up to 3 notifications as previews.
+    return (
+      <div className="notification-badge">
+        <span>{count}</span>
+        <div className="notification-tooltip">
+          {notifications.map((notification, index) => (
+            <div 
+              key={index} 
+              className="notification-preview"
+              onClick={() => markNotificationRead(notification.id)}
+            >
+              <span className="notification-type">
+                {notification.event_type.replace('_', ' ').toUpperCase()}
+              </span>
+              <span className="notification-time">
+                {new Date(notification.timestamp).toLocaleTimeString()}
+              </span>
+              {notification.details?.detections?.map((d, i) => (
+                <span key={i} className="detection-tag">
+                  {d.class} ({(d.confidence * 100).toFixed(1)}%)
+                </span>
+              ))}
+            </div>
+          ))}
+          {count > 3 && (
+            <div className="notification-more">
+              +{count - 3} more notifications
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }, [agentNotifications, notificationCounts]);
 
   if (loading) {
     return (
@@ -346,7 +402,6 @@ const AgentDashboard = () => {
           <div className="loading-spinner"></div>
           <div className="loading-text">Loading dashboard...</div>
         </div>
-        
       </div>
     );
   }
@@ -366,23 +421,8 @@ const AgentDashboard = () => {
                     className="assignment-card" 
                     onClick={() => setSelectedAssignment(assignment)}
                   >
+                    {renderNotificationBadge(assignment)}
                     {renderStreamVideo(assignment)}
-                    {(detectionAlerts[assignment.room_url]?.length > 0) && (
-                      <div className="detection-alert-badge">
-                        {detectionAlerts[assignment.room_url].length} DETECTIONS
-                        <div className="detection-preview">
-                          <img 
-                            src={detectionAlerts[assignment.room_url][0].image_url} 
-                            alt="Detection preview" 
-                            className="preview-image"
-                          />
-                          <div className="detection-info">
-                            <span>{detectionAlerts[assignment.room_url][0].class} </span>
-                            <span>({(detectionAlerts[assignment.room_url][0].confidence * 100).toFixed(1)}%)</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
                     <div className="assignment-details">
                       <p><strong>Streamer:</strong> {assignment.streamer_username}</p>
                       <p><strong>Platform:</strong> {assignment.platform}</p>
@@ -405,29 +445,42 @@ const AgentDashboard = () => {
               <div className="stream-info">
                 <p><strong>Platform:</strong> {selectedAssignment.platform}</p>
                 <p><strong>URL:</strong> {selectedAssignment.room_url}</p>
-                {detectionAlerts[selectedAssignment.room_url]?.length > 0 && (
-                  <div className="detections-list">
-                    <h3>Recent Detections</h3>
-                    <ul>
-                      {detectionAlerts[selectedAssignment.room_url].map((detection, index) => (
-                        <li key={index}>
-                          {detection.class} ({(detection.confidence * 100).toFixed(1)}%)
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                {/* Display notifications specific to this stream */}
+                <div className="stream-notifications">
+                  <h3>Recent Alerts</h3>
+                  {agentNotifications
+                    .filter(n => n.room_url === selectedAssignment.room_url)
+                    .slice(0, 5)
+                    .map(notification => (
+                      <div 
+                        key={notification.id} 
+                        className={`notification-item ${notification.read ? 'read' : 'unread'}`}
+                        onClick={() => markNotificationRead(notification.id)}
+                      >
+                        <div className="notification-header">
+                          <span className="notification-type">
+                            {notification.event_type.replace('_', ' ').toUpperCase()}
+                          </span>
+                          <span className="notification-time">
+                            {new Date(notification.timestamp).toLocaleString()}
+                          </span>
+                        </div>
+                        {notification.details?.detections?.map((d, i) => (
+                          <div key={i} className="detection-item">
+                            <span>{d.class}</span>
+                            <span className="confidence">{(d.confidence * 100).toFixed(1)}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                </div>
               </div>
             </div>
           </div>
         )}
-
-       
       </div>
     </ErrorBoundary>
   );
 };
-
-
 
 export default AgentDashboard;

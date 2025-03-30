@@ -313,7 +313,7 @@
             }
          
 
-         /* Add to AgentDashboard.css */
+         /* Notification Styles */
 .notification-badge {
   position: absolute;
   top: -8px;
@@ -360,6 +360,11 @@
 .notification-preview {
   padding: 8px 0;
   border-bottom: 1px solid #40444b;
+  cursor: pointer;
+}
+
+.notification-preview:hover {
+  background-color: #3a3d44;
 }
 
 .notification-preview:last-child {
@@ -370,16 +375,68 @@
   font-weight: 600;
   color: #7289da;
   display: block;
+  font-size: 12px;
 }
 
 .notification-time {
-  font-size: 12px;
+  font-size: 11px;
   color: #b9bbbe;
+}
+
+.detection-tag {
+  display: inline-block;
+  background-color: #3a3d44;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  margin: 2px;
 }
 
 .notification-more {
   text-align: center;
   padding-top: 8px;
-  font-size: 12px;
+  font-size: 11px;
   color: #b9bbbe;
+}
+
+/* Stream Notifications in Modal */
+.stream-notifications {
+  margin-top: 20px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.notification-item {
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.notification-item.unread {
+  background-color: rgba(114, 137, 218, 0.1);
+  border-left: 3px solid #7289da;
+}
+
+.notification-item.read {
+  background-color: #2f3136;
+}
+
+.notification-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.detection-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 4px 0;
+}
+
+.confidence {
+  color: #b9bbbe;
+  font-weight: 600;
 }
