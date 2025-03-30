@@ -487,7 +487,7 @@ def fetch_m3u8_from_page(url, timeout=90):
 
 
 def scrape_stripchat_data(url, progress_callback=None):
-    """Stripchat scraper with improved m3u8 extraction from network resources"""
+    """Enhanced Stripchat scraper with modern browser emulation and HLS detection"""
     from selenium.webdriver.support.ui import WebDriverWait
     from selenium.webdriver.support import expected_conditions as EC
     from selenium.webdriver.common.by import By
@@ -496,235 +496,93 @@ def scrape_stripchat_data(url, progress_callback=None):
         if progress_callback:
             progress_callback(p, m)
 
-    MAX_ATTEMPTS = 3
-    stream_data = None
+    try:
+        update_progress(10, "Initializing browser")
+        
+        # Modern Chrome configuration
+        chrome_options = Options()
+        chrome_options.add_argument("--headless=new")
+        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+        chrome_options.add_argument("--window-size=1920,1080")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument(f"user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36")
+        
+        # Anti-detection settings
+        chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        chrome_options.add_experimental_option("useAutomationExtension", False)
 
-    for attempt in range(MAX_ATTEMPTS):
-        proxy = get_random_proxy()
-        update_progress(10, f"Attempt {attempt+1}/{MAX_ATTEMPTS} - Initializing browser")
-
+        driver = webdriver.Chrome(options=chrome_options)
+        
         try:
-            # Configure browser with stealth options
-            chrome_options = Options()
-            chrome_options.add_argument("--headless=new")
-            chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-            chrome_options.add_argument("--window-size=1920,1080")
-            chrome_options.add_argument("--no-sandbox")
-            chrome_options.add_argument("--disable-dev-shm-usage")
-            chrome_options.add_argument("--disable-web-security")  # Allow cross-origin requests for better network capture
-            chrome_options.add_argument(f"user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36")
+            update_progress(20, "Loading page")
+            driver.get(url)
             
-            # Configure proxy and network monitoring through Selenium Wire
-            seleniumwire_options = {
-                'proxy': {
-                    'http': proxy['http'],
-                    'https': proxy['https'],
-                    'no_proxy': 'localhost,127.0.0.1'
-                },
-                'verify_ssl': False,
-                'connection_timeout': 30,
-                # Enable request storage
-                'enable_har': True
+            # Wait for video element existence
+            WebDriverWait(driver, 20).until(
+                EC.presence_of_element_located((By.TAG_NAME, "video"))
+            )
+
+            update_progress(40, "Capturing stream data")
+            
+            # Get direct video source from video element
+            video_element = driver.find_element(By.TAG_NAME, "video")
+            m3u8_url = driver.execute_script("return arguments[0].src;", video_element)
+
+            if not m3u8_url or "m3u8" not in m3u8_url:
+                # Fallback to network requests
+                update_progress(50, "Analyzing network traffic")
+                m3u8_urls = []
+                start_time = time.time()
+                
+                for request in driver.requests:
+                    if request.response and request.method == "GET" and "m3u8" in request.url:
+                        clean_url = request.url.split('?')[0]
+                        if clean_url not in m3u8_urls:
+                            m3u8_urls.append(clean_url)
+
+                m3u8_url = next((url for url in m3u8_urls if "chunklist" in url), None)
+
+            if not m3u8_url:
+                raise RuntimeError("M3U8 URL not found in video source or network requests")
+
+            update_progress(80, "Validating stream URL")
+            
+            # Verify URL format
+            if not re.match(r"https?://[^\s]+\.m3u8", m3u8_url):
+                raise ValueError("Invalid M3U8 URL format")
+
+            # Get streamer username from URL
+            streamer_username = url.rstrip("/").split("/")[-1]
+
+            return {
+                "status": "online",
+                "streamer_username": streamer_username,
+                "stripchat_m3u8_url": m3u8_url,
             }
 
-            # Create a more targeted request filter to capture m3u8 URLs
-            def custom_request_interceptor(request):
-                # Add additional headers to bypass anti-bot measures
-                request.headers['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
-                request.headers['Accept-Language'] = 'en-US,en;q=0.5'
-                request.headers['Accept-Encoding'] = 'gzip, deflate, br'
-                request.headers['DNT'] = '1'
-                request.headers['Connection'] = 'keep-alive'
-                request.headers['Upgrade-Insecure-Requests'] = '1'
-                request.headers['Sec-Fetch-Dest'] = 'document'
-                request.headers['Sec-Fetch-Mode'] = 'navigate'
-                request.headers['Sec-Fetch-Site'] = 'none'
-                request.headers['Sec-Fetch-User'] = '?1'
-                request.headers['Cache-Control'] = 'max-age=0'
-
-            driver = webdriver.Chrome(
-                options=chrome_options,
-                seleniumwire_options=seleniumwire_options
-            )
+        except Exception as e:
+            # Save debug information
+            timestamp = int(time.time())
+            driver.save_screenshot(f"stripchat_error_{timestamp}.png")
+            page_source = driver.page_source
+            with open(f"stripchat_debug_{timestamp}.html", "w") as f:
+                f.write(page_source)
+            raise e
             
-            # Set custom request interceptor
-            driver.request_interceptor = custom_request_interceptor
+        finally:
+            driver.quit()
 
-            try:
-                update_progress(30, "Loading page via proxy")
-                driver.set_page_load_timeout(45)
-                
-                # Set a specific filter for m3u8 requests before loading the page
-                driver.scopes = [
-                    '.*\.m3u8.*',  # Capture all m3u8 requests
-                    '.*chunklist.*',  # Also capture chunklist requests
-                    '.*playlist.*'   # And playlist requests
-                ]
-                
-                driver.get(url)
-                update_progress(40, "Waiting for video element")
-                
-                # Wait for critical elements
-                try:
-                    WebDriverWait(driver, 20).until(
-                        EC.presence_of_element_located((By.XPATH, "//video"))
-                    )
-                except Exception as wait_error:
-                    logging.warning(f"Video element wait timed out: {str(wait_error)}")
-                
-                # Give extra time for network requests to complete
-                update_progress(50, "Capturing network requests")
-                time.sleep(5)  # Allow time for requests to process
-
-                # First try: Extract from video element
-                m3u8_url = None
-                try:
-                    m3u8_url = driver.execute_script(
-                        "return document.querySelector('video').src"
-                    )
-                    if m3u8_url and '.m3u8' in m3u8_url:
-                        logging.info(f"Found m3u8 URL from video element: {m3u8_url}")
-                except Exception as js_error:
-                    logging.warning(f"JS extraction failed: {str(js_error)}")
-
-                # Second try: Extract from network requests
-                if not m3u8_url or '.m3u8' not in m3u8_url:
-                    update_progress(60, "Searching network requests")
-                    # Sort requests by time, most recent first
-                    for request in reversed(driver.requests):
-                        if request.response and '.m3u8' in request.url:
-                            # Prioritize higher quality streams (chunklist)
-                            if 'chunklist' in request.url:
-                                m3u8_url = request.url
-                                logging.info(f"Found chunklist m3u8 URL: {m3u8_url}")
-                                break
-                            # Otherwise take any m3u8 URL
-                            elif not m3u8_url:  # Only set if we haven't found a better URL
-                                m3u8_url = request.url
-                                logging.info(f"Found m3u8 URL from network: {m3u8_url}")
-
-                # Third try: Look for URLs in the page source
-                if not m3u8_url or '.m3u8' not in m3u8_url:
-                    update_progress(70, "Searching page source")
-                    page_source = driver.page_source
-                    m3u8_matches = re.findall(r'(https?://[^\s"\']+\.m3u8[^\s"\']*)', page_source)
-                    if m3u8_matches:
-                        m3u8_url = m3u8_matches[0]
-                        logging.info(f"Found m3u8 URL from page source: {m3u8_url}")
-
-                # Fourth try: Execute specific JavaScript to find HLS sources
-                if not m3u8_url or '.m3u8' not in m3u8_url:
-                    update_progress(80, "Executing JavaScript to find HLS sources")
-                    try:
-                        hls_sources = driver.execute_script("""
-                            const videoElements = document.querySelectorAll('video');
-                            const sources = [];
-                            
-                            for (const video of videoElements) {
-                                if (video.src && video.src.includes('.m3u8')) {
-                                    sources.push(video.src);
-                                }
-                                
-                                const sourceElements = video.querySelectorAll('source');
-                                for (const source of sourceElements) {
-                                    if (source.src && source.src.includes('.m3u8')) {
-                                        sources.push(source.src);
-                                    }
-                                }
-                            }
-                            
-                            // Also check for URLs in JSON data
-                            const scripts = document.querySelectorAll('script');
-                            for (const script of scripts) {
-                                const content = script.textContent || '';
-                                const m3u8Match = content.match(/(https?:\/\/[^"']+\.m3u8[^"']*)/);
-                                if (m3u8Match) {
-                                    sources.push(m3u8Match[1]);
-                                }
-                            }
-                            
-                            return sources;
-                        """)
-                        
-                        if hls_sources and len(hls_sources) > 0:
-                            m3u8_url = hls_sources[0]
-                            logging.info(f"Found m3u8 URL from JS extraction: {m3u8_url}")
-                    except Exception as js_error:
-                        logging.warning(f"Advanced JS extraction failed: {str(js_error)}")
-
-                # Clean and validate the URL
-                if m3u8_url and re.match(r'https?://[^\s]+\.m3u8', m3u8_url):
-                    # Remove any query parameters for cleaner URL
-                    m3u8_url = m3u8_url.split('?')[0] if '?' in m3u8_url else m3u8_url
-                    update_progress(90, "Valid m3u8 URL found")
-                    
-                    # Extract streamer username from URL
-                    streamer_username = url.rstrip('/').split('/')[-1]
-                    
-                    stream_data = {
-                        "status": "online",
-                        "streamer_username": streamer_username,
-                        "stripchat_m3u8_url": m3u8_url
-                    }
-                    break
-                else:
-                    update_progress(85, "No valid m3u8 URL found, trying a different approach")
-
-            except Exception as e:
-                logging.warning(f"Attempt {attempt+1} failed: {str(e)}")
-                try:
-                    driver.save_screenshot(f'stripchat_error_{attempt}.png')
-                except:
-                    pass
-
-            finally:
-                driver.quit()
-                # Clean up tempfiles
-                try:
-                    for file in driver._driver_kwargs.get('seleniumwire_options', {}).get('request_storage_base_dir', []):
-                        if os.path.exists(file):
-                            os.remove(file)
-                except:
-                    pass
-
-        except Exception as fatal_error:
-            logging.error(f"Proxy connection failed: {str(fatal_error)}")
-
-        # Add a small delay between attempts
-        time.sleep(2)
-
-    if not stream_data:
+    except Exception as e:
+        error_msg = f"Stripchat scraping failed: {str(e)}"
+        logging.error(error_msg)
+        update_progress(100, error_msg)
         return {
             "status": "error",
-            "message": "Failed to extract m3u8 URL after multiple attempts",
-            "error_type": "extraction_failure",
+            "message": error_msg,
+            "error_type": "scraping_error",
             "platform": "stripchat"
         }
-
-    # Verify M3U8 accessibility
-    try:
-        update_progress(95, "Verifying stream URL")
-        verify_response = requests.head(
-            stream_data['stripchat_m3u8_url'],
-            timeout=10,
-            headers={
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
-            }
-        )
-        
-        if verify_response.status_code != 200:
-            return {
-                "status": "error",
-                "message": f"Stream URL verification failed with status {verify_response.status_code}",
-                "error_type": "verification_failure",
-                "platform": "stripchat"
-            }
-    except Exception as verification_error:
-        logging.error(f"Stream verification error: {str(verification_error)}")
-        # Continue anyway, as direct verification might be blocked but the URL could still work
-
-    update_progress(100, "Scraping complete")
-    return stream_data
 
 def run_scrape_job(job_id, url):
     """Run a scraping job and update progress interactively."""
