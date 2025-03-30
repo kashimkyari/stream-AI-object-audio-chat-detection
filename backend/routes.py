@@ -37,6 +37,7 @@ from werkzeug.utils import secure_filename
 from threading import Condition
 import queue
 import uuid
+from datetime import datetime
 
 # Global dictionary to store detection threads and their cancellation events keyed by stream_url.
 detection_threads = {}
@@ -1026,19 +1027,47 @@ def forward_notification(notification_id):
     if not notification or not agent:
         return jsonify({"message": "Invalid notification or agent"}), 404
 
+    # Build detailed message content
+    details = {
+        "event_type": notification.event_type,
+        "timestamp": notification.timestamp.isoformat(),
+        "stream_url": notification.room_url,
+        "streamer": notification.details.get('streamer_name', 'Unknown'),
+        "platform": notification.details.get('platform', 'Unknown')
+    }
+
+    # Add type-specific details
+    if notification.event_type == 'object_detection':
+        details.update({
+            "detections": notification.details.get('detections', []),
+            "annotated_image": base64.b64encode(notification.detection_image).decode('utf-8') 
+                if notification.detection_image else None
+        })
+    elif notification.event_type == 'chat_detection':
+        details.update({
+            "keywords": notification.details.get('keywords', []),
+            "messages": notification.details.get('detections', [])
+        })
+    elif notification.event_type == 'audio_detection':
+        details.update({
+            "keyword": notification.details.get('keyword'),
+            "transcript": notification.details.get('transcript')
+        })
+
     # Create system message
     sys_msg = ChatMessage(
         sender_id=session['user_id'],
         receiver_id=agent.id,
-        message=f"🚨 Forwarded Alert: {notification.event_type.replace('_', ' ').title()}",
-        details=notification.details,
+        message=f"🚨 Forwarded {notification.event_type.replace('_', ' ').title()} Alert",
+        details=details,
         is_system=True,
         timestamp=datetime.utcnow()
     )
+    
     db.session.add(sys_msg)
     db.session.commit()
     
-    return jsonify({"message": "Notification forwarded"}), 200
+    return jsonify({"message": "Notification forwarded", "message": sys_msg.serialize()}), 200
 
 
 
@@ -1071,18 +1100,22 @@ def send_message():
     message_text = data.get("message")
 
     if not receiver_id or not message_text:
-        return jsonify({"error": "Missing receiver_id or message"}), 400
+        return jsonify({"error": "Missing required fields"}), 400
 
-    new_message = ChatMessage(
-        sender_id=session["user_id"],
-        receiver_id=receiver_id,
-        message=message_text,
-        timestamp=datetime.utcnow(),
-        is_system=False
-    )
-    db.session.add(new_message)
-    db.session.commit()
-    return jsonify(new_message.serialize()), 201
+    try:
+        new_message = ChatMessage(
+            sender_id=session["user_id"],
+            receiver_id=receiver_id,
+            message=message_text,
+            timestamp=datetime.utcnow(),  # Fixed timestamp
+            is_system=False
+        )
+        db.session.add(new_message)
+        db.session.commit()
+        return jsonify(new_message.serialize()), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/api/messages/<int:receiver_id>", methods=["GET"])
 @login_required()
