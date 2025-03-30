@@ -6,6 +6,9 @@ This module provides scraping functions for Chaturbate (and Stripchat) streams.
 The updated Chaturbate scraper uses a POST request to retrieve the HLS URL 
 via free proxies. SSL verification is disabled due to known proxy issues.
 """
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
 import sys
 import types
 import tempfile  # For generating unique user-data directories
@@ -362,57 +365,95 @@ def get_hls_url(room_slug: str, max_attempts: int = 15) -> dict:
 
 # --- Updated Chaturbate Scraping Function (Using AJAX) ---
 def scrape_chaturbate_data(url, progress_callback=None):
-    """Enhanced Chaturbate scraper with validation"""
+    """Scrape Chaturbate using headless browser to capture M3U8 from network"""
+    from selenium.webdriver.support.ui import WebDriverWait
+    from selenium.webdriver.support import expected_conditions as EC
+    from selenium.webdriver.common.by import By
+
+    def update_progress(p, m):
+        if progress_callback:
+            progress_callback(p, m)
+
     try:
-        # Initial validation
-        if not url or 'chaturbate.com/' not in url:
-            raise ValueError("Invalid Chaturbate URL")
+        update_progress(10, "Initializing browser")
+        
+        # Configure stealth browser
+        chrome_options = Options()
+        chrome_options.add_argument("--headless=new")
+        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+        chrome_options.add_argument("--window-size=1920,1080")
+        chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36")
+        chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        chrome_options.add_experimental_option("useAutomationExtension", False)
 
-        # Progress tracking
-        def update_progress(p, m):
-            if progress_callback:
-                progress_callback(p, m)
-
-        update_progress(10, "Extracting room slug")
-        room_slug = extract_room_slug(url)
+        driver = webdriver.Chrome(options=chrome_options)
         
-        update_progress(30, "Fetching HLS URL")
-        result = get_hls_url(room_slug)
-        
-        # Response validation
-        if not result:
-            raise ValueError("Empty response from Chaturbate API")
-        
-        if 'error' in result:
-            error_msg = result.get('message', 'Unknown error')
-            raise RuntimeError(f"Chaturbate API error: {error_msg}")
+        try:
+            update_progress(20, "Loading room page")
+            driver.get(url)
             
-        hls_url = result.get("hls_url") or result.get("url")
-        if not hls_url:
-            raise ValueError("Missing HLS URL in response")
-            
-        if 'edge' not in hls_url:
-            raise ValueError("Invalid HLS URL format")
+            # Wait for video container or offline indicator
+            try:
+                WebDriverWait(driver, 15).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, "#video-container, .offline-placeholder"))
+                )
+            except:
+                raise RuntimeError("Page failed to load")
 
-        update_progress(100, "Scraping complete")
-        return {
-            "status": "online",
-            "streamer_username": room_slug,
-            "chaturbate_m3u8_url": hls_url,
-        }
+            # Check for offline status
+            if driver.find_elements(By.CSS_SELECTOR, ".offline-placeholder"):
+                raise RuntimeError("Stream is offline")
+
+            update_progress(40, "Monitoring network requests")
+            
+            # Capture M3U8 URLs with CDN pattern
+            m3u8_urls = []
+            start_time = time.time()
+            timeout = 25  # Increased timeout for slow streams
+            
+            while time.time() - start_time < timeout:
+                for request in driver.requests:
+                    if request.response and "m3u8" in request.url and "edge" in request.url:
+                        clean_url = request.url.split('?')[0]
+                        if clean_url not in m3u8_urls:
+                            m3u8_urls.append(clean_url)
+                if m3u8_urls:
+                    break
+                time.sleep(1)
+
+            if not m3u8_urls:
+                raise RuntimeError("M3U8 URL not found in network requests")
+
+            update_progress(80, "Validating stream URL")
+            
+            # Get streamer username from URL
+            streamer_username = url.rstrip("/").split("/")[-1]
+            
+            return {
+                "status": "online",
+                "streamer_username": streamer_username,
+                "chaturbate_m3u8_url": m3u8_urls[0],
+                "backup_urls": m3u8_urls[1:]  # CDN fallbacks
+            }
+            
+        except Exception as e:
+            # Capture screenshot for debugging
+            driver.save_screenshot(f"chaturbate_error_{int(time.time())}.png")
+            raise e
+            
+        finally:
+            driver.quit()
 
     except Exception as e:
-        error_msg = f"Scraping failed: {str(e)}"
+        error_msg = f"Chaturbate scraping failed: {str(e)}"
         logging.error(error_msg)
-        if progress_callback:
-            progress_callback(100, error_msg)
+        update_progress(100, error_msg)
         return {
             "status": "error",
             "message": error_msg,
-            "details": str(e)
+            "error_type": "scraping_error",
+            "platform": "chaturbate"
         }
-
-
 # --- Existing Functions Remain Unchanged ---
 def fetch_page_content(url, use_selenium=False):
     """
