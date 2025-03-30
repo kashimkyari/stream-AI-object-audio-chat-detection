@@ -128,106 +128,107 @@ def extract_room_slug(url: str) -> str:
 
 # --- Updated Proxy List from free-proxy-list.net (Updated at 2025-03-28 21:42:02 UTC) ---
 PROXY_LIST = [
-    "43.130.47.130:18088",  
-"204.236.137.68:80",  
-"13.55.210.141:3128",  
-"51.16.179.113:1080",  
-"51.20.50.149:3128",  
-"99.80.11.54:3128",  
-"52.63.129.110:3128",  
-"51.16.199.206:3128",  
-"43.200.77.128:3128",  
-"103.129.200.2:8124",  
-"13.36.113.81:3128",  
-"15.235.10.31:28003",  
-"18.230.71.1:20202",  
-"51.84.68.153:20202",  
-"13.239.31.125:20202",  
-"3.68.91.163:20201",  
-"34.233.124.56:20202",  
-"51.84.57.200:20202",  
-"98.81.33.66:20002",  
-"18.183.24.164:20202",  
-"56.155.28.22:20202",  
-"18.182.43.188:20201",  
-"15.157.63.239:20202",  
-"3.22.116.89:20202",  
-"3.27.112.170:20201",  
-"18.138.124.192:20202",  
-"13.214.122.121:20202",  
-"16.171.52.52:20202",  
-"3.79.206.9:20202",  
-"18.140.231.34:20201",  
-"3.99.172.72:20201",  
-"18.207.97.58:20201",  
-"43.201.58.184:20202",  
-"51.20.137.15:20202",  
-"18.197.127.166:20201",  
-"15.237.27.182:20201",  
-"54.173.153.36:20202",  
-"51.16.53.5:20202",  
-"3.27.16.79:20201",  
-"3.128.90.134:20201",  
-"13.53.126.216:20201",  
-"13.40.100.60:20202",  
-"35.183.236.38:20202",  
-"13.247.223.169:20202",  
-"18.231.121.68:20201",  
-"13.51.6.203:20202",  
-"47.129.126.231:20005",  
-"3.35.133.153:20201",  
-"176.34.199.110:20202",  
-"3.26.147.255:20202",  
-"51.16.113.105:3128",  
-"51.44.173.80:20202",  
-"13.203.209.37:20202",  
-"54.180.131.34:20202",  
-"51.17.5.160:20201",  
-"51.17.21.181:20202",  
-"3.106.120.30:20201",  
-"13.247.88.206:20202",  
-"15.236.92.30:20201",  
-"51.44.185.55:20202",  
-"13.231.150.2:20202",  
-"51.17.42.250:20202",  
-"3.36.99.188:20201",  
-"13.124.128.42:20202",  
-"51.17.241.16:20202",  
-"56.155.27.142:20201",  
-"52.26.248.158:3128",  
-"51.84.67.35:45554",  
-"18.141.156.100:20202",  
-"54.215.228.245:20202",  
-"3.115.5.216:20202",  
-"43.204.227.94:20201",  
-"54.209.104.96:20202",  
-"3.249.124.251:20202",  
-"18.181.208.20:20201",  
-"13.250.172.255:20202",  
-"18.144.72.79:20201",  
-"13.115.194.123:20202",  
-"13.214.35.84:20201",  
-"54.151.71.253:20201",  
-"54.210.2.20:20201",  
-"56.155.29.90:20201",  
-"13.245.229.158:20201",  
-"13.208.183.144:20201",  
-"3.27.111.170:20202",  
-"54.174.37.207:20005",  
-"54.252.193.7:20201",  
-"99.79.64.51:20201",  
-"18.134.160.73:20201",  
-"13.247.58.145:20201",  
-"13.49.75.100:20202",  
-"15.236.210.236:20201",  
-"51.16.53.20:20202",  
-"13.208.56.180:80",  
-"71.14.218.2:8080",  
-"15.152.50.120:20202",  
-"18.215.151.253:20201",  
-"34.226.195.206:20202",  
-"13.125.35.27:20202",  
-"13.245.229.200:20201"  
+
+"52.67.10.183:80",
+"200.250.131.218:80",
+"152.230.215.123:80",
+"85.214.107.177:80",
+"154.0.14.116:3128",
+"141.95.238.126:8080",
+"91.134.55.236:8080",
+"219.65.73.81:80",
+"170.106.135.2:13001",
+"43.153.36.22:3334",
+"188.68.52.244:80",
+"43.153.117.40:13001",
+"49.51.250.227:13001",
+"43.153.117.193:13001",
+"43.153.105.141:13001",
+"43.130.32.94:13001",
+"170.106.137.158:13001",
+"170.106.143.168:13001",
+"79.127.158.225:8081",
+"49.51.179.85:13001",
+"170.106.100.130:13001",
+"43.135.161.247:13001",
+"170.106.67.179:13001",
+"43.153.78.185:13001",
+"49.51.197.116:13001",
+"170.106.64.187:13001",
+"43.135.183.46:13001",
+"43.135.129.111:13001",
+"43.153.16.149:13001",
+"43.153.4.125:13001",
+"170.106.196.118:13001",
+"170.106.80.237:13001",
+"43.159.129.136:13001",
+"170.106.82.224:13001",
+"49.51.203.51:13001",
+"43.135.138.21:13001",
+"43.135.172.243:13001",
+"51.91.237.124:8080",
+"170.106.173.254:13001",
+"43.135.179.180:13001",
+"43.130.16.92:13001",
+"43.130.38.18:13001",
+"43.130.0.130:13001",
+"170.106.198.54:13001",
+"43.130.57.165:13001",
+"170.106.192.157:13001",
+"170.106.194.126:13001",
+"43.135.134.89:13001",
+"43.135.130.88:13001",
+"43.130.2.30:13001",
+"170.106.169.110:13001",
+"43.135.164.4:13001",
+"43.153.28.45:13001",
+"43.130.48.100:13001",
+"43.130.37.196:13001",
+"43.130.29.139:13001",
+"43.135.164.2:13001",
+"43.130.42.164:13001",
+"43.153.79.9:13001",
+"65.49.14.6:3128",
+"47.88.137.92:5020",
+"43.153.92.57:13001",
+"43.153.100.212:13001",
+"43.153.79.15:13001",
+"43.153.2.3:13001",
+"103.213.218.22:13137",
+"37.114.192.104:3128",
+"51.44.176.151:20202",
+"18.223.25.15:80",
+"212.33.205.55:3128",
+"188.166.230.109:31028",
+"65.49.2.99:3128",
+"49.51.249.217:13001",
+"54.37.214.253:8080",
+"63.32.1.88:3128",
+"121.200.50.33:3128",
+"43.153.21.33:13001",
+"43.153.35.252:13001",
+"8.219.97.248:80",
+"8.210.17.35:9443",
+"62.210.15.199:80",
+"117.103.68.38:9941",
+"15.236.106.236:3128",
+"47.252.29.28:11222",
+"23.247.136.248:80",
+"3.126.147.182:80",
+"35.72.118.126:80",
+"43.202.154.212:80",
+"3.127.62.252:80",
+"18.228.149.161:80",
+"3.127.121.101:80",
+"3.78.92.159:3128",
+"51.16.199.206:3128",
+"52.63.129.110:3128",
+"52.65.193.254:3128",
+"51.16.179.113:1080",
+"3.212.148.199:3128",
+"54.248.238.110:80",
+"44.219.175.186:80",
+"162.223.90.130:80"
 
 ]
 
@@ -518,34 +519,90 @@ def fetch_m3u8_from_page(url, timeout=90):
 
 
 def scrape_stripchat_data(url, progress_callback=None):
-    """Scrape Stripchat data and update progress."""
+    """Enhanced Stripchat scraper with headless browser bypass"""
+    from selenium.webdriver.support.ui import WebDriverWait
+    from selenium.webdriver.support import expected_conditions as EC
+    from selenium.webdriver.common.by import By
+    
+    def update_progress(p, m):
+        if progress_callback:
+            progress_callback(p, m)
+
     try:
-        if progress_callback:
-            progress_callback(10, "Fetching Stripchat page")
-        stripchat_m3u8_url = fetch_m3u8_from_page(url)
-        if not stripchat_m3u8_url:
-            logging.error("Failed to fetch m3u8 URL for Stripchat stream.")
-            if progress_callback:
-                progress_callback(100, "Error: Failed to fetch m3u8 URL")
-            return None
-        if "playlistType=lowLatency" in stripchat_m3u8_url:
-            stripchat_m3u8_url = stripchat_m3u8_url.split('?')[0]
-        streamer_username = url.rstrip("/").split("/")[-1]
-        result = {
-            "streamer_username": streamer_username,
-            "stripchat_m3u8_url": stripchat_m3u8_url,
-        }
-        logging.info("Scraped details: %s", result)
-        if progress_callback:
-            progress_callback(100, "Scraping complete")
-        return result
+        update_progress(10, "Initializing browser")
+        
+        # Configure stealth browser
+        chrome_options = Options()
+        chrome_options.add_argument("--headless=new")
+        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+        chrome_options.add_argument("--window-size=1920,1080")
+        chrome_options.add_argument(f"user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36")
+        
+        # Anti-detection config
+        chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        chrome_options.add_experimental_option("useAutomationExtension", False)
+
+        driver = webdriver.Chrome(options=chrome_options)
+        
+        try:
+            update_progress(20, "Loading page")
+            driver.get(url)
+            
+            # Wait for stream container
+            WebDriverWait(driver, 15).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "div.video-container"))
+            )
+            
+            update_progress(40, "Capturing network requests")
+            
+            # Capture M3U8 URLs from network requests
+            m3u8_urls = []
+            start_time = time.time()
+            timeout = 30  # Increased timeout
+            
+            while time.time() - start_time < timeout:
+                for request in driver.requests:
+                    if request.response and ".m3u8" in request.url:
+                        clean_url = request.url.split('?')[0]
+                        if clean_url not in m3u8_urls:
+                            m3u8_urls.append(clean_url)
+                if m3u8_urls:
+                    break
+                time.sleep(1)
+            
+            if not m3u8_urls:
+                raise RuntimeError("M3U8 URL not found in network requests")
+            
+            update_progress(80, "Validating stream URL")
+            
+            # Get streamer username from URL
+            streamer_username = url.rstrip("/").split("/")[-1]
+            
+            return {
+                "status": "online",
+                "streamer_username": streamer_username,
+                "stripchat_m3u8_url": m3u8_urls[0],
+                "backup_urls": m3u8_urls[1:]  # For fallback
+            }
+            
+        except Exception as e:
+            # Capture screenshot for debugging
+            driver.save_screenshot(f"stripchat_error_{int(time.time())}.png")
+            raise e
+            
+        finally:
+            driver.quit()
+
     except Exception as e:
-        logging.error("Error scraping Stripchat URL %s: %s", url, e)
-        if progress_callback:
-            progress_callback(100, f"Error: {e}")
-        return None
-
-
+        error_msg = f"Stripchat scraping failed: {str(e)}"
+        logging.error(error_msg)
+        update_progress(100, error_msg)
+        return {
+            "status": "error",
+            "message": error_msg,
+            "error_type": "scraping_error",
+            "platform": "stripchat"
+        }
 def run_scrape_job(job_id, url):
     """Run a scraping job and update progress interactively."""
     update_job_progress(job_id, 0, "Starting scrape job")
@@ -681,7 +738,7 @@ def run_stream_creation_job(job_id, room_url, platform, agent_id=None):
             except Exception as e:
                 logging.warning("Session close error: %s", str(e))
 
-                
+
 def send_telegram_notifications(platform, streamer, room_url):
     """Robust notification handler"""
     try:
