@@ -6,8 +6,7 @@ from cleanup import start_chat_cleanup_thread, start_detection_cleanup_thread
 from monitoring import start_notification_monitor
 import logging
 from flask_cors import CORS
-CORS(app, supports_credentials=True, resources={r"/api/*": {"origins": "https://stream-ai-object-audio-chat-detection.vercel.app/"}})
-
+CORS(app, resources={r"/api/*": {"origins": "*"}}) 
 
 with app.app_context():
     # Create all database tables if they do not exist.
