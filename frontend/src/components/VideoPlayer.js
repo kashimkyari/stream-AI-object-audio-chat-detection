@@ -1,18 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Hls from 'hls.js';
 import axios from 'axios';
-import './VideoPlayer.css';
+import './VideoPlayer.css'
 
-const HlsPlayer = ({ 
-  m3u8Url, 
-  isModalOpen, 
-  posterUrl, 
-  platform, 
-  streamerName, 
-  onError,
-  onRefresh,
-  loading 
-}) => {
+const HlsPlayer = ({ m3u8Url, isModalOpen, posterUrl, platform, streamerName }) => {
   const videoRef = React.useRef(null);
   const [isStreamLoaded, setIsStreamLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -22,7 +13,7 @@ const HlsPlayer = ({
   const [volume, setVolume] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Update video properties when mute or volume changes
+  // Sync volume/mute state with video element.
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.muted = isMuted;
@@ -30,24 +21,18 @@ const HlsPlayer = ({
     }
   }, [isMuted, volume]);
 
-  // Initialize HLS player and attach error handling for m3u8 fetch failures
+  // Initialize HLS player.
   useEffect(() => {
     let hls;
     if (!m3u8Url) {
       setIsLoading(false);
       setHasError(true);
       setErrorMessage("Invalid stream URL");
-      onError?.(true);
       return;
     }
-
     const initializePlayer = () => {
       if (Hls.isSupported()) {
-        hls = new Hls({ 
-          autoStartLoad: true, 
-          startLevel: -1, 
-          debug: false 
-        });
+        hls = new Hls({ autoStartLoad: true, startLevel: -1, debug: false });
         hls.loadSource(m3u8Url);
         hls.attachMedia(videoRef.current);
 
@@ -57,14 +42,11 @@ const HlsPlayer = ({
           videoRef.current.play().catch(console.error);
         });
 
-        // Handle errors specifically related to fetching the m3u8 (manifest)
         hls.on(Hls.Events.ERROR, (event, data) => {
-          // If a fatal error related to the manifest load occurs, mark offline
-          if (data.fatal && data.type === Hls.ErrorTypes.NETWORK_ERROR && data.details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR) {
+          if (data.fatal) {
             setHasError(true);
             setIsLoading(false);
             setErrorMessage(data.details || 'Playback error');
-            onError?.(true);
           }
         });
       } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
@@ -78,23 +60,59 @@ const HlsPlayer = ({
         setHasError(true);
         setIsLoading(false);
         setErrorMessage("HLS not supported");
-        onError?.(true);
       }
     };
 
     initializePlayer();
     return () => hls?.destroy();
-  }, [m3u8Url, refreshKey, onError]);
+  }, [m3u8Url, refreshKey]);
 
+  // Trigger detection when the stream is online.
+  useEffect(() => {
+    if (isStreamLoaded && m3u8Url) {
+      axios.post('/api/trigger-detection', {
+        stream_url: m3u8Url,
+        timestamp: new Date().toISOString(),
+        platform: platform,
+        streamer_name: streamerName
+      })
+      .then(response => {
+        console.log("Server-side detection triggered:", response.data);
+      })
+      .catch(error => {
+        console.error("Error triggering server-side detection:", error);
+      });
+    }
+  }, [isStreamLoaded, m3u8Url, platform, streamerName]);
+
+  // Refresh handler for Chaturbate streams only.
   const handleRefresh = async () => {
     setHasError(false);
     setIsLoading(true);
     setErrorMessage("");
-    try {
-      await onRefresh();
+    if (platform.toLowerCase() === 'chaturbate') {
+      try {
+        const response = await axios.post('/api/streams/refresh/chaturbate', {
+          room_slug: streamerName
+        });
+        if (response.data && response.data.m3u8_url) {
+          // Update m3u8Url with the new URL from the refresh endpoint.
+          // Also trigger a refresh of the player.
+          setRefreshKey(prev => prev + 1);
+          // It's important to update the URL if necessary:
+          // Optionally, you can call a prop callback to update the m3u8Url state higher up.
+          // For now, we'll assume the player uses the new refreshKey to reinitialize.
+          console.log("Refreshed m3u8 URL:", response.data.m3u8_url);
+        } else {
+          console.error("Refresh response missing m3u8_url");
+        }
+      } catch (error) {
+        console.error("Error refreshing stream:", error);
+        setErrorMessage("Error refreshing stream");
+      }
+    } else {
+      // For other platforms, simply reinitialize the player.
       setRefreshKey(prev => prev + 1);
-    } catch (error) {
-      setErrorMessage("Error refreshing stream");
     }
   };
 
@@ -106,48 +124,23 @@ const HlsPlayer = ({
           <span className="live-text">LIVE</span>
         </div>
       )}
-
-      {(isLoading || loading) && (
+      {isLoading && (
         <div className="loading-overlay">
           <div className="loading-spinner"></div>
           <div className="loading-text">Loading stream...</div>
         </div>
       )}
-
       {hasError && (
-        <div className="interactive-overlay" onClick={handleRefresh}>
-          <div className="offline-content">
-            <img 
-              src={posterUrl || '/default-thumbnail.jpg'} 
-              alt="Stream preview" 
-              className="offline-thumbnail"
-            />
-            <div className="offline-message">
-              <div className="offline-icon">🔴</div>
-              <h3>Stream Offline</h3>
-              <p>We're trying to reconnect automatically</p>
-              <button 
-                className="refresh-button interactive-button"
-                onClick={handleRefresh}
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <span className="spinner"></span>
-                    Refreshing...
-                  </>
-                ) : (
-                  'Try Now'
-                )}
-              </button>
-              <div className="retry-timer">
-                <div className="timer-bar" style={{ width: `${loading ? 100 : 0}%` }}></div>
-              </div>
-            </div>
-          </div>
+        <div className="error-overlay">
+          <div className="error-icon">⚠️</div>
+          <div className="error-text">Room Offline</div>
+          {errorMessage.includes("manifestLoadError") && (
+            <button className="button" onClick={handleRefresh}>
+              Refresh Stream
+            </button>
+          )}
         </div>
       )}
-
       <video
         ref={videoRef}
         muted
@@ -156,13 +149,11 @@ const HlsPlayer = ({
         poster={posterUrl}
         style={{ width: '100%', height: '100%' }}
       />
-
       {isModalOpen && (
         <div className="volume-controls">
           <button 
             className="mute-button"
             onClick={() => setIsMuted(!isMuted)}
-            aria-label={isMuted ? "Unmute" : "Mute"}
           >
             {isMuted ? '🔇' : volume > 0 ? '🔊' : '🔈'}
           </button>
@@ -178,171 +169,146 @@ const HlsPlayer = ({
               setVolume(newVolume);
               if (newVolume > 0) setIsMuted(false);
             }}
-            aria-label="Volume control"
           />
         </div>
       )}
+      
     </div>
   );
 };
 
 const VideoPlayer = ({
   platform = "stripchat",
+  streamerUid,
   streamerName,
   staticThumbnail,
+  onDetection,
 }) => {
+  const [thumbnail, setThumbnail] = useState(null);
   const [isOnline, setIsOnline] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [m3u8Url, setM3u8Url] = useState(null);
+  const [fetchedStreamerUsername, setFetchedStreamerUsername] = useState(null);
   const [posterUrl, setPosterUrl] = useState(null);
-  const [videoHasError, setVideoHasError] = useState(false);
-  const [lastChecked, setLastChecked] = useState(new Date());
 
-  // Ensure modal remains closed if offline or error exists
+  // Fetch m3u8 URL based on platform and streamerName.
   useEffect(() => {
-    if (!isOnline || videoHasError) {
-      setIsModalOpen(false);
+    if (platform.toLowerCase() === 'chaturbate' && streamerName) {
+      const fetchM3u8Url = async () => {
+        try {
+          const response = await fetch(`/api/streams?platform=chaturbate&streamer=${streamerName}`);
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          const data = await response.json();
+          if (data.length > 0 && data[0].chaturbate_m3u8_url) {
+            setM3u8Url(data[0].chaturbate_m3u8_url);
+          } else {
+            throw new Error("No m3u8 URL found for the stream");
+          }
+        } catch (error) {
+          console.error("Error fetching m3u8 URL for Chaturbate:", error);
+          setIsOnline(false);
+          const fallbackPosterUrl = `https://jpeg.live.mmcdn.com/stream?room=${streamerName}&f=${Math.random()}`;
+          setPosterUrl(fallbackPosterUrl);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchM3u8Url();
+    } else if (platform.toLowerCase() === 'stripchat' && streamerName) {
+      const fetchM3u8Url = async () => {
+        try {
+          const response = await fetch(`/api/streams?platform=stripchat&streamer=${streamerName}`);
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          const data = await response.json();
+          if (data.length > 0 && data[0].stripchat_m3u8_url) {
+            setM3u8Url(data[0].stripchat_m3u8_url);
+            setFetchedStreamerUsername(data[0].streamer_username);
+          } else {
+            throw new Error("No m3u8 URL found for the stream");
+          }
+        } catch (error) {
+          console.error("Error fetching m3u8 URL for Stripchat:", error);
+          setIsOnline(false);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchM3u8Url();
+    } else {
+      setLoading(false);
     }
-  }, [isOnline, videoHasError]);
-
-  // Fetch stream URL without explicitly triggering offline state for API errors
-  useEffect(() => {
-    const fetchM3u8Url = async () => {
-      try {
-        const endpoint = `/api/streams?platform=${platform}&streamer=${streamerName}`;
-        const response = await fetch(endpoint);
-        
-        // Even if the API returns a 404 or error, we do not mark the stream offline here.
-        // Instead, we let the HLS player determine if the m3u8 cannot be fetched.
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        const urlKey = platform === 'chaturbate' ? 'chaturbate_m3u8_url' : 'stripchat_m3u8_url';
-        
-        if (data.length > 0 && data[0][urlKey]) {
-          setM3u8Url(data[0][urlKey]);
-          setPosterUrl(staticThumbnail);
-          setIsOnline(true);
-          setVideoHasError(false);
-        } else {
-          // No valid m3u8 URL; let HlsPlayer handle the error state
-          setM3u8Url(null);
-        }
-      } catch (error) {
-        console.error(`Error fetching ${platform} stream:`, error);
-        // Do not set offline state here; the HLS player will display the error if m3u8 fails to load.
-        setM3u8Url(null);
-      } finally {
-        setLoading(false);
-        setLastChecked(new Date());
-      }
-    };
-
-    if (streamerName) fetchM3u8Url();
   }, [platform, streamerName, staticThumbnail]);
 
-  const handleRefresh = async () => {
-    try {
-      setLoading(true);
-      let response;
-      
-      if (platform === 'chaturbate') {
-        response = await axios.post('/api/streams/refresh/chaturbate', {
-          room_slug: streamerName
-        });
-      } else if (platform === 'stripchat') {
-        const roomUrl = `https://stripchat.com/${streamerName}/`;
-        response = await axios.post('/api/streams/refresh/stripchat', {
-          room_url: roomUrl
-        });
-      }
-
-      if (response?.data?.m3u8_url) {
-        setM3u8Url(response.data.m3u8_url);
-        setIsOnline(true);
-        setVideoHasError(false);
-      }
-    } catch (error) {
-      console.error("Refresh failed:", error);
-      setIsOnline(false);
-      setVideoHasError(true);
-    } finally {
-      setLoading(false);
-      setLastChecked(new Date());
-    }
+  const handleThumbnailError = () => {
+    setIsOnline(false);
+    setThumbnail(null);
   };
 
-  // Allow modal toggle only when the stream is live (i.e. online and without errors)
+  // Only allow modal toggle when the stream is online.
   const handleModalToggle = () => {
-    if (isOnline && !videoHasError) {
-      setIsModalOpen(!isModalOpen);
-    }
+    if (!isOnline) return;
+    setIsModalOpen(!isModalOpen);
+  };
+
+  const renderPlayer = (isModal) => {
+    return m3u8Url ? (
+      <HlsPlayer
+        m3u8Url={m3u8Url}
+        isModalOpen={isModal}
+        posterUrl={posterUrl}
+        platform={platform}
+        streamerName={streamerName}
+      />
+    ) : (
+      <div className="error-message">No valid m3u8 URL provided for {platform}.</div>
+    );
   };
 
   return (
     <div className="video-container">
       {loading ? (
-        <div className="loading-state">
-          <div className="loading-animation"></div>
-          <p>Checking stream status...</p>
-        </div>
-      ) : (
-        <>
-          {isOnline && !videoHasError ? (
-            <div className="stream-wrapper" onClick={handleModalToggle}>
-              <HlsPlayer
-                m3u8Url={m3u8Url}
-                isModalOpen={isModalOpen}
-                posterUrl={posterUrl}
-                platform={platform}
-                streamerName={streamerName}
-                onError={(error) => {
-                  setVideoHasError(error);
-                  setIsOnline(!error);
-                }}
-                onRefresh={handleRefresh}
-                loading={loading}
-              />
-              
-              {!isModalOpen && (
-                <div className="thumbnail-overlay">
-                  <span className="click-to-expand">Click to expand</span>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="interactive-offline">
-              <div className="offline-card">
-                <div className="platform-icon">
-                  {platform === 'chaturbate' ? '🎥' : '📡'}
-                </div>
-                <h3>{streamerName} is Offline</h3>
-                <p className="last-checked">
-                  Last checked: {lastChecked.toLocaleTimeString()}
-                </p>
-                <div className="action-buttons">
-                  <button 
-                    className="refresh-button" 
-                    onClick={handleRefresh}
-                    disabled={loading}
-                  >
-                    {loading ? 'Checking...' : 'Check Again'}
-                  </button>
-                  <button 
-                    className="notify-button"
-                    onClick={() => {/* Implement notification logic */}
-                    }
-                  >
-                    Notify Me When Live
-                  </button>
-                </div>
-              </div>
+        <div className="loading-message">Loading...</div>
+      ) : thumbnail && isOnline && !isModalOpen ? (
+        <div className="thumbnail-wrapper">
+          <img
+            src={thumbnail}
+            alt="Live stream thumbnail"
+            className="thumbnail-image"
+            onClick={handleModalToggle}
+            onError={handleThumbnailError}
+          />
+          {!isOnline && (
+            <div className="thumbnail-live-indicator">
+              <span>Offline</span>
             </div>
           )}
-        </>
+        </div>
+      ) : (
+        renderPlayer(false)
+      )}
+
+      {!loading && !isOnline && (
+        <div className="error-message">
+          {platform.toLowerCase() === 'stripchat'
+            ? 'Stripchat stream is offline.'
+            : 'Chaturbate stream is offline.'}
+        </div>
+      )}
+
+      {isModalOpen && (
+        <div className="modal-overlay" onClick={handleModalToggle}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            {renderPlayer(true)}
+            <button className="close-modal" onClick={handleModalToggle}>
+              &times;
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

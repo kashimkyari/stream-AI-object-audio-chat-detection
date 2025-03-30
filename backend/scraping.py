@@ -799,8 +799,7 @@ def fetch_chaturbate_chat_history(room_slug):
 
 def refresh_chaturbate_stream(room_slug):
     """
-    Refresh the m3u8 URL for a Chaturbate stream based on the given room slug.
-    Attempts to find a valid m3u8 URL by rotating through edge servers.
+    Refresh the m3u8 URL for a Chaturbate stream using the scraping function.
     
     Args:
         room_slug (str): The room slug (streamer username).
@@ -808,47 +807,43 @@ def refresh_chaturbate_stream(room_slug):
     Returns:
         str or None: The new m3u8 URL if successful, or None if an error occurred.
     """
-    # Template for Chaturbate livestream URL
-    url_template = (
-        "https://edge{edge_num}-sof.live.mmcdn.com/live-edge/"
-        "amlst:{room_slug}-sd-2c7654400be3ea198275ea9be7c29a7ed69b094af88455a15e4eda04d8fbc54c_trns_h264/playlist.m3u8"
-    )
-    
     try:
-        # Try edge servers 1-50
-        for edge_num in range(1, 50):
-            try:
-                new_url = url_template.format(edge_num=edge_num, room_slug=room_slug)
-                response = requests.head(new_url, timeout=60)
-                if response.status_code == 200:
-                    stream = ChaturbateStream.query.filter_by(streamer_username=room_slug).first()
-                    if stream:
-                        stream.chaturbate_m3u8_url = new_url
-                        try:
-                            db.session.commit()
-                            logging.info("Updated stream '%s' with new m3u8 URL: %s", room_slug, new_url)
-                            return new_url
-                        except Exception as db_e:
-                            db.session.rollback()
-                            logging.error("Database commit failed: %s", db_e)
-                            return None
-                    else:
-                        logging.info("No existing stream found, but valid URL found: %s", new_url)
-                        return new_url
-            except Exception as e:
-                logging.debug("Edge%s failed for %s: %s", edge_num, room_slug, e)
-                continue
+        # Construct the Chaturbate room URL
+        room_url = f"https://chaturbate.com/{room_slug}/"
         
-        logging.error("No valid m3u8 URL found for room slug: %s", room_slug)
-        return None
+        # Scrape the updated data
+        scraped_data = scrape_chaturbate_data(room_url)
+        
+        # Validate the response
+        if not scraped_data or scraped_data.get('status') != 'online':
+            logging.error("Scraping failed or stream offline for %s", room_slug)
+            return None
+        
+        new_url = scraped_data.get('chaturbate_m3u8_url')
+        if not new_url:
+            logging.error("No valid m3u8 URL found for room slug: %s", room_slug)
+            return None
+        
+        # Update the database
+        stream = ChaturbateStream.query.filter_by(streamer_username=room_slug).first()
+        if stream:
+            stream.chaturbate_m3u8_url = new_url
+            db.session.commit()
+            logging.info("Updated stream '%s' with new m3u8 URL: %s", room_slug, new_url)
+            return new_url
+        else:
+            logging.info("No existing stream found, but valid URL found: %s", new_url)
+            return new_url
     
     except Exception as e:
-        logging.error("Error refreshing stream for room slug %s: %s", room_slug, e)
+        logging.error("Error refreshing stream for room slug %s: %s", room_slug, str(e))
+        db.session.rollback()
         return None
+
 
 def refresh_stripchat_stream(room_url: str) -> str:
     """
-    Refresh the M3U8 URL for a Stripchat stream by re-scraping the page.
+    Refresh the M3U8 URL for a Stripchat stream using the scraping function.
     
     Args:
         room_url (str): The full URL of the Stripchat room.
@@ -858,20 +853,26 @@ def refresh_stripchat_stream(room_url: str) -> str:
     """
     try:
         scraped_data = scrape_stripchat_data(room_url)
-        if not scraped_data:
+        
+        # Validate the response
+        if not scraped_data or scraped_data.get('status') != 'online':
+            logging.error("Scraping failed or stream offline for %s", room_url)
             return None
+        
         new_url = scraped_data.get("stripchat_m3u8_url")
-        if new_url:
-            stream = StripchatStream.query.filter_by(room_url=room_url).first()
-            if stream:
-                stream.stripchat_m3u8_url = new_url
-                db.session.commit()
-                return new_url
+        if not new_url:
+            logging.error("No valid m3u8 URL found for URL: %s", room_url)
+            return None
+        
+        # Update the database
+        stream = StripchatStream.query.filter_by(room_url=room_url).first()
+        if stream:
+            stream.stripchat_m3u8_url = new_url
+            db.session.commit()
+            return new_url
         return None
+    
     except Exception as e:
         logging.error(f"Error refreshing Stripchat stream: {str(e)}")
+        db.session.rollback()
         return None
-
-
-
-
