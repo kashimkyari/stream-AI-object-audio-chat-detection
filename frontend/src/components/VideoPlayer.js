@@ -22,7 +22,7 @@ const HlsPlayer = ({
   const [volume, setVolume] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Video control handlers
+  // Update video properties when mute or volume changes
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.muted = isMuted;
@@ -30,7 +30,7 @@ const HlsPlayer = ({
     }
   }, [isMuted, volume]);
 
-  // HLS initialization
+  // Initialize HLS player and attach error handling for m3u8 fetch failures
   useEffect(() => {
     let hls;
     if (!m3u8Url) {
@@ -57,8 +57,10 @@ const HlsPlayer = ({
           videoRef.current.play().catch(console.error);
         });
 
+        // Handle errors specifically related to fetching the m3u8 (manifest)
         hls.on(Hls.Events.ERROR, (event, data) => {
-          if (data.fatal) {
+          // If a fatal error related to the manifest load occurs, mark offline
+          if (data.fatal && data.type === Hls.ErrorTypes.NETWORK_ERROR && data.details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR) {
             setHasError(true);
             setIsLoading(false);
             setErrorMessage(data.details || 'Playback error');
@@ -197,19 +199,25 @@ const VideoPlayer = ({
   const [videoHasError, setVideoHasError] = useState(false);
   const [lastChecked, setLastChecked] = useState(new Date());
 
+  // Ensure modal remains closed if offline or error exists
   useEffect(() => {
     if (!isOnline || videoHasError) {
       setIsModalOpen(false);
     }
   }, [isOnline, videoHasError]);
 
+  // Fetch stream URL without explicitly triggering offline state for API errors
   useEffect(() => {
     const fetchM3u8Url = async () => {
       try {
         const endpoint = `/api/streams?platform=${platform}&streamer=${streamerName}`;
         const response = await fetch(endpoint);
         
-        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        // Even if the API returns a 404 or error, we do not mark the stream offline here.
+        // Instead, we let the HLS player determine if the m3u8 cannot be fetched.
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
         
         const data = await response.json();
         const urlKey = platform === 'chaturbate' ? 'chaturbate_m3u8_url' : 'stripchat_m3u8_url';
@@ -220,13 +228,13 @@ const VideoPlayer = ({
           setIsOnline(true);
           setVideoHasError(false);
         } else {
-          throw new Error("No M3U8 URL found");
+          // No valid m3u8 URL; let HlsPlayer handle the error state
+          setM3u8Url(null);
         }
       } catch (error) {
         console.error(`Error fetching ${platform} stream:`, error);
-        setIsOnline(false);
-        setVideoHasError(true);
-        setPosterUrl(`https://jpeg.live.mmcdn.com/stream?room=${streamerName}&f=${Math.random()}`);
+        // Do not set offline state here; the HLS player will display the error if m3u8 fails to load.
+        setM3u8Url(null);
       } finally {
         setLoading(false);
         setLastChecked(new Date());
@@ -267,6 +275,7 @@ const VideoPlayer = ({
     }
   };
 
+  // Allow modal toggle only when the stream is live (i.e. online and without errors)
   const handleModalToggle = () => {
     if (isOnline && !videoHasError) {
       setIsModalOpen(!isModalOpen);
@@ -325,6 +334,7 @@ const VideoPlayer = ({
                   <button 
                     className="notify-button"
                     onClick={() => {/* Implement notification logic */}
+                    }
                   >
                     Notify Me When Live
                   </button>
