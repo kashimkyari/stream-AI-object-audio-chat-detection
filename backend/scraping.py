@@ -487,10 +487,17 @@ def fetch_m3u8_from_page(url, timeout=90):
 
 
 def scrape_stripchat_data(url, progress_callback=None):
-    """Enhanced Stripchat scraper with modern browser emulation and HLS detection"""
-    from selenium.webdriver.support.ui import WebDriverWait
-    from selenium.webdriver.support import expected_conditions as EC
-    from selenium.webdriver.common.by import By
+    """
+    Enhanced Stripchat scraper with modern browser emulation and robust HLS (m3u8) detection.
+    Uses Selenium Wire to intercept network requests for capturing m3u8 URLs.
+
+    Args:
+        url (str): The Stripchat stream URL.
+        progress_callback (callable, optional): Callback function for progress updates.
+
+    Returns:
+        dict: Stream status and extracted m3u8 URL or error details.
+    """
 
     def update_progress(p, m):
         if progress_callback:
@@ -498,63 +505,68 @@ def scrape_stripchat_data(url, progress_callback=None):
 
     try:
         update_progress(10, "Initializing browser")
-        
-        # Modern Chrome configuration
+
+        # Configure modern Chrome options
         chrome_options = Options()
         chrome_options.add_argument("--headless=new")
         chrome_options.add_argument("--disable-blink-features=AutomationControlled")
         chrome_options.add_argument("--window-size=1920,1080")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument(f"user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36")
-        
+        chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                                    "Chrome/119.0.0.0 Safari/537.36")
+
         # Anti-detection settings
         chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
         chrome_options.add_experimental_option("useAutomationExtension", False)
 
+        # Initialize Selenium Wire webdriver for network interception
         driver = webdriver.Chrome(options=chrome_options)
         
         try:
             update_progress(20, "Loading page")
             driver.get(url)
             
-            # Wait for video element existence
+            # Wait for the video element to be present
             WebDriverWait(driver, 20).until(
                 EC.presence_of_element_located((By.TAG_NAME, "video"))
             )
-
             update_progress(40, "Capturing stream data")
-            
-            # Get direct video source from video element
+
+            # Try to obtain m3u8 URL directly from the video element
             video_element = driver.find_element(By.TAG_NAME, "video")
             m3u8_url = driver.execute_script("return arguments[0].src;", video_element)
 
+            # Enhance: If direct extraction fails, search network requests for m3u8 URL
             if not m3u8_url or "m3u8" not in m3u8_url:
-                # Fallback to network requests
-                update_progress(50, "Analyzing network traffic")
+                update_progress(50, "Analyzing network traffic for m3u8 URL")
                 m3u8_urls = []
-                start_time = time.time()
+                # Allow some time for network traffic to accumulate
+                time.sleep(3)
                 
+                # Loop through all intercepted requests
                 for request in driver.requests:
                     if request.response and request.method == "GET" and "m3u8" in request.url:
                         clean_url = request.url.split('?')[0]
                         if clean_url not in m3u8_urls:
                             m3u8_urls.append(clean_url)
-
-                m3u8_url = next((url for url in m3u8_urls if "chunklist" in url), None)
+                
+                # Prioritize URLs that include 'chunklist' indicating HLS segments
+                m3u8_url = next((req_url for req_url in m3u8_urls if "chunklist" in req_url), None)
 
             if not m3u8_url:
-                raise RuntimeError("M3U8 URL not found in video source or network requests")
+                raise RuntimeError("M3U8 URL not found in video element or network requests.")
 
             update_progress(80, "Validating stream URL")
-            
-            # Verify URL format
+            # Validate URL format
             if not re.match(r"https?://[^\s]+\.m3u8", m3u8_url):
-                raise ValueError("Invalid M3U8 URL format")
+                raise ValueError("Invalid M3U8 URL format detected.")
 
-            # Get streamer username from URL
+            # Extract streamer username from the URL
             streamer_username = url.rstrip("/").split("/")[-1]
 
+            update_progress(100, "Stream URL successfully captured")
             return {
                 "status": "online",
                 "streamer_username": streamer_username,
@@ -562,14 +574,17 @@ def scrape_stripchat_data(url, progress_callback=None):
             }
 
         except Exception as e:
-            # Save debug information
+            # Save debug information in case of an error
             timestamp = int(time.time())
-            driver.save_screenshot(f"stripchat_error_{timestamp}.png")
+            try:
+                driver.save_screenshot(f"stripchat_error_{timestamp}.png")
+            except Exception as ss_err:
+                logging.error(f"Failed to save screenshot: {ss_err}")
             page_source = driver.page_source
-            with open(f"stripchat_debug_{timestamp}.html", "w") as f:
+            with open(f"stripchat_debug_{timestamp}.html", "w", encoding="utf-8") as f:
                 f.write(page_source)
             raise e
-            
+
         finally:
             driver.quit()
 
@@ -583,6 +598,7 @@ def scrape_stripchat_data(url, progress_callback=None):
             "error_type": "scraping_error",
             "platform": "stripchat"
         }
+
 
 def run_scrape_job(job_id, url):
     """Run a scraping job and update progress interactively."""
