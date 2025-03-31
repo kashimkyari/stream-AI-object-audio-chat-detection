@@ -1,0 +1,112 @@
+# Deployment: Defines the backend pods with improved resource allocation and health checks
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stream-backend
+  labels:
+    app: stream-backend
+spec:
+  replicas: 3  # Starting replicas for initial load; HPA will scale as needed
+  selector:
+    matchLabels:
+      app: stream-backend
+  template:
+    metadata:
+      labels:
+        app: stream-backend
+    spec:
+      containers:
+      - name: stream-backend
+        image: $DOCKER_USERNAME/stream-backend:latest  # Ensure your image is up-to-date in DockerHub
+        ports:
+        - containerPort: 5000
+        # Enhanced resource requests and limits for CPU-intensive workloads
+        resources:
+          requests:
+            cpu: "1"       # Request at least 1 CPU core for steady performance
+            memory: "2Gi"  # Request 2Gi memory to accommodate load peaks
+          limits:
+            cpu: "2"       # Cap usage at 2 CPU cores to avoid resource overrun
+            memory: "4Gi"  # Limit memory to 4Gi for stability
+        # Liveness probe: Restart container if unresponsive
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        # Readiness probe: Ensure the pod is ready before routing traffic
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        # Optional: Environment variable to signal the workload type (if used in your app)
+        env:
+          - name: MODEL_TYPE
+            value: "yolo_and_whisper"
+        # Uncomment below if you plan to use GPUs and have the necessary node labels and drivers installed
+        # resources:
+        #   limits:
+        #     nvidia.com/gpu: 1
+
+---
+# Service: Exposes the backend internally on port 80 (redirects to container port 5000)
+apiVersion: v1
+kind: Service
+metadata:
+  name: stream-backend
+  labels:
+    app: stream-backend
+spec:
+  selector:
+    app: stream-backend
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80         # ClusterIP port for internal routing
+    targetPort: 5000 # Container port
+  type: ClusterIP
+
+---
+# Horizontal Pod Autoscaler: Scales the deployment based on CPU utilization to prevent downtime
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: stream-backend-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: stream-backend
+  minReplicas: 3
+  maxReplicas: 15  # Increased max replicas for high load conditions
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 60  # Target a slightly higher CPU utilization given the workload
+
+---
+# Ingress: Proxies API requests from your frontend to the backend service seamlessly
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: stream-backend-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2  # Rewrite to strip /api/ prefix for backend routing
+spec:
+  rules:
+  - host: stream-ai-object-audio-chat-detection.vercel.app  # Frontend domain provided
+    http:
+      paths:
+      - path: /api/(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: stream-backend
+            port:
+              number: 80

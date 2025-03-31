@@ -1,0 +1,16 @@
+app = "stream-ai-object-audio-chat-detection"
+primary_region = "waw"
+
+[http_service]
+auto_start_machines = true
+auto_stop_machines = true
+force_https = true
+internal_port = 5000
+min_machines_running = 0
+processes = [ "app" ]
+
+[[vm]]
+cpu_kind = "shared"
+cpus = 1
+memory = "2gb"         # Updated memory string to match the allowed memory_mb value
+memory_mb = 2048       # Set maximum allowed memory to 2048 MiB
